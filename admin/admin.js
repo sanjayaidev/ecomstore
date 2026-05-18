@@ -288,16 +288,24 @@ async function handleProductSubmit(e) {
     keywords: document.getElementById('productKeywords').value.split(',').map(k => k.trim()).filter(Boolean)
   };
 
-  try {
-    // Placeholder: Will connect to POST/PUT API next step
-    showToast(state.editingId ? 'Product update queued (API next)' : 'Product added (API next)', 'success');
+    try {
+    const url = state.editingId ? CONFIG.productsUrl : CONFIG.productsUrl;
+    const method = state.editingId ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Save failed');
+
+    showToast(state.editingId ? '✅ Product updated' : '✅ Product added', 'success');
     closeProductModal();
     fetchProducts();
   } catch (err) {
-    showToast(err.message, 'error');
-  } finally {
-    btn.textContent = 'Save Product';
-    btn.disabled = false;
+    showToast('❌ ' + err.message, 'error');
   }
 }
 
@@ -326,15 +334,22 @@ function openDeleteModal(id) {
 
 elements.confirmDelete?.addEventListener('click', async () => {
   if (!state.deleteTarget) return;
-  // Placeholder: Will connect to DELETE API next step
-  showToast('Delete queued (API next)', 'success');
-  elements.deleteModal.close();
-  fetchProducts();
-  state.deleteTarget = null;
-});
-elements.cancelDelete?.addEventListener('click', () => {
-  elements.deleteModal.close();
-  state.deleteTarget = null;
+  try {
+    const res = await fetch(CONFIG.productsUrl, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: state.deleteTarget })
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Delete failed');
+    
+    showToast('✅ Product deleted', 'success');
+    elements.deleteModal.close();
+    fetchProducts();
+    state.deleteTarget = null;
+  } catch (err) {
+    showToast('❌ ' + err.message, 'error');
+  }
 });
 
 // --- DASHBOARD ---

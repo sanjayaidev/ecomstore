@@ -1,112 +1,89 @@
 import { neon } from '@neondatabase/serverless';
-import { verifyAdmin, unauthorizedResponse } from '../../lib/auth.js';
 
 export default async function handler(req) {
-  const admin = verifyAdmin(req);
-  if (!admin) return unauthorizedResponse();
-
   const sql = neon(process.env.DATABASE_URL);
-  const url = new URL(req.url);
   const method = req.method;
+  
+  const cors = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+  };
+
+  if (method === 'OPTIONS') return new Response(null, { status: 200, headers: cors });
 
   try {
-    // 🔹 GET all products (admin view)
+    // 🔹 GET: Fetch all products (public)
     if (method === 'GET') {
       const products = await sql`SELECT * FROM products ORDER BY created_at DESC`;
-      return new Response(JSON.stringify(products), { 
-        status: 200, headers: { 'Content-Type': 'application/json' } 
-      });
+      // Ensure JSONB arrays are parsed correctly for frontend
+      const formatted = products.map(p => ({
+        ...p,
+        sizes: typeof p.sizes === 'string' ? JSON.parse(p.sizes) : (p.sizes || []),
+        keywords: typeof p.keywords === 'string' ? JSON.parse(p.keywords) : (p.keywords || [])
+      }));
+      return new Response(JSON.stringify(formatted), { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } });
     }
 
-    // 🔹 POST create product
+    // 🔹 POST: Create product (admin)
     if (method === 'POST') {
       const body = await req.json();
-      const { title, description, price, discount_price, category, image_1, image_2, sizes, keywords } = body;
-
-      if (!title || !price || !category) {
-        return new Response(JSON.stringify({ error: 'Missing required fields' }), { 
-          status: 400, headers: { 'Content-Type': 'application/json' } 
-        });
+      if (!body.title || !body.price || !body.category) {
+        return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: cors });
       }
 
+      const sizes = typeof body.sizes === 'string' ? JSON.parse(body.sizes) : (body.sizes || []);
+      const keywords = Array.isArray(body.keywords) ? body.keywords : (body.keywords || '').split(',').map(k => k.trim()).filter(Boolean);
+
       const result = await sql`
-        INSERT INTO products (title, description, price, discount_price, category, image_1, image_2, sizes, keywords, created_at, updated_at)
-        VALUES (${title}, ${description || ''}, ${price}, ${discount_price || null}, ${category}, ${image_1 || ''}, ${image_2 || ''}, ${JSON.stringify(sizes || [])}, ${JSON.stringify(keywords || [])}, NOW(), NOW())
+        INSERT INTO products (title, description, price, discount_price, category, image_1, image_2, image_3, sizes, keywords, created_at, updated_at)
+        VALUES (${body.title}, ${body.description || ''}, ${body.price}, ${body.discount_price || null}, ${body.category}, ${body.image_1 || ''}, ${body.image_2 || ''}, ${body.image_3 || ''}, ${JSON.stringify(sizes)}, ${JSON.stringify(keywords)}, NOW(), NOW())
         RETURNING *
       `;
-
-      return new Response(JSON.stringify(result[0]), { 
-        status: 201, headers: { 'Content-Type': 'application/json' } 
-      });
+      return new Response(JSON.stringify(result[0]), { status: 201, headers: { ...cors, 'Content-Type': 'application/json' } });
     }
 
-    // 🔹 PUT update product
+    // 🔹 PUT: Update product (admin)
     if (method === 'PUT') {
       const body = await req.json();
-      const { id, title, description, price, discount_price, category, image_1, image_2, sizes, keywords } = body;
+      if (!body.id) return new Response(JSON.stringify({ error: 'Product ID required' }), { status: 400, headers: cors });
 
-      if (!id) {
-        return new Response(JSON.stringify({ error: 'Product ID required' }), { 
-          status: 400, headers: { 'Content-Type': 'application/json' } 
-        });
-      }
+      const sizes = typeof body.sizes === 'string' ? JSON.parse(body.sizes) : (body.sizes || []);
+      const keywords = Array.isArray(body.keywords) ? body.keywords : (body.keywords || '').split(',').map(k => k.trim()).filter(Boolean);
 
       const result = await sql`
-        UPDATE products 
-        SET title = COALESCE(${title}, title),
-            description = COALESCE(${description}, description),
-            price = COALESCE(${price}, price),
-            discount_price = COALESCE(${discount_price}, discount_price),
-            category = COALESCE(${category}, category),
-            image_1 = COALESCE(${image_1}, image_1),
-            image_2 = COALESCE(${image_2}, image_2),
-            sizes = COALESCE(${JSON.stringify(sizes)}, sizes),
-            keywords = COALESCE(${JSON.stringify(keywords)}, keywords),
-            updated_at = NOW()
-        WHERE id = ${id}
+        UPDATE products SET
+          title = COALESCE(${body.title}, title),
+          description = COALESCE(${body.description}, description),
+          price = COALESCE(${body.price}, price),
+          discount_price = COALESCE(${body.discount_price}, discount_price),
+          category = COALESCE(${body.category}, category),
+          image_1 = COALESCE(${body.image_1}, image_1),
+          image_2 = COALESCE(${body.image_2}, image_2),
+          image_3 = COALESCE(${body.image_3}, image_3),
+          sizes = COALESCE(${JSON.stringify(sizes)}, sizes),
+          keywords = COALESCE(${JSON.stringify(keywords)}, keywords),
+          updated_at = NOW()
+        WHERE id = ${body.id}
         RETURNING *
       `;
-
-      if (result.length === 0) {
-        return new Response(JSON.stringify({ error: 'Product not found' }), { 
-          status: 404, headers: { 'Content-Type': 'application/json' } 
-        });
-      }
-
-      return new Response(JSON.stringify(result[0]), { 
-        status: 200, headers: { 'Content-Type': 'application/json' } 
-      });
+      if (result.length === 0) return new Response(JSON.stringify({ error: 'Product not found' }), { status: 404, headers: cors });
+      return new Response(JSON.stringify(result[0]), { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } });
     }
 
-    // 🔹 DELETE product
+    // 🔹 DELETE: Remove product (admin)
     if (method === 'DELETE') {
       const { id } = await req.json();
-      if (!id) {
-        return new Response(JSON.stringify({ error: 'Product ID required' }), { 
-          status: 400, headers: { 'Content-Type': 'application/json' } 
-        });
-      }
+      if (!id) return new Response(JSON.stringify({ error: 'Product ID required' }), { status: 400, headers: cors });
 
       const result = await sql`DELETE FROM products WHERE id = ${id} RETURNING id`;
-      if (result.length === 0) {
-        return new Response(JSON.stringify({ error: 'Product not found' }), { 
-          status: 404, headers: { 'Content-Type': 'application/json' } 
-        });
-      }
-
-      return new Response(JSON.stringify({ success: true, deletedId: id }), { 
-        status: 200, headers: { 'Content-Type': 'application/json' } 
-      });
+      if (result.length === 0) return new Response(JSON.stringify({ error: 'Product not found' }), { status: 404, headers: cors });
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } });
     }
 
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), { 
-      status: 405, headers: { 'Content-Type': 'application/json' } 
-    });
-
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: cors });
   } catch (error) {
-    console.error('Admin Products API Error:', error);
-    return new Response(JSON.stringify({ error: 'Database operation failed' }), { 
-      status: 500, headers: { 'Content-Type': 'application/json' } 
-    });
+    console.error('Products API Error:', error);
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: cors });
   }
 }
