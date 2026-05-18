@@ -218,3 +218,9 @@
   .user-info { display: none; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
 }
+#imagePreview img {
+  width: 60px; height: 60px; object-fit: cover;
+  border-radius: 6px; border: 1px solid #e5e7eb;
+  transition: transform 0.2s;
+}
+#imagePreview img:hover { transform: scale(1.05); }
