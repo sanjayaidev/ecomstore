@@ -1,5 +1,5 @@
 /**
- * Product Renderer - Universal rendering function with caching
+ * Product Renderer - Vercel Serverless Compatible
  * Usage:
  *   productRenderer.renderProducts('featured', { ids: [23, 25, 24] })
  *   productRenderer.renderProducts('top-picks', { category: 'saree', limit: 4 })
@@ -10,6 +10,8 @@
 const productRenderer = (() => {
   const cache = {};
   const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  const MAX_RETRIES = 2; // For serverless cold starts
+  const RETRY_DELAY = 300; // ms
 
   // Generate cache key
   function getCacheKey(params) {
@@ -22,7 +24,7 @@ const productRenderer = (() => {
     return Date.now() - cache[key].timestamp < CACHE_DURATION;
   }
 
-  // Build query string
+  // Build query string (matches api/products.js expectations)
   function buildQueryString(params) {
     const query = new URLSearchParams();
     
@@ -45,30 +47,66 @@ const productRenderer = (() => {
     return query.toString();
   }
 
-  // Create product card HTML
+  // Create product card HTML (updated for DB schema fields)
   function createProductCard(product) {
     const displayPrice = product.discount_price || product.price;
     const discount = product.discount_price 
       ? Math.round(((product.price - product.discount_price) / product.price) * 100) 
       : 0;
 
+    // Handle sizes array from DB
+    const sizesHtml = product.sizes && product.sizes.length > 0
+      ? `<div class="sizes-preview">${product.sizes.slice(0, 3).join(', ')}${product.sizes.length > 3 ? '+' : ''}</div>`
+      : '';
+
     return `
-      <div class="product-card">
+      <div class="product-card" data-product-id="${product.id}">
         <div class="product-image">
-          <img src="${product.image_1}" alt="${product.title}">
+          <img src="${product.image_1}" alt="${product.title}" loading="lazy" onerror="this.src='/images/placeholder.webp'">
           ${discount > 0 ? `<span class="discount-badge">${discount}% OFF</span>` : ''}
+          ${product.stock === 0 ? `<span class="sold-out-badge">SOLD OUT</span>` : ''}
         </div>
         <div class="product-info">
           <h3>${product.title}</h3>
           <p class="category">${product.category || 'General'}</p>
+          ${sizesHtml}
           <div class="price-section">
             <span class="price">₹${displayPrice}</span>
             ${product.discount_price ? `<span class="original-price">₹${product.price}</span>` : ''}
           </div>
-          <button class="btn-view-details" onclick="window.location.href='/pages/product.html?id=${product.id}'">View Details</button>
+          <button class="btn-view-details" data-id="${product.id}">View Details</button>
         </div>
       </div>
     `;
+  }
+
+  // Fetch with retry logic for serverless cold starts
+  async function fetchWithRetry(url, retries = 0) {
+    try {
+      const response = await fetch(url, {
+        headers: { 'Accept': 'application/json' },
+        // Vercel serverless functions may have cold starts
+        signal: AbortSignal.timeout(10000) // 10s timeout
+      });
+
+      // Handle 503 (cold start) or 429 (rate limit)
+      if ((response.status === 503 || response.status === 429) && retries < MAX_RETRIES) {
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (retries + 1)));
+        return fetchWithRetry(url, retries + 1);
+      }
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      if (error.name === 'TimeoutError' && retries < MAX_RETRIES) {
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (retries + 1)));
+        return fetchWithRetry(url, retries + 1);
+      }
+      throw error;
+    }
   }
 
   // Render products to container
@@ -81,27 +119,26 @@ const productRenderer = (() => {
 
     const cacheKey = getCacheKey(params);
 
-    // Check cache
+    // Check cache first
     if (isCacheValid(cacheKey)) {
-      console.log('Using cached products for:', containerId);
+      console.log('📦 Cache hit for:', containerId);
       container.innerHTML = cache[cacheKey].html;
+      // Re-attach event listeners after cache render
+      attachButtonListeners();
       return;
     }
 
     try {
-      container.innerHTML = '<p>Loading products...</p>';
+      container.innerHTML = '<p class="loading">Loading products...</p>';
 
       const queryString = buildQueryString(params);
-      const response = await fetch(`/api/products?${queryString}`);
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.statusText}`);
-      }
-
-      const products = await response.json();
+      const apiUrl = `/api/products?${queryString}`;
+      
+      console.log('🔍 Fetching:', apiUrl);
+      const products = await fetchWithRetry(apiUrl);
 
       if (!products || products.length === 0) {
-        container.innerHTML = '<p>No products found</p>';
+        container.innerHTML = '<p class="no-products">No products found</p>';
         return;
       }
 
@@ -115,21 +152,80 @@ const productRenderer = (() => {
       };
 
       container.innerHTML = html;
+      
+      // Attach click listeners after render
+      attachButtonListeners();
+      
     } catch (error) {
-      console.error('Error rendering products:', error);
-      container.innerHTML = '<p>Error loading products. Please try again.</p>';
+      console.error('❌ Error rendering products:', error);
+      container.innerHTML = `
+        <div class="error-state">
+          <p>⚠️ Failed to load products</p>
+          <button class="btn-retry" onclick="productRenderer.renderProducts('${containerId}', ${JSON.stringify(params).replace(/"/g, '&quot;')})">
+            Try Again
+          </button>
+        </div>
+      `;
     }
   }
 
-  // Clear cache
-  function clearCache() {
-    Object.keys(cache).forEach(key => delete cache[key]);
-    console.log('Cache cleared');
+  // Attach event listeners to dynamically rendered buttons
+  function attachButtonListeners() {
+    document.querySelectorAll('.btn-view-details').forEach(btn => {
+      btn.onclick = (e) => {
+        e.preventDefault();
+        const productId = btn.dataset.id;
+        if (productId) {
+          window.location.href = `/pages/product.html?id=${productId}`;
+        }
+      };
+    });
+  }
+
+  // Clear cache (useful after admin updates)
+  function clearCache(key = null) {
+    if (key) {
+      delete cache[key];
+      console.log('🗑️ Cache cleared for key:', key);
+    } else {
+      Object.keys(cache).forEach(k => delete cache[k]);
+      console.log('🗑️ All cache cleared');
+    }
+  }
+
+  // Refresh specific container (bypass cache)
+  async function refresh(containerId, params = {}) {
+    const cacheKey = getCacheKey(params);
+    delete cache[cacheKey]; // Force fresh fetch
+    return renderProducts(containerId, params);
   }
 
   // Public API
   return {
     renderProducts,
-    clearCache
+    refresh,
+    clearCache,
+    // Expose for debugging
+    _cache: cache,
+    _buildQueryString: buildQueryString
   };
 })();
+
+// Auto-attach listeners on initial page load
+document.addEventListener('DOMContentLoaded', () => {
+  // Handle browser back/forward cache
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) {
+      // Re-attach listeners after bfcache restore
+      document.querySelectorAll('.btn-view-details').forEach(btn => {
+        btn.onclick = (e) => {
+          e.preventDefault();
+          const productId = btn.dataset.id;
+          if (productId) {
+            window.location.href = `/pages/product.html?id=${productId}`;
+          }
+        };
+      });
+    }
+  });
+});
