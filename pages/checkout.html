@@ -74,8 +74,7 @@
               <label for="payment">Payment Method</label>
               <select id="payment" name="payment" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px">
                 <option value="cod">💵 Cash on Delivery</option>
-                <option value="upi">📱 UPI</option>
-                <option value="card">💳 Card</option>
+                <option value="online">💳 Online Payment</option>
               </select>
             </div>
           </form>
@@ -89,7 +88,7 @@
           <div class="order-summary">
             <div class="summary-row"><span>Subtotal</span><span id="subtotal">₹0</span></div>
             <div class="summary-row"><span>Shipping</span><span id="shipping">₹0</span></div>
-            <div class="summary-row"><span>Tax</span><span>₹0</span></div>
+            <div class="summary-row"><span>Tax</span><span id="tax">₹0</span></div>
             <div class="summary-row total"><span>Total</span><span id="total">₹0</span></div>
           </div>
 
@@ -191,7 +190,29 @@
           return;
         }
 
-        // Gather data
+        const paymentMethod = document.getElementById('payment').value;
+
+        // For online payments, redirect to payment gateway
+        if (paymentMethod === 'online') {
+          const cart = cartManager.getCart();
+          const totals = cartManager.getCartTotals();
+          const checkoutData = {
+            customer_name: document.getElementById('name').value.trim(),
+            customer_email: document.getElementById('email').value.trim(),
+            customer_phone: document.getElementById('phone').value.trim(),
+            customer_address: document.getElementById('address').value.trim(),
+            items: cart,
+            subtotal: totals.subtotal,
+            tax: totals.tax,
+            shipping: totals.shipping,
+            total: totals.total
+          };
+          sessionStorage.setItem('checkoutData', JSON.stringify(checkoutData));
+          window.location.href = '/api/payment?amount=' + encodeURIComponent(Math.round(totals.total * 100));
+          return;
+        }
+
+        // Gather data for COD
         const cart = cartManager.getCart();
         const totals = cartManager.getCartTotals();
         
@@ -200,7 +221,7 @@
           customer_email: document.getElementById('email').value.trim(),
           customer_phone: document.getElementById('phone').value.trim(),
           customer_address: document.getElementById('address').value.trim(),
-          payment_method: document.getElementById('payment').value,
+          payment_method: paymentMethod,
           items: cart.map(item => ({
             product_id: item.product_id,
             size: item.size || null,
