@@ -48,8 +48,10 @@
           </div>
           <div class="detail-row">
             <span>Status:</span>
-            <span class="status-badge">Pending</span>
+            <span id="order-status" class="status-badge">Pending</span>
           </div>
+        </div>
+        <div id="orderItems" class="order-items" style="text-align:left; margin-top:20px;">
         </div>
 
         <div class="next-steps">
@@ -75,20 +77,47 @@
   </footer>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       const params = new URLSearchParams(window.location.search);
       const orderId = params.get('id');
+      const totalFromUrl = params.get('total');
 
-      if (orderId) {
-        document.getElementById('order-id').textContent = orderId;
+      if (!orderId) {
+        document.getElementById('order-id').textContent = 'Unknown';
+        document.getElementById('order-total').textContent = totalFromUrl ? `₹${Number(totalFromUrl).toFixed(2)}` : '₹0';
+        return;
       }
 
+      document.getElementById('order-id').textContent = orderId;
       const today = new Date();
       document.getElementById('order-date').textContent = today.toLocaleDateString('en-IN', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
       });
+
+      try {
+        const response = await fetch(`/api/orders?id=${encodeURIComponent(orderId)}`);
+        if (!response.ok) throw new Error('Unable to load order details');
+        const order = await response.json();
+
+        document.getElementById('order-total').textContent = order.total ? `₹${Number(order.total).toFixed(2)}` : `₹${Number(totalFromUrl || 0).toFixed(2)}`;
+        document.getElementById('order-status').textContent = order.status || 'Pending';
+
+        if (order.items_detail && order.items_detail.length) {
+          document.getElementById('orderItems').innerHTML = `
+            <h3>Order Items</h3>
+            ${order.items_detail.map(item => `
+              <div class="detail-row">
+                <span>${item.title} (${item.size || 'One size'}) x ${item.quantity}</span>
+                <span>₹${(item.price * item.quantity).toFixed(2)}</span>
+              </div>
+            `).join('')}
+          `;
+        }
+      } catch (error) {
+        console.error('Order details error:', error);
+      }
     });
   </script>
 </body>

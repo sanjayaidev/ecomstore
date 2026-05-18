@@ -64,7 +64,8 @@
 
         <div class="action-buttons">
           <button id="add-to-cart" class="btn-primary">Add to Cart</button>
-          <button id="shop-now" class="btn-secondary">Shop Now</button>
+          <button id="buy-now" class="btn-primary">Buy Now</button>
+          <button id="shop-now" class="btn-secondary">Continue Shopping</button>
         </div>
 
         <div class="product-tabs">
@@ -142,7 +143,8 @@
       });
 
       // Add to cart
-      document.getElementById('add-to-cart').addEventListener('click', addToCart);
+      document.getElementById('add-to-cart').addEventListener('click', () => addToCart({ redirect: false }));
+      document.getElementById('buy-now').addEventListener('click', () => addToCart({ redirect: true }));
       document.getElementById('shop-now').addEventListener('click', () => {
         window.location.href = 'products.html';
       });
@@ -204,8 +206,8 @@
           thumbnailsContainer.appendChild(thumb);
         });
 
-        // Load sizes
-        await loadSizes(productId);
+        // Render size options from the product data
+        renderSizes(product);
 
         // Load related products
         productRenderer.renderProducts('related', { category: product.category, limit: 4 });
@@ -214,22 +216,47 @@
       }
     }
 
-    async function loadSizes(productId) {
-      try {
-        const response = await fetch(`/api/product-sizes?product_id=${productId}`);
-        const sizes = await response.json();
+    function normalizeProductSizes(product) {
+      const rawSizes = Array.isArray(product.sizes) ? product.sizes : [];
+      if (rawSizes.length === 0) {
+        return [{ id: 'default', size: 'One size', stock_qty: 999 }];
+      }
 
-        const sizeSelect = document.getElementById('size-select');
-        sizes.forEach(size => {
-          const option = document.createElement('option');
-          option.value = size.id;
-          option.dataset.size = size.size;
-          option.dataset.stock = size.stock_qty;
-          option.textContent = `${size.size} (${size.stock_qty} in stock)`;
-          sizeSelect.appendChild(option);
-        });
-      } catch (error) {
-        console.error('Error loading sizes:', error);
+      return rawSizes.map((entry, index) => {
+        if (typeof entry === 'string') {
+          return { id: String(index), size: entry, stock_qty: 999 };
+        }
+        if (entry && typeof entry === 'object') {
+          return {
+            id: String(index),
+            size: entry.name || entry.size || `Option ${index + 1}`,
+            stock_qty: Number(entry.stock_qty ?? entry.stock ?? 999)
+          };
+        }
+        return { id: String(index), size: String(entry), stock_qty: 999 };
+      });
+    }
+
+    function renderSizes(product) {
+      const sizes = normalizeProductSizes(product);
+      const sizeSelect = document.getElementById('size-select');
+      sizeSelect.innerHTML = '<option value="">Choose a size</option>';
+      sizes.forEach(size => {
+        const option = document.createElement('option');
+        option.value = size.id;
+        option.dataset.size = size.size;
+        option.dataset.stock = size.stock_qty;
+        option.textContent = `${size.size} (${size.stock_qty} in stock)`;
+        sizeSelect.appendChild(option);
+      });
+
+      if (sizes.length === 1) {
+        sizeSelect.value = sizes[0].id;
+        currentSize = sizes[0].id;
+        updateStockStatus();
+      } else {
+        currentSize = null;
+        document.getElementById('stock-status').textContent = '';
       }
     }
 
@@ -255,7 +282,7 @@
       }
     }
 
-    function addToCart() {
+    function addToCart({ redirect = false } = {}) {
       if (!currentSize) {
         alert('Please select a size');
         return;
@@ -263,7 +290,7 @@
 
       const selectedOption = document.querySelector(`#size-select option[value="${currentSize}"]`);
       const stock = parseInt(selectedOption.dataset.stock);
-      const quantity = parseInt(document.getElementById('quantity').value);
+      const quantity = Math.max(1, parseInt(document.getElementById('quantity').value) || 1);
 
       if (quantity > stock) {
         alert(`Only ${stock} items available`);
@@ -282,10 +309,14 @@
       cartManager.addToCart(cartItem);
       alert('Added to cart!');
       document.getElementById('quantity').value = 1;
+
+      if (redirect) {
+        window.location.href = 'checkout.html';
+      }
     }
 
     function updateCartCount() {
-      const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      const cart = cartManager.getCart();
       document.getElementById('cart-count').textContent = cart.length;
     }
 

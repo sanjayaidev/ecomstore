@@ -26,6 +26,11 @@
         <h3>Filters</h3>
         
         <div class="filter-group">
+          <label for="search-input">Search</label>
+          <input id="search-input" type="search" placeholder="Search by product name or category" />
+        </div>
+
+        <div class="filter-group">
           <label for="category-filter">Category</label>
           <select id="category-filter">
             <option value="">All Categories</option>
@@ -78,17 +83,29 @@
       document.getElementById('price-filter').addEventListener('input', (e) => {
         document.getElementById('price-value').textContent = `₹${e.target.value}`;
       });
+      document.getElementById('search-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') applyFilters();
+      });
+
+      window.addEventListener('cartUpdated', () => {
+        loadProducts();
+        updateCartCount();
+      });
     });
 
     function applyFilters() {
       currentFilters = { limit: 100 };
       
       const category = document.getElementById('category-filter').value;
-      const maxPrice = parseInt(document.getElementById('price-filter').value);
+      const maxPrice = parseInt(document.getElementById('price-filter').value) || 5000;
       const sort = document.getElementById('sort-filter').value;
+      const keywords = document.getElementById('search-input').value.trim();
 
       if (category) currentFilters.category = category;
-      if (sort) currentFilters.sort = sort;
+      if (sort === 'price-asc') currentFilters.sort = 'price_low';
+      else if (sort === 'price-desc') currentFilters.sort = 'price_high';
+      else if (sort) currentFilters.sort = sort;
+      if (keywords) currentFilters.keywords = keywords;
       currentFilters.maxPrice = maxPrice;
 
       loadProducts();
@@ -116,6 +133,8 @@
             const card = createProductCard(product);
             container.appendChild(card);
           });
+
+          attachCardListeners();
         })
         .catch(error => {
           console.error('Error loading products:', error);
@@ -129,6 +148,9 @@
       
       const displayPrice = product.discount_price || product.price;
       const discount = product.discount_price ? Math.round(((product.price - product.discount_price) / product.price) * 100) : 0;
+      const defaultSize = Array.isArray(product.sizes) && product.sizes.length > 0
+        ? (typeof product.sizes[0] === 'string' ? product.sizes[0] : product.sizes[0].name || product.sizes[0].size)
+        : 'One size';
 
       card.innerHTML = `
         <div class="product-image">
@@ -143,9 +165,35 @@
             ${product.discount_price ? `<span class="original-price">₹${product.price}</span>` : ''}
           </div>
           <button class="btn-view-details" onclick="viewProduct('${product.id}')">View Details</button>
+          <button class="btn-secondary btn-add-cart"
+            data-id="${product.id}"
+            data-title="${product.title}"
+            data-price="${displayPrice}"
+            data-image="${product.image_1}"
+            data-size="${defaultSize}">
+            Add to Cart
+          </button>
         </div>
       `;
       return card;
+    }
+
+    function attachCardListeners() {
+      document.querySelectorAll('.btn-add-cart').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const item = {
+            product_id: btn.dataset.id,
+            title: btn.dataset.title,
+            quantity: 1,
+            price: Number(btn.dataset.price),
+            image: btn.dataset.image,
+            size: btn.dataset.size || 'One size'
+          };
+          cartManager.addToCart(item);
+          alert('Added to cart');
+        });
+      });
     }
 
     function viewProduct(productId) {
@@ -153,7 +201,7 @@
     }
 
     function updateCartCount() {
-      const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      const cart = cartManager.getCart();
       document.getElementById('cart-count').textContent = cart.length;
     }
 

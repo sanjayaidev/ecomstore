@@ -58,7 +58,7 @@
     });
 
     function updateCartCount() {
-      const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      const cart = cartManager.getCart();
       document.getElementById('cart-count').textContent = cart.length;
     }
 

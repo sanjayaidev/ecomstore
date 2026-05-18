@@ -54,9 +54,15 @@ const productRenderer = (() => {
       ? Math.round(((product.price - product.discount_price) / product.price) * 100) 
       : 0;
 
+    const sizeLabels = Array.isArray(product.sizes)
+      ? product.sizes.map(s => typeof s === 'string' ? s : s.name || s.size || String(s))
+      : [];
+
+    const defaultSize = sizeLabels.length > 0 ? sizeLabels[0] : 'One size';
+
     // Handle sizes array from DB
-    const sizesHtml = product.sizes && product.sizes.length > 0
-      ? `<div class="sizes-preview">${product.sizes.slice(0, 3).join(', ')}${product.sizes.length > 3 ? '+' : ''}</div>`
+    const sizesHtml = sizeLabels.length > 0
+      ? `<div class="sizes-preview">${sizeLabels.slice(0, 3).join(', ')}${sizeLabels.length > 3 ? '+' : ''}</div>`
       : '';
 
     return `
@@ -74,7 +80,17 @@ const productRenderer = (() => {
             <span class="price">₹${displayPrice}</span>
             ${product.discount_price ? `<span class="original-price">₹${product.price}</span>` : ''}
           </div>
-          <button class="btn-view-details" data-id="${product.id}">View Details</button>
+          <div class="card-actions">
+            <button class="btn-view-details" data-id="${product.id}">View Details</button>
+            <button class="btn-secondary btn-add-cart"
+              data-id="${product.id}"
+              data-title="${product.title}"
+              data-price="${displayPrice}"
+              data-image="${product.image_1}"
+              data-size="${defaultSize}">
+              Add to Cart
+            </button>
+          </div>
         </div>
       </div>
     `;
@@ -178,6 +194,28 @@ const productRenderer = (() => {
         if (productId) {
           window.location.href = `/pages/product.html?id=${productId}`;
         }
+      };
+    });
+
+    document.querySelectorAll('.btn-add-cart').forEach(btn => {
+      btn.onclick = (e) => {
+        e.preventDefault();
+        if (!window.cartManager) {
+          alert('Cart is not available yet.');
+          return;
+        }
+
+        const item = {
+          product_id: btn.dataset.id,
+          title: btn.dataset.title,
+          quantity: 1,
+          price: Number(btn.dataset.price),
+          image: btn.dataset.image,
+          size: btn.dataset.size || 'One size'
+        };
+
+        window.cartManager.addToCart(item);
+        alert('Product added to cart!');
       };
     });
   }

@@ -19,12 +19,29 @@ export default async function handler(req, res) {
 
   try {
     const sql = neon(process.env.DATABASE_URL);
+    const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    const params = url.searchParams;
     
     // ✅ FIX: In Vercel Node.js runtime, body is already parsed as req.body
     const body = req.method !== 'GET' ? (req.body || {}) : {};
 
-    // 🔹 GET: Fetch all orders
+    // 🔹 GET: Fetch all orders or a single order by id
     if (req.method === 'GET') {
+      const orderId = params.get('id');
+      if (orderId) {
+        const orders = await sql`
+          SELECT o.*, 
+            (SELECT json_agg(json_build_object('product_id', oi.product_id, 'title', p.title, 'price', oi.price, 'quantity', oi.quantity, 'size', oi.size))
+             FROM order_items oi LEFT JOIN products p ON oi.product_id = p.id 
+             WHERE oi.order_id = o.id) as items_detail
+          FROM orders o WHERE o.id = ${orderId}
+        `;
+        if (!orders.length) {
+          return res.status(404).json({ error: 'Order not found' });
+        }
+        return res.status(200).json(orders[0]);
+      }
+
       const orders = await sql`
         SELECT o.*, 
           (SELECT json_agg(json_build_object('product_id', oi.product_id, 'title', p.title, 'price', oi.price, 'quantity', oi.quantity, 'size', oi.size))
