@@ -5,83 +5,217 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin Dashboard • EcomStore</title>
   <link rel="stylesheet" href="/css/style.css">
-<link rel="stylesheet" href="/admin/admin.css">
+  <link rel="stylesheet" href="/admin/admin.css">
 </head>
 <body class="admin-body">
-  
+
   <!-- Top Bar -->
   <header class="admin-header">
     <div class="admin-header__left">
-      <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+      <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle menu">☰</button>
       <div class="logo">🛍️ EcomStore Admin</div>
     </div>
     <div class="admin-header__right">
-      <span class="user-info">👤 Admin</span>
-      <button class="btn-logout" id="logoutBtn">Logout</button>
-      <a href="../" class="btn-store" target="_blank">View Store →</a>
+      <div class="header-search">
+        <input type="search" id="globalSearch" placeholder="Search anything..." />
+        <span class="search-icon">🔍</span>
+      </div>
+      <div class="notification-btn" id="notificationBtn" title="Notifications">
+        🔔 <span class="notif-badge" id="notifBadge">3</span>
+      </div>
+      <div class="user-dropdown" id="userDropdown">
+        <div class="user-avatar">A</div>
+        <span class="user-info">Admin</span>
+        <span class="dropdown-arrow">▾</span>
+        <div class="dropdown-menu" id="dropdownMenu">
+          <a href="#" class="dropdown-item" id="profileLink">👤 Profile</a>
+          <a href="../" class="dropdown-item" target="_blank">🏪 View Store</a>
+          <div class="dropdown-divider"></div>
+          <button class="dropdown-item danger" id="logoutBtn">🚪 Logout</button>
+        </div>
+      </div>
     </div>
   </header>
 
   <div class="admin-layout">
-    
+
     <!-- Sidebar -->
     <aside class="admin-sidebar" id="adminSidebar">
+      <div class="sidebar-store-badge">
+        <div class="store-dot"></div>
+        <span>EcomStore</span>
+        <span class="store-status">● Live</span>
+      </div>
+
       <nav class="sidebar-nav">
+        <div class="nav-group-label">MAIN</div>
         <button class="nav-item active" data-section="dashboard">
-          📊 Dashboard
+          <span class="nav-icon">📊</span> Dashboard
         </button>
         <button class="nav-item" data-section="products">
-          📦 Products
+          <span class="nav-icon">📦</span> Products
+          <span class="nav-badge" id="navBadgeProducts">0</span>
         </button>
         <button class="nav-item" data-section="orders">
-          📋 Orders
+          <span class="nav-icon">📋</span> Orders
+          <span class="nav-badge pending" id="navBadgeOrders">0</span>
+        </button>
+
+        <div class="nav-group-label">STORE</div>
+        <button class="nav-item" data-section="customers">
+          <span class="nav-icon">👥</span> Customers
         </button>
         <button class="nav-item" data-section="categories">
-          🏷️ Categories
+          <span class="nav-icon">🏷️</span> Categories
         </button>
+        <button class="nav-item" data-section="analytics">
+          <span class="nav-icon">📈</span> Analytics
+        </button>
+
+        <div class="nav-group-label">SYSTEM</div>
         <button class="nav-item" data-section="settings">
-          ⚙️ Settings
+          <span class="nav-icon">⚙️</span> Settings
         </button>
       </nav>
+
+      <div class="sidebar-footer">
+        <a href="../" target="_blank" class="btn-store-link">🏪 View Store →</a>
+      </div>
     </aside>
+
+    <!-- Sidebar Overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <!-- Main Content -->
     <main class="admin-main">
-      
-      <!-- Dashboard Section -->
+
+      <!-- ── DASHBOARD ── -->
       <section id="dashboard" class="admin-section active">
         <div class="section-header">
-          <h1>Dashboard</h1>
-          <p class="text-muted">Overview of your store performance</p>
+          <div>
+            <h1>Dashboard</h1>
+            <p class="text-muted" id="dashboardDate">Today's overview</p>
+          </div>
+          <div class="header-actions">
+            <select class="filter-select" id="dashboardRange">
+              <option value="7">Last 7 days</option>
+              <option value="30" selected>Last 30 days</option>
+              <option value="90">Last 90 days</option>
+            </select>
+          </div>
         </div>
+
+        <!-- KPI Cards -->
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-value" id="stat-products">0</div>
-            <div class="stat-label">Total Products</div>
+            <div class="stat-icon" style="background:#eff6ff;color:#3b82f6">📦</div>
+            <div class="stat-body">
+              <div class="stat-value" id="stat-products">0</div>
+              <div class="stat-label">Total Products</div>
+              <div class="stat-change positive" id="stat-products-change">—</div>
+            </div>
           </div>
           <div class="stat-card">
-            <div class="stat-value" id="stat-orders">0</div>
-            <div class="stat-label">Total Orders</div>
+            <div class="stat-icon" style="background:#f0fdf4;color:#22c55e">📋</div>
+            <div class="stat-body">
+              <div class="stat-value" id="stat-orders">0</div>
+              <div class="stat-label">Total Orders</div>
+              <div class="stat-change" id="stat-orders-change">—</div>
+            </div>
           </div>
           <div class="stat-card">
-            <div class="stat-value" id="stat-revenue">₹0</div>
-            <div class="stat-label">Revenue</div>
+            <div class="stat-icon" style="background:#fefce8;color:#eab308">💰</div>
+            <div class="stat-body">
+              <div class="stat-value" id="stat-revenue">₹0</div>
+              <div class="stat-label">Revenue</div>
+              <div class="stat-change positive" id="stat-revenue-change">—</div>
+            </div>
           </div>
           <div class="stat-card">
-            <div class="stat-value" id="stat-stock">0</div>
-            <div class="stat-label">Low Stock Items</div>
+            <div class="stat-icon" style="background:#fff1f2;color:#f43f5e">⚠️</div>
+            <div class="stat-body">
+              <div class="stat-value" id="stat-stock">0</div>
+              <div class="stat-label">Low Stock Items</div>
+              <div class="stat-change negative" id="stat-stock-change">needs attention</div>
+            </div>
           </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="charts-row">
+          <div class="chart-card wide">
+            <div class="chart-header">
+              <h3>Revenue Overview</h3>
+              <span class="text-muted" style="font-size:0.8rem">Last 7 days</span>
+            </div>
+            <div class="chart-area" id="revenueChart">
+              <canvas id="revenueCanvas" height="180"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header"><h3>Order Status</h3></div>
+            <div class="donut-chart" id="orderDonut">
+              <svg viewBox="0 0 120 120" width="120" height="120">
+                <circle cx="60" cy="60" r="45" fill="none" stroke="#e5e7eb" stroke-width="18"/>
+                <circle cx="60" cy="60" r="45" fill="none" stroke="#3b82f6" stroke-width="18"
+                  stroke-dasharray="113 170" stroke-dashoffset="28" class="donut-seg"/>
+                <circle cx="60" cy="60" r="45" fill="none" stroke="#22c55e" stroke-width="18"
+                  stroke-dasharray="57 226" stroke-dashoffset="-85" class="donut-seg"/>
+                <circle cx="60" cy="60" r="45" fill="none" stroke="#f59e0b" stroke-width="18"
+                  stroke-dasharray="28 255" stroke-dashoffset="-142" class="donut-seg"/>
+              </svg>
+              <div class="donut-legend">
+                <span><i style="background:#3b82f6"></i>Pending</span>
+                <span><i style="background:#22c55e"></i>Fulfilled</span>
+                <span><i style="background:#f59e0b"></i>Returned</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Orders Quick View -->
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h3>Recent Orders</h3>
+            <button class="btn-link" data-goto="orders">View all →</button>
+          </div>
+          <div class="table-container" style="border:none;box-shadow:none;">
+            <table class="admin-table" id="recentOrdersTable">
+              <thead>
+                <tr>
+                  <th>Order ID</th><th>Customer</th><th>Total</th><th>Status</th><th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="recentOrdersBody">
+                <tr><td colspan="5" class="text-center text-muted">No orders yet</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Top Products -->
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h3>Top Products</h3>
+            <button class="btn-link" data-goto="products">View all →</button>
+          </div>
+          <div id="topProductsList" class="top-products-list"></div>
         </div>
       </section>
 
-      <!-- Products Section -->
+      <!-- ── PRODUCTS ── -->
       <section id="products" class="admin-section">
         <div class="section-header">
-          <h1>Products</h1>
-          <button class="btn-primary" id="addProductBtn">+ Add Product</button>
+          <div>
+            <h1>Products</h1>
+            <p class="text-muted" id="productsCount">0 products</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn-secondary" id="exportProductsBtn">⬇ Export</button>
+            <button class="btn-primary" id="addProductBtn">+ Add Product</button>
+          </div>
         </div>
-        
-        <!-- Search & Filters -->
+
         <div class="admin-toolbar">
           <input type="search" id="productSearch" placeholder="Search products..." class="search-input" />
           <select id="categoryFilter" class="filter-select">
@@ -97,9 +231,16 @@
             <option value="lowstock">Low Stock</option>
             <option value="outstock">Out of Stock</option>
           </select>
+          <select id="sortFilter" class="filter-select">
+            <option value="">Sort by</option>
+            <option value="price-asc">Price: Low → High</option>
+            <option value="price-desc">Price: High → Low</option>
+            <option value="title-asc">Name A–Z</option>
+            <option value="stock-asc">Stock: Low first</option>
+          </select>
+          <button class="btn-secondary btn-sm" id="bulkDeleteBtn" style="display:none;color:#ef4444;border-color:#ef4444">Delete Selected</button>
         </div>
 
-        <!-- Products Table -->
         <div class="table-container">
           <table class="admin-table" id="productsTable">
             <thead>
@@ -115,25 +256,43 @@
               </tr>
             </thead>
             <tbody id="productsTableBody">
-              <!-- Populated by JS -->
+              <tr><td colspan="8" class="text-center">Loading products...</td></tr>
             </tbody>
           </table>
         </div>
-        
-        <!-- Pagination -->
-        <div class="pagination" id="productsPagination">
-          <!-- Populated by JS -->
-        </div>
+        <div class="pagination" id="productsPagination"></div>
       </section>
 
-      <!-- Orders Section -->
+      <!-- ── ORDERS ── -->
       <section id="orders" class="admin-section">
         <div class="section-header">
-          <h1>Orders</h1>
-          <div class="text-muted">Manage customer orders</div>
+          <div>
+            <h1>Orders</h1>
+            <p class="text-muted">Manage and track customer orders</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn-secondary" id="exportOrdersBtn">⬇ Export CSV</button>
+          </div>
         </div>
+
+        <div class="order-status-tabs" id="orderTabs">
+          <button class="tab-btn active" data-status="all">All <span class="tab-count" id="tabAll">0</span></button>
+          <button class="tab-btn" data-status="pending">Pending <span class="tab-count" id="tabPending">0</span></button>
+          <button class="tab-btn" data-status="processing">Processing <span class="tab-count" id="tabProcessing">0</span></button>
+          <button class="tab-btn" data-status="shipped">Shipped <span class="tab-count" id="tabShipped">0</span></button>
+          <button class="tab-btn" data-status="delivered">Delivered <span class="tab-count" id="tabDelivered">0</span></button>
+          <button class="tab-btn" data-status="cancelled">Cancelled <span class="tab-count" id="tabCancelled">0</span></button>
+        </div>
+
+        <div class="admin-toolbar">
+          <input type="search" id="orderSearch" placeholder="Search by name, order ID..." class="search-input" />
+          <input type="date" id="orderDateFrom" class="filter-select" style="width:auto" />
+          <span style="align-self:center;color:#9ca3af">to</span>
+          <input type="date" id="orderDateTo" class="filter-select" style="width:auto" />
+        </div>
+
         <div class="table-container">
-          <table class="admin-table" id="ordersTable">
+          <table class="admin-table">
             <thead>
               <tr>
                 <th>Order ID</th>
@@ -146,26 +305,48 @@
               </tr>
             </thead>
             <tbody id="ordersTableBody">
-              <tr><td colspan="7" class="text-center">Loading orders...</td></tr>
+              <tr><td colspan="7" class="text-center text-muted">No orders yet</td></tr>
             </tbody>
           </table>
         </div>
       </section>
 
-      <!-- Categories Section -->
+      <!-- ── CUSTOMERS ── -->
+      <section id="customers" class="admin-section">
+        <div class="section-header">
+          <div>
+            <h1>Customers</h1>
+            <p class="text-muted" id="customersCount">0 customers</p>
+          </div>
+        </div>
+        <div class="admin-toolbar">
+          <input type="search" id="customerSearch" placeholder="Search customers..." class="search-input" />
+        </div>
+        <div class="table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Name</th><th>Email</th><th>Phone</th><th>Orders</th><th>Total Spent</th><th>Joined</th>
+              </tr>
+            </thead>
+            <tbody id="customersTableBody">
+              <tr><td colspan="6" class="text-center text-muted">No customers yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── CATEGORIES ── -->
       <section id="categories" class="admin-section">
         <div class="section-header">
           <h1>Categories</h1>
           <button class="btn-primary" id="addCategoryBtn">+ Add Category</button>
         </div>
         <div class="table-container">
-          <table class="admin-table" id="categoriesTable">
+          <table class="admin-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Slug</th>
-                <th>Products</th>
-                <th>Actions</th>
+                <th>Name</th><th>Slug</th><th>Products</th><th>Actions</th>
               </tr>
             </thead>
             <tbody id="categoriesTableBody">
@@ -175,111 +356,291 @@
         </div>
       </section>
 
-      <!-- Settings Section -->
+      <!-- ── ANALYTICS ── -->
+      <section id="analytics" class="admin-section">
+        <div class="section-header">
+          <h1>Analytics</h1>
+          <p class="text-muted">Store performance insights</p>
+        </div>
+        <div class="analytics-grid">
+          <div class="analytics-card">
+            <h3>Category Breakdown</h3>
+            <div id="categoryBreakdown" class="breakdown-list"></div>
+          </div>
+          <div class="analytics-card">
+            <h3>Stock Health</h3>
+            <div id="stockHealth" class="stock-bars"></div>
+          </div>
+          <div class="analytics-card wide">
+            <h3>Price Distribution</h3>
+            <div id="priceDistribution" class="price-dist"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── SETTINGS ── -->
       <section id="settings" class="admin-section">
         <div class="section-header">
           <h1>Settings</h1>
           <p class="text-muted">Store configuration</p>
         </div>
-        <div class="settings-card">
-          <h3>Store Info</h3>
-          <div class="form-group">
-            <label>Store Name</label>
-            <input type="text" id="storeName" value="EcomStore" />
+        <div class="settings-tabs">
+          <button class="settings-tab active" data-stab="general">General</button>
+          <button class="settings-tab" data-stab="security">Security</button>
+          <button class="settings-tab" data-stab="notifications">Notifications</button>
+        </div>
+
+        <div id="stab-general" class="settings-panel active">
+          <div class="settings-card">
+            <h3>Store Info</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Store Name</label>
+                <input type="text" id="storeName" value="EcomStore" />
+              </div>
+              <div class="form-group">
+                <label>Support Email</label>
+                <input type="email" id="supportEmail" value="support@mystore.com" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Currency</label>
+                <select id="storeCurrency">
+                  <option value="INR" selected>₹ Indian Rupee (INR)</option>
+                  <option value="USD">$ US Dollar (USD)</option>
+                  <option value="EUR">€ Euro (EUR)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Timezone</label>
+                <select id="storeTimezone">
+                  <option value="Asia/Kolkata" selected>Asia/Kolkata (IST)</option>
+                  <option value="UTC">UTC</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn-primary" id="saveSettingsBtn">Save Changes</button>
           </div>
-          <div class="form-group">
-            <label>Support Email</label>
-            <input type="email" id="supportEmail" value="support@mystore.com" />
+        </div>
+
+        <div id="stab-security" class="settings-panel">
+          <div class="settings-card">
+            <h3>Change Admin Password</h3>
+            <div class="form-group">
+              <label>Current Password</label>
+              <input type="password" id="currentPassword" placeholder="Enter current password" />
+            </div>
+            <div class="form-group">
+              <label>New Password</label>
+              <input type="password" id="newPassword" placeholder="Min 8 characters" />
+            </div>
+            <div class="form-group">
+              <label>Confirm New Password</label>
+              <input type="password" id="confirmPassword" placeholder="Repeat new password" />
+            </div>
+            <button class="btn-primary" id="changePasswordBtn">Update Password</button>
           </div>
-          <button class="btn-primary" id="saveSettingsBtn">Save Changes</button>
+        </div>
+
+        <div id="stab-notifications" class="settings-panel">
+          <div class="settings-card">
+            <h3>Notification Preferences</h3>
+            <div class="toggle-list">
+              <div class="toggle-item">
+                <div>
+                  <strong>New Order Alerts</strong>
+                  <p class="text-muted">Get notified when a new order is placed</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="toggle-item">
+                <div>
+                  <strong>Low Stock Warnings</strong>
+                  <p class="text-muted">Alert when stock drops below 5 units</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="toggle-item">
+                <div>
+                  <strong>Daily Reports</strong>
+                  <p class="text-muted">Receive daily summary via email</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            <button class="btn-primary" style="margin-top:16px">Save Preferences</button>
+          </div>
         </div>
       </section>
 
     </main>
   </div>
 
-  <!-- Add/Edit Product Modal -->
+  <!-- ── PRODUCT MODAL ── -->
   <dialog class="modal" id="productModal">
     <div class="modal-content">
       <div class="modal-header">
         <h3 id="modalTitle">Add Product</h3>
-        <button class="modal-close" id="closeProductModal">&times;</button>
+        <button class="modal-close" id="closeProductModal" aria-label="Close">&times;</button>
       </div>
       <form id="productForm" class="modal-form">
         <input type="hidden" id="productId" />
-        
-        <div class="form-row">
-          <div class="form-group">
-            <label for="productTitle">Title *</label>
-            <input type="text" id="productTitle" name="title" required />
+
+        <div class="form-tabs">
+          <button type="button" class="form-tab active" data-ftab="basic">Basic Info</button>
+          <button type="button" class="form-tab" data-ftab="media">Media</button>
+          <button type="button" class="form-tab" data-ftab="inventory">Inventory</button>
+        </div>
+
+        <!-- Basic Info Tab -->
+        <div class="form-tab-panel active" id="ftab-basic">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="productTitle">Title *</label>
+              <input type="text" id="productTitle" name="title" required placeholder="e.g. Silk Banarasi Saree" />
+            </div>
+            <div class="form-group">
+              <label for="productCategory">Category *</label>
+              <select id="productCategory" name="category" required>
+                <option value="">Select category...</option>
+                <option value="saree">Saree</option>
+                <option value="kurti">Kurti</option>
+                <option value="dress">Dress</option>
+                <option value="top">Top</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="productPrice">Price (₹) *</label>
+              <div class="input-prefix">
+                <span>₹</span>
+                <input type="number" id="productPrice" name="price" step="1" min="0" required placeholder="0" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="productDiscount">Discount Price (₹)</label>
+              <div class="input-prefix">
+                <span>₹</span>
+                <input type="number" id="productDiscount" name="discount_price" step="1" min="0" placeholder="0" />
+              </div>
+            </div>
           </div>
           <div class="form-group">
-            <label for="productCategory">Category *</label>
-            <select id="productCategory" name="category" required>
-              <option value="">Select...</option>
-              <option value="saree">Saree</option>
-              <option value="kurti">Kurti</option>
-              <option value="dress">Dress</option>
-              <option value="top">Top</option>
-            </select>
+            <label for="productDescription">Description *</label>
+            <textarea id="productDescription" name="description" rows="4" required placeholder="Describe your product..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Keywords <small class="text-muted">(comma-separated)</small></label>
+            <input type="text" id="productKeywords" name="keywords" placeholder="e.g. cotton, blue, casual, festive" />
           </div>
         </div>
 
-        <div class="form-row">
+        <!-- Media Tab -->
+        <div class="form-tab-panel" id="ftab-media">
           <div class="form-group">
-            <label for="productPrice">Price (₹) *</label>
-            <input type="number" id="productPrice" name="price" step="0.01" required />
+            <label>Product Images</label>
+            <p class="text-muted" style="font-size:0.82rem;margin-bottom:12px">Use paths like <code>/images/product.webp</code> or full URLs</p>
+            <div class="image-inputs">
+              <div class="image-input-row">
+                <span class="img-num">1</span>
+                <input type="text" id="image1" name="image_1" placeholder="/images/1.webp or https://..." required />
+                <span class="img-badge primary-badge">Main</span>
+              </div>
+              <div class="image-input-row">
+                <span class="img-num">2</span>
+                <input type="text" id="image2" name="image_2" placeholder="/images/2.webp or https://..." />
+              </div>
+              <div class="image-input-row">
+                <span class="img-num">3</span>
+                <input type="text" id="image3" name="image_3" placeholder="/images/3.webp or https://..." />
+              </div>
+            </div>
           </div>
           <div class="form-group">
-            <label for="productDiscount">Discount Price (₹)</label>
-            <input type="number" id="productDiscount" name="discount_price" step="0.01" />
+            <label>Preview</label>
+            <div id="imagePreview" class="image-preview-grid"></div>
           </div>
         </div>
 
-        <div class="form-group">
-          <label for="productDescription">Description *</label>
-          <textarea id="productDescription" name="description" rows="3" required></textarea>
-        </div>
-
-        <div class="form-group">
-  <label>Images</label>
-  <div class="image-inputs">
- <input type="text" id="image1" name="image_1" placeholder="/images/1.webp or https://..." required />
-<input type="text" id="image2" name="image_2" placeholder="/images/2.webp or https://..." />
-<input type="text" id="image3" name="image_3" placeholder="/images/3.webp or https://..." />
-  </div>
-  <small class="text-muted">Use paths like <code>/images/1.webp</code> for repo images</small>
-  <!-- 👇 ADD THIS LINE RIGHT HERE 👇 -->
-  <div id="imagePreview" style="display:flex; gap:8px; margin-top:10px; min-height:60px;"></div>
-</div>
-
-        <div class="form-group">
-          <label>Sizes & Stock</label>
-          <div id="sizesContainer"></div>
-          <button type="button" class="btn-secondary btn-sm" id="addSizeRow">+ Add Size</button>
-        </div>
-
-        <div class="form-group">
-          <label>Keywords (comma-separated)</label>
-          <input type="text" id="productKeywords" name="keywords" placeholder="e.g., cotton, blue, casual" />
+        <!-- Inventory Tab -->
+        <div class="form-tab-panel" id="ftab-inventory">
+          <div class="form-group">
+            <label>Sizes & Stock</label>
+            <div id="sizesContainer"></div>
+            <button type="button" class="btn-secondary btn-sm" id="addSizeRow" style="margin-top:8px">+ Add Size</button>
+          </div>
+          <div class="stock-summary" id="stockSummary">
+            <span>Total stock: <strong id="totalStockCount">0</strong> units</span>
+          </div>
         </div>
 
         <div class="modal-actions">
           <button type="button" class="btn-secondary" id="cancelProductModal">Cancel</button>
-          <button type="submit" class="btn-primary">Save Product</button>
+          <button type="submit" class="btn-primary" id="saveProductBtn">
+            <span id="saveBtnText">Save Product</span>
+          </button>
         </div>
       </form>
     </div>
   </dialog>
 
-  <!-- Delete Confirmation Modal -->
-  <dialog class="modal modal-danger" id="deleteModal">
+  <!-- ── CATEGORY MODAL ── -->
+  <dialog class="modal modal-sm" id="categoryModal">
     <div class="modal-content">
-      <h3>Confirm Delete</h3>
-      <p>Are you sure you want to delete <strong id="deleteItemName">this item</strong>? This action cannot be undone.</p>
-      <div class="modal-actions">
+      <div class="modal-header">
+        <h3 id="categoryModalTitle">Add Category</h3>
+        <button class="modal-close" id="closeCategoryModal">&times;</button>
+      </div>
+      <form id="categoryForm" class="modal-form">
+        <input type="hidden" id="categoryId" />
+        <div class="form-group">
+          <label>Category Name *</label>
+          <input type="text" id="categoryName" required placeholder="e.g. Saree" />
+        </div>
+        <div class="form-group">
+          <label>Slug</label>
+          <input type="text" id="categorySlug" placeholder="auto-generated" />
+          <small class="text-muted">Used in URLs. Leave blank to auto-generate.</small>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="cancelCategoryModal">Cancel</button>
+          <button type="submit" class="btn-primary">Save Category</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- ── ORDER DETAIL MODAL ── -->
+  <dialog class="modal modal-lg" id="orderModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="orderModalTitle">Order Details</h3>
+        <button class="modal-close" id="closeOrderModal">&times;</button>
+      </div>
+      <div id="orderModalBody" class="modal-form"></div>
+    </div>
+  </dialog>
+
+  <!-- ── DELETE CONFIRM MODAL ── -->
+  <dialog class="modal modal-sm modal-danger" id="deleteModal">
+    <div class="modal-content" style="padding:28px;text-align:center;">
+      <div style="font-size:2.5rem;margin-bottom:12px">🗑️</div>
+      <h3 style="margin-bottom:8px">Confirm Delete</h3>
+      <p class="text-muted">Are you sure you want to delete <strong id="deleteItemName">this item</strong>? This cannot be undone.</p>
+      <div class="modal-actions" style="justify-content:center;margin-top:20px;gap:12px">
         <button class="btn-secondary" id="cancelDelete">Cancel</button>
-        <button class="btn-danger" id="confirmDelete">Delete</button>
+        <button class="btn-danger" id="confirmDelete">Yes, Delete</button>
       </div>
     </div>
   </dialog>
