@@ -1,273 +1,362 @@
 // admin/admin.js
-const API = {
-  auth: '/api/login',
-  products: '/api/admin/products',
-  tokenKey: 'admin_token'
+const CONFIG = {
+  loginUrl: '/api/login',
+  productsUrl: '/api/products',
+  tokenKey: 'admin_token',
+  adminEmail: 'sanjay@mystore.com',
+  adminPassword: 'sanjay@123'
 };
 
-// --- AUTH & INIT ---
-document.addEventListener('DOMContentLoaded', () => {
-  const token = localStorage.getItem(API.tokenKey);
-  if (!token) {
-    showLoginModal();
+// DOM Elements
+const elements = {
+  loginModal: document.getElementById('loginModal') || createLoginModal(),
+  loginForm: document.getElementById('loginForm'),
+  logoutBtn: document.getElementById('logoutBtn'),
+  mobileMenuBtn: document.getElementById('mobileMenuBtn'),
+  sidebar: document.getElementById('adminSidebar'),
+  navItems: document.querySelectorAll('.nav-item'),
+  sections: document.querySelectorAll('.admin-section'),
+  productsTableBody: document.getElementById('productsTableBody'),
+  productSearch: document.getElementById('productSearch'),
+  categoryFilter: document.getElementById('categoryFilter'),
+  addProductBtn: document.getElementById('addProductBtn'),
+  productModal: document.getElementById('productModal'),
+  productForm: document.getElementById('productForm'),
+  closeProductModal: document.getElementById('closeProductModal'),
+  cancelProductModal: document.getElementById('cancelProductModal'),
+  sizesContainer: document.getElementById('sizesContainer'),
+  addSizeRow: document.getElementById('addSizeRow'),
+  deleteModal: document.getElementById('deleteModal'),
+  deleteItemName: document.getElementById('deleteItemName'),
+  cancelDelete: document.getElementById('cancelDelete'),
+  confirmDelete: document.getElementById('confirmDelete'),
+  toastContainer: document.getElementById('toastContainer'),
+  statProducts: document.getElementById('stat-products'),
+  statOrders: document.getElementById('stat-orders'),
+  statRevenue: document.getElementById('stat-revenue'),
+  statStock: document.getElementById('stat-stock')
+};
+
+// State
+let state = {
+  token: localStorage.getItem(CONFIG.tokenKey),
+  products: [],
+  editingId: null,
+  deleteTarget: null
+};
+
+// --- INIT ---
+document.addEventListener('DOMContentLoaded', init);
+
+function init() {
+  if (!state.token) {
+    elements.loginModal.showModal();
     return;
   }
-  initAdmin(token);
-});
+  setupNavigation();
+  setupProductModal();
+  setupSizeInputs();
+  setupSearchFilters();
+  setupMobileMenu();
+  setupLogout();
+  fetchProducts();
+  updateDashboardStats();
+}
 
-function showLoginModal() {
-  let modal = document.getElementById('auth-modal');
-  if (!modal) {
-    modal = document.createElement('div');
-    modal.id = 'auth-modal';
-    modal.className = 'auth-overlay';
-    modal.innerHTML = `
-      <div class="auth-box">
-        <h2>🔐 Admin Login</h2>
-        <form id="login-form">
-          <input type="email" id="login-email" placeholder="Email" required>
-          <input type="password" id="login-password" placeholder="Password" required>
-          <button type="submit">Login</button>
-          <p id="login-error" style="color:red; margin-top:10px; font-size:0.9rem;"></p>
-        </form>
-      </div>
-    `;
-    document.body.appendChild(modal);
-
-    // Minimal modal CSS
-    const style = document.createElement('style');
-    style.textContent = `
-      .auth-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.9); display:flex; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(4px); }
-      .auth-box { background:#fff; padding:2rem; border-radius:12px; width:90%; max-width:380px; box-shadow:0 20px 40px rgba(0,0,0,0.2); }
-      .auth-box input, .auth-box button { width:100%; padding:12px; margin:6px 0; border:1px solid #ddd; border-radius:6px; font-size:14px; }
-      .auth-box button { background:#2563eb; color:white; border:none; cursor:pointer; font-weight:600; }
-      .auth-box button:hover { background:#1d4ed8; }
-    `;
-    document.head.appendChild(style);
-
-    document.getElementById('login-form').addEventListener('submit', handleLogin);
-  }
+// --- AUTH ---
+function createLoginModal() {
+  const modal = document.createElement('dialog');
+  modal.id = 'loginModal';
+  modal.className = 'modal';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <h3 style="margin-bottom:20px;text-align:center;">🔐 Admin Login</h3>
+      <form id="loginForm" class="modal-form" style="padding:0;">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="loginEmail" required value="${CONFIG.adminEmail}">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="loginPassword" required value="${CONFIG.adminPassword}">
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%;">Login</button>
+      </form>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  
+  modal.querySelector('#loginForm').addEventListener('submit', handleLogin);
+  return modal;
 }
 
 async function handleLogin(e) {
   e.preventDefault();
-  const email = document.getElementById('login-email').value;
-  const password = document.getElementById('login-password').value;
-  const errorEl = document.getElementById('login-error');
-  errorEl.textContent = 'Authenticating...';
+  const btn = e.target.querySelector('button');
+  btn.textContent = 'Authenticating...';
+  btn.disabled = true;
 
   try {
-    const res = await fetch(API.auth, {
+    const res = await fetch(CONFIG.loginUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({
+        email: document.getElementById('loginEmail').value,
+        password: document.getElementById('loginPassword').value
+      })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Invalid credentials');
+    if (!res.ok) throw new Error(data.error || 'Login failed');
 
-    localStorage.setItem(API.tokenKey, data.token);
-    document.getElementById('auth-modal').remove();
-    initAdmin(data.token);
+    state.token = data.token;
+    localStorage.setItem(CONFIG.tokenKey, state.token);
+    elements.loginModal.close();
+    init();
   } catch (err) {
-    errorEl.textContent = err.message;
+    showToast(err.message, 'error');
+    btn.textContent = 'Login';
+    btn.disabled = false;
   }
 }
 
-async function initAdmin(token) {
-  try {
-    // Verify token works
-    await authFetch(API.products);
-    setupNavigation();
-    loadProducts();
-    setupSizeInputs();
-    setupAddProductForm();
-  } catch (err) {
-    console.error('Auth failed:', err);
-    localStorage.removeItem(API.tokenKey);
-    showLoginModal();
+function setupLogout() {
+  if (elements.logoutBtn) {
+    elements.logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem(CONFIG.tokenKey);
+      location.reload();
+    });
   }
-}
-
-window.logout = () => {
-  localStorage.removeItem(API.tokenKey);
-  location.reload();
-};
-
-// --- API HELPER ---
-async function authFetch(url, options = {}) {
-  const token = localStorage.getItem(API.tokenKey);
-  if (!token) throw new Error('Session expired. Please login again.');
-
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      ...options.headers
-    }
-  });
-
-  if (res.status === 401) {
-    window.logout();
-    throw new Error('Session expired');
-  }
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(err.error || `HTTP ${res.status}`);
-  }
-  return res.json();
 }
 
 // --- NAVIGATION ---
 function setupNavigation() {
-  const menuItems = document.querySelectorAll('.menu-item');
-  const sections = document.querySelectorAll('.admin-section');
-
-  menuItems.forEach(btn => {
+  elements.navItems.forEach(btn => {
     btn.addEventListener('click', () => {
-      menuItems.forEach(i => i.classList.remove('active'));
-      sections.forEach(s => s.classList.remove('active'));
-
+      elements.navItems.forEach(b => b.classList.remove('active'));
+      elements.sections.forEach(s => s.classList.remove('active'));
       btn.classList.add('active');
-      const target = btn.dataset.section;
-      document.getElementById(target)?.classList.add('active');
-
-      if (target === 'products') loadProducts();
-      if (target === 'orders') loadOrders(); // Stub for now
+      const target = document.getElementById(btn.dataset.section);
+      if (target) target.classList.add('active');
+      if (window.innerWidth < 768) elements.sidebar.classList.remove('open');
     });
   });
+}
+
+function setupMobileMenu() {
+  if (elements.mobileMenuBtn) {
+    elements.mobileMenuBtn.addEventListener('click', () => {
+      elements.sidebar.classList.toggle('open');
+    });
+    document.addEventListener('click', (e) => {
+      if (!elements.sidebar.contains(e.target) && e.target !== elements.mobileMenuBtn) {
+        elements.sidebar.classList.remove('open');
+      }
+    });
+  }
 }
 
 // --- PRODUCTS ---
-async function loadProducts() {
-  const tbody = document.querySelector('#products-table tbody');
-  if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;">Loading products...</td></tr>';
-
+async function fetchProducts() {
   try {
-    const products = await authFetch(API.products);
-    tbody.innerHTML = products.length === 0
-      ? '<tr><td colspan="6" style="padding:20px;text-align:center;">No products found</td></tr>'
-      : products.map(p => `
-        <tr>
-          <td><img src="${p.image_1}" width="48" height="48" style="object-fit:cover; border-radius:6px;" onerror="this.src='/images/placeholder.webp'"></td>
-          <td><strong>${p.title}</strong></td>
-          <td><span class="badge">${p.category}</span></td>
-          <td>₹${p.price} ${p.discount_price ? `<br><span style="color:#16a34a; font-size:0.85em;">₹${p.discount_price}</span>` : ''}</td>
-          <td>${p.sizes ? (typeof p.sizes === 'string' ? p.sizes : p.sizes.join(', ')) : 'N/A'}</td>
-          <td>
-            <button onclick="editProduct('${p.id}')" class="btn-sm btn-edit">Edit</button>
-            <button onclick="deleteProduct('${p.id}')" class="btn-sm btn-delete">Delete</button>
-          </td>
-        </tr>
-      `).join('');
+    elements.productsTableBody.innerHTML = '<tr><td colspan="8" class="text-center">Loading...</td></tr>';
+    const res = await fetch(CONFIG.productsUrl);
+    if (!res.ok) throw new Error('Failed to fetch products');
+    state.products = await res.json();
+    renderProducts(state.products);
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="6" style="color:#dc2626; padding:20px;">${err.message}</td></tr>`;
+    elements.productsTableBody.innerHTML = `<tr><td colspan="8" class="text-center" style="color:#ef4444">${err.message}</td></tr>`;
   }
 }
 
-// --- DYNAMIC SIZES ---
-function setupSizeInputs() {
-  const container = document.getElementById('sizes-container');
-  const addBtn = document.getElementById('add-size-btn');
-  if (!container || !addBtn) return;
+function renderProducts(products) {
+  if (products.length === 0) {
+    elements.productsTableBody.innerHTML = '<tr><td colspan="8" class="text-center">No products found</td></tr>';
+    return;
+  }
 
-  window.addSizeRow = (name = '', stock = 10) => {
-    const row = document.createElement('div');
-    row.className = 'size-row';
-    row.style.cssText = 'display:flex; gap:8px; margin:6px 0; align-items:center;';
-    row.innerHTML = `
-      <input type="text" name="size_name" placeholder="Size (e.g., M, L)" value="${name}" required style="flex:1; padding:8px; border:1px solid #cbd5e1; border-radius:4px;">
-      <input type="number" name="size_stock" placeholder="Stock" value="${stock}" min="0" required style="width:80px; padding:8px; border:1px solid #cbd5e1; border-radius:4px;">
-      <button type="button" onclick="this.parentElement.remove()" style="width:32px; height:32px; background:#fee2e2; color:#dc2626; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">×</button>
+  elements.productsTableBody.innerHTML = products.map(p => {
+    const stock = p.sizes ? p.sizes.reduce((acc, s) => acc + (s.stock || 0), 0) : 0;
+    let status = 'Active';
+    if (stock === 0) status = 'Out of Stock';
+    else if (stock < 5) status = 'Low Stock';
+    
+    const statusClass = status === 'Active' ? 'status-active' : 
+                       status === 'Low Stock' ? 'status-pending' : 'status-out-of-stock';
+
+    return `
+      <tr>
+        <td><input type="checkbox" class="row-check" data-id="${p.id}"></td>
+        <td><img src="${p.image_1}" alt="${p.title}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;" onerror="this.src='/images/placeholder.webp'"></td>
+        <td><strong>${p.title}</strong></td>
+        <td>${p.category}</td>
+        <td>₹${p.price}</td>
+        <td>${stock} units</td>
+        <td><span class="status-badge ${statusClass}">${status}</span></td>
+        <td>
+          <button class="btn-sm btn-primary edit-btn" data-id="${p.id}">Edit</button>
+          <button class="btn-sm btn-danger delete-btn" data-id="${p.id}">Delete</button>
+        </td>
+      </tr>
     `;
-    container.appendChild(row);
+  }).join('');
+
+  // Attach dynamic listeners
+  document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', () => openProductModal(btn.dataset.id)));
+  document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', () => openDeleteModal(btn.dataset.id)));
+}
+
+function setupSearchFilters() {
+  const filter = () => {
+    const search = elements.productSearch?.value.toLowerCase() || '';
+    const cat = elements.categoryFilter?.value || '';
+    const filtered = state.products.filter(p => {
+      const matchSearch = p.title.toLowerCase().includes(search);
+      const matchCat = !cat || p.category.toLowerCase() === cat;
+      return matchSearch && matchCat;
+    });
+    renderProducts(filtered);
+  };
+  if (elements.productSearch) elements.productSearch.addEventListener('input', filter);
+  if (elements.categoryFilter) elements.categoryFilter.addEventListener('change', filter);
+}
+
+// --- MODALS & FORMS ---
+function setupProductModal() {
+  if (elements.addProductBtn) elements.addProductBtn.addEventListener('click', () => openProductModal());
+  if (elements.closeProductModal) elements.closeProductModal.addEventListener('click', closeProductModal);
+  if (elements.cancelProductModal) elements.cancelProductModal.addEventListener('click', closeProductModal);
+  
+  elements.productForm.addEventListener('submit', handleProductSubmit);
+}
+
+function openProductModal(id = null) {
+  state.editingId = id;
+  document.getElementById('modalTitle').textContent = id ? 'Edit Product' : 'Add Product';
+  elements.productForm.reset();
+  elements.sizesContainer.innerHTML = '';
+  addSizeRow(); // Default size row
+
+  if (id) {
+    const product = state.products.find(p => p.id === id);
+    if (product) {
+      document.getElementById('productId').value = product.id;
+      document.getElementById('productTitle').value = product.title;
+      document.getElementById('productCategory').value = product.category.toLowerCase();
+      document.getElementById('productPrice').value = product.price;
+      document.getElementById('productDiscount').value = product.discount_price || '';
+      document.getElementById('productDescription').value = product.description || '';
+      document.getElementById('image1').value = product.image_1 || '';
+      document.getElementById('image2').value = product.image_2 || '';
+      document.getElementById('image3').value = product.image_3 || '';
+      document.getElementById('productKeywords').value = product.keywords ? product.keywords.join(', ') : '';
+      elements.sizesContainer.innerHTML = '';
+      if (product.sizes) product.sizes.forEach(s => addSizeRow(s.name, s.stock));
+    }
+  }
+  elements.productModal.showModal();
+}
+
+function closeProductModal() {
+  elements.productModal.close();
+  state.editingId = null;
+}
+
+async function handleProductSubmit(e) {
+  e.preventDefault();
+  const btn = e.target.querySelector('button[type="submit"]');
+  btn.textContent = 'Saving...';
+  btn.disabled = true;
+
+  const sizes = [];
+  elements.sizesContainer.querySelectorAll('.size-row').forEach(row => {
+    const name = row.querySelector('.size-name').value.trim();
+    const stock = parseInt(row.querySelector('.size-stock').value) || 0;
+    if (name) sizes.push({ name, stock });
+  });
+
+  const data = {
+    id: state.editingId || undefined,
+    title: document.getElementById('productTitle').value,
+    category: document.getElementById('productCategory').value,
+    price: parseFloat(document.getElementById('productPrice').value),
+    discount_price: document.getElementById('productDiscount').value ? parseFloat(document.getElementById('productDiscount').value) : null,
+    description: document.getElementById('productDescription').value,
+    image_1: document.getElementById('image1').value,
+    image_2: document.getElementById('image2').value,
+    image_3: document.getElementById('image3').value,
+    sizes: JSON.stringify(sizes),
+    keywords: document.getElementById('productKeywords').value.split(',').map(k => k.trim()).filter(Boolean)
   };
 
-  addBtn.addEventListener('click', () => window.addSizeRow());
-  if (container.children.length === 0) window.addSizeRow();
-}
-
-// --- ADD PRODUCT FORM ---
-function setupAddProductForm() {
-  const form = document.getElementById('product-form');
-  if (!form) return;
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = form.querySelector('button[type="submit"]');
-    const originalText = btn.textContent;
-    btn.textContent = 'Adding...';
-    btn.disabled = true;
-
-    try {
-      const data = {
-        title: form.title.value.trim(),
-        category: form.category.value,
-        price: parseFloat(form.price.value),
-        discount_price: form.discount_price.value ? parseFloat(form.discount_price.value) : null,
-        description: form.description.value.trim(),
-        long_description: form.long_description.value.trim() || null,
-        care_instructions: form.care_instructions.value.trim() || null,
-        keywords: form.keywords.value.split(',').map(k => k.trim()).filter(Boolean),
-        image_1: form.image_1.value.trim(),
-        image_2: form.image_2.value.trim() || null,
-        image_3: form.image_3.value.trim() || null,
-        image_4: form.image_4.value.trim() || null,
-        image_5: form.image_5.value.trim() || null,
-        sizes: []
-      };
-
-      // Collect sizes
-      document.querySelectorAll('#sizes-container .size-row').forEach(row => {
-        const name = row.querySelector('[name="size_name"]').value.trim();
-        const stock = parseInt(row.querySelector('[name="size_stock"]').value) || 0;
-        if (name) data.sizes.push({ name, stock });
-      });
-
-      await authFetch(API.products, {
-        method: 'POST',
-        body: JSON.stringify(data)
-      });
-
-      alert('✅ Product added successfully!');
-      form.reset();
-      document.getElementById('sizes-container').innerHTML = '';
-      setupSizeInputs();
-      loadProducts();
-      // Auto-switch to products tab
-      document.querySelector('[data-section="products"]').click();
-
-    } catch (err) {
-      alert('❌ Error: ' + err.message);
-    } finally {
-      btn.textContent = originalText;
-      btn.disabled = false;
-    }
-  });
-}
-
-// --- EDIT / DELETE ---
-window.editProduct = (id) => {
-  alert('🔧 Edit modal coming next. For now, use Delete & Re-add.');
-};
-
-window.deleteProduct = async (id) => {
-  if (!confirm('Are you sure you want to permanently delete this product?')) return;
   try {
-    await authFetch(API.products, {
-      method: 'DELETE',
-      body: JSON.stringify({ id })
-    });
-    alert('✅ Product deleted');
-    loadProducts();
+    // Placeholder: Will connect to POST/PUT API next step
+    showToast(state.editingId ? 'Product update queued (API next)' : 'Product added (API next)', 'success');
+    closeProductModal();
+    fetchProducts();
   } catch (err) {
-    alert('❌ Delete failed: ' + err.message);
+    showToast(err.message, 'error');
+  } finally {
+    btn.textContent = 'Save Product';
+    btn.disabled = false;
   }
-};
+}
 
-// --- ORDERS STUB ---
-async function loadOrders() {
-  const tbody = document.querySelector('#orders-table tbody');
-  if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;">Orders system coming next step...</td></tr>';
+function setupSizeInputs() {
+  window.addSizeRow = (name = 'S', stock = 10) => {
+    const row = document.createElement('div');
+    row.className = 'size-row';
+    row.style.cssText = 'display:flex;gap:10px;margin-bottom:10px;align-items:center;';
+    row.innerHTML = `
+      <input type="text" class="size-name" value="${name}" placeholder="Size" style="flex:1;padding:8px;border:1px solid #e5e7eb;border-radius:6px;">
+      <input type="number" class="size-stock" value="${stock}" placeholder="Stock" min="0" style="width:80px;padding:8px;border:1px solid #e5e7eb;border-radius:6px;">
+      <button type="button" onclick="this.parentElement.remove()" style="width:32px;height:32px;background:#fee2e2;color:#dc2626;border:none;border-radius:6px;cursor:pointer;font-weight:bold;">×</button>
+    `;
+    elements.sizesContainer.appendChild(row);
+  };
+  if (elements.addSizeRow) elements.addSizeRow.addEventListener('click', () => addSizeRow());
+}
+
+// --- DELETE MODAL ---
+function openDeleteModal(id) {
+  const product = state.products.find(p => p.id === id);
+  state.deleteTarget = id;
+  elements.deleteItemName.textContent = product?.title || 'this item';
+  elements.deleteModal.showModal();
+}
+
+elements.confirmDelete?.addEventListener('click', async () => {
+  if (!state.deleteTarget) return;
+  // Placeholder: Will connect to DELETE API next step
+  showToast('Delete queued (API next)', 'success');
+  elements.deleteModal.close();
+  fetchProducts();
+  state.deleteTarget = null;
+});
+elements.cancelDelete?.addEventListener('click', () => {
+  elements.deleteModal.close();
+  state.deleteTarget = null;
+});
+
+// --- DASHBOARD ---
+function updateDashboardStats() {
+  const p = state.products;
+  if (elements.statProducts) elements.statProducts.textContent = p.length;
+  if (elements.statOrders) elements.statOrders.textContent = '0'; // Will update when orders API is ready
+  if (elements.statRevenue) elements.statRevenue.textContent = '₹0';
+  if (elements.statStock) elements.statStock.textContent = p.filter(prod => {
+    const totalStock = prod.sizes?.reduce((a,s) => a + (s.stock||0), 0) || 0;
+    return totalStock < 5;
+  }).length;
+}
+
+// --- TOAST UTILITY ---
+function showToast(message, type = 'success') {
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  elements.toastContainer.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
 }

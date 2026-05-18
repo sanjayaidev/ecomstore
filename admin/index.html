@@ -1,177 +1,289 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="../css/style.css">
-  <link rel="stylesheet" href="admin.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard • EcomStore</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="admin.css" />
 </head>
-<body>
-  <header>
-    <nav class="navbar">
-      <div class="container">
-        <div class="logo">🛍️ Admin Panel</div>
-        <ul class="nav-links">
-          <li><a href="../">Back to Store</a></li>
-        </ul>
-      </div>
-    </nav>
+<body class="admin-body">
+  
+  <!-- Top Bar -->
+  <header class="admin-header">
+    <div class="admin-header__left">
+      <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+      <div class="logo">🛍️ EcomStore Admin</div>
+    </div>
+    <div class="admin-header__right">
+      <span class="user-info">👤 Admin</span>
+      <button class="btn-logout" id="logoutBtn">Logout</button>
+      <a href="../" class="btn-store" target="_blank">View Store →</a>
+    </div>
   </header>
 
-  <main>
-    <div class="container admin-container">
-      <aside class="admin-sidebar">
-        <div class="sidebar-menu">
-          <button class="menu-item active" data-section="products">
-            📦 Products
-          </button>
-          <button class="menu-item" data-section="add-product">
-            ➕ Add Product
-          </button>
-          <button class="menu-item" data-section="orders">
-            📋 Orders
-          </button>
+  <div class="admin-layout">
+    
+    <!-- Sidebar -->
+    <aside class="admin-sidebar" id="adminSidebar">
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-section="dashboard">
+          📊 Dashboard
+        </button>
+        <button class="nav-item" data-section="products">
+          📦 Products
+        </button>
+        <button class="nav-item" data-section="orders">
+          📋 Orders
+        </button>
+        <button class="nav-item" data-section="categories">
+          🏷️ Categories
+        </button>
+        <button class="nav-item" data-section="settings">
+          ⚙️ Settings
+        </button>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="admin-main">
+      
+      <!-- Dashboard Section -->
+      <section id="dashboard" class="admin-section active">
+        <div class="section-header">
+          <h1>Dashboard</h1>
+          <p class="text-muted">Overview of your store performance</p>
         </div>
-      </aside>
-
-      <div class="admin-content">
-        <!-- Products Section -->
-        <section id="products" class="admin-section active">
-          <h2>Products</h2>
-          <div class="products-table-container">
-            <table id="products-table" class="admin-table">
-              <thead>
-                <tr>
-                  <th>Image</th>
-                  <th>Title</th>
-                  <th>Category</th>
-                  <th>Price</th>
-                  <th>Stock</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="stat-products">0</div>
+            <div class="stat-label">Total Products</div>
           </div>
-        </section>
-
-        <!-- Add Product Section -->
-        <section id="add-product" class="admin-section">
-          <h2>Add New Product</h2>
-          <form id="product-form" class="admin-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="title">Product Title *</label>
-                <input type="text" id="title" name="title" required>
-              </div>
-              <div class="form-group">
-                <label for="category">Category *</label>
-                <select id="category" name="category" required>
-                  <option value="">Select Category</option>
-                  <option value="saree">Saree</option>
-                  <option value="kurti">Kurti</option>
-                  <option value="dress">Dress</option>
-                  <option value="top">Top</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="price">Price (₹) *</label>
-                <input type="number" id="price" name="price" step="0.01" required>
-              </div>
-              <div class="form-group">
-                <label for="discount_price">Discount Price (₹)</label>
-                <input type="number" id="discount_price" name="discount_price" step="0.01">
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="description">Description *</label>
-              <textarea id="description" name="description" rows="3" required></textarea>
-            </div>
-
-            <div class="form-group">
-              <label for="long_description">Long Description</label>
-              <textarea id="long_description" name="long_description" rows="4"></textarea>
-            </div>
-
-            <div class="form-group">
-              <label for="care_instructions">Care Instructions</label>
-              <textarea id="care_instructions" name="care_instructions" rows="3"></textarea>
-            </div>
-
-            <div class="form-group">
-              <label for="keywords">Keywords (comma-separated)</label>
-              <input type="text" id="keywords" name="keywords" placeholder="e.g., kurti, cotton, blue">
-            </div>
-
-            <fieldset class="images-fieldset">
-              <legend>Product Images</legend>
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="image_1">Main Image (Required) *</label>
-                  <input type="url" id="image_1" name="image_1" required>
-                </div>
-                <div class="form-group">
-                  <label for="image_2">Image 2</label>
-                  <input type="url" id="image_2" name="image_2">
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="image_3">Image 3</label>
-                  <input type="url" id="image_3" name="image_3">
-                </div>
-                <div class="form-group">
-                  <label for="image_4">Image 4</label>
-                  <input type="url" id="image_4" name="image_4">
-                </div>
-              </div>
-              <div class="form-group">
-                <label for="image_5">Image 5</label>
-                <input type="url" id="image_5" name="image_5">
-              </div>
-            </fieldset>
-
-            <fieldset class="sizes-fieldset">
-              <legend>Product Sizes & Stock</legend>
-              <div id="sizes-container"></div>
-              <button type="button" id="add-size-btn" class="btn-secondary">+ Add Size</button>
-            </fieldset>
-
-            <button type="submit" class="btn-primary">Add Product</button>
-          </form>
-        </section>
-
-        <!-- Orders Section -->
-        <section id="orders" class="admin-section">
-          <h2>Orders</h2>
-          <div class="orders-table-container">
-            <table id="orders-table" class="admin-table">
-              <thead>
-                <tr>
-                  <th>Order ID</th>
-                  <th>Customer Email</th>
-                  <th>Total</th>
-                  <th>Status</th>
-                  <th>Date</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-orders">0</div>
+            <div class="stat-label">Total Orders</div>
           </div>
-        </section>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-revenue">₹0</div>
+            <div class="stat-label">Revenue</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-stock">0</div>
+            <div class="stat-label">Low Stock Items</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Products Section -->
+      <section id="products" class="admin-section">
+        <div class="section-header">
+          <h1>Products</h1>
+          <button class="btn-primary" id="addProductBtn">+ Add Product</button>
+        </div>
+        
+        <!-- Search & Filters -->
+        <div class="admin-toolbar">
+          <input type="search" id="productSearch" placeholder="Search products..." class="search-input" />
+          <select id="categoryFilter" class="filter-select">
+            <option value="">All Categories</option>
+            <option value="saree">Saree</option>
+            <option value="kurti">Kurti</option>
+            <option value="dress">Dress</option>
+            <option value="top">Top</option>
+          </select>
+          <select id="stockFilter" class="filter-select">
+            <option value="">All Stock</option>
+            <option value="instock">In Stock</option>
+            <option value="lowstock">Low Stock</option>
+            <option value="outstock">Out of Stock</option>
+          </select>
+        </div>
+
+        <!-- Products Table -->
+        <div class="table-container">
+          <table class="admin-table" id="productsTable">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="selectAll" /></th>
+                <th>Image</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="productsTableBody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Pagination -->
+        <div class="pagination" id="productsPagination">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- Orders Section -->
+      <section id="orders" class="admin-section">
+        <div class="section-header">
+          <h1>Orders</h1>
+          <div class="text-muted">Manage customer orders</div>
+        </div>
+        <div class="table-container">
+          <table class="admin-table" id="ordersTable">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="ordersTableBody">
+              <tr><td colspan="7" class="text-center">Loading orders...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Categories Section -->
+      <section id="categories" class="admin-section">
+        <div class="section-header">
+          <h1>Categories</h1>
+          <button class="btn-primary" id="addCategoryBtn">+ Add Category</button>
+        </div>
+        <div class="table-container">
+          <table class="admin-table" id="categoriesTable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Slug</th>
+                <th>Products</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="categoriesTableBody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Settings Section -->
+      <section id="settings" class="admin-section">
+        <div class="section-header">
+          <h1>Settings</h1>
+          <p class="text-muted">Store configuration</p>
+        </div>
+        <div class="settings-card">
+          <h3>Store Info</h3>
+          <div class="form-group">
+            <label>Store Name</label>
+            <input type="text" id="storeName" value="EcomStore" />
+          </div>
+          <div class="form-group">
+            <label>Support Email</label>
+            <input type="email" id="supportEmail" value="support@mystore.com" />
+          </div>
+          <button class="btn-primary" id="saveSettingsBtn">Save Changes</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Add/Edit Product Modal -->
+  <dialog class="modal" id="productModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle">Add Product</h3>
+        <button class="modal-close" id="closeProductModal">&times;</button>
+      </div>
+      <form id="productForm" class="modal-form">
+        <input type="hidden" id="productId" />
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="productTitle">Title *</label>
+            <input type="text" id="productTitle" name="title" required />
+          </div>
+          <div class="form-group">
+            <label for="productCategory">Category *</label>
+            <select id="productCategory" name="category" required>
+              <option value="">Select...</option>
+              <option value="saree">Saree</option>
+              <option value="kurti">Kurti</option>
+              <option value="dress">Dress</option>
+              <option value="top">Top</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="productPrice">Price (₹) *</label>
+            <input type="number" id="productPrice" name="price" step="0.01" required />
+          </div>
+          <div class="form-group">
+            <label for="productDiscount">Discount Price (₹)</label>
+            <input type="number" id="productDiscount" name="discount_price" step="0.01" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="productDescription">Description *</label>
+          <textarea id="productDescription" name="description" rows="3" required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Images</label>
+          <div class="image-inputs">
+            <input type="url" id="image1" name="image_1" placeholder="Main Image URL *" required />
+            <input type="url" id="image2" name="image_2" placeholder="Image 2 URL (optional)" />
+            <input type="url" id="image3" name="image_3" placeholder="Image 3 URL (optional)" />
+          </div>
+          <small class="text-muted">Use paths like <code>/images/1.webp</code> for repo images</small>
+        </div>
+
+        <div class="form-group">
+          <label>Sizes & Stock</label>
+          <div id="sizesContainer"></div>
+          <button type="button" class="btn-secondary btn-sm" id="addSizeRow">+ Add Size</button>
+        </div>
+
+        <div class="form-group">
+          <label>Keywords (comma-separated)</label>
+          <input type="text" id="productKeywords" name="keywords" placeholder="e.g., cotton, blue, casual" />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="cancelProductModal">Cancel</button>
+          <button type="submit" class="btn-primary">Save Product</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Delete Confirmation Modal -->
+  <dialog class="modal modal-danger" id="deleteModal">
+    <div class="modal-content">
+      <h3>Confirm Delete</h3>
+      <p>Are you sure you want to delete <strong id="deleteItemName">this item</strong>? This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="cancelDelete">Cancel</button>
+        <button class="btn-danger" id="confirmDelete">Delete</button>
       </div>
     </div>
-  </main>
+  </dialog>
 
-  <footer>
-    <p>&copy; 2026 Ecommerce Store Admin. All rights reserved.</p>
-  </footer>
+  <!-- Toast Notifications -->
+  <div id="toastContainer" class="toast-container"></div>
 
   <script src="admin.js"></script>
 </body>
