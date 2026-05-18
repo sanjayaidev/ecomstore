@@ -1,10 +1,26 @@
-export default async function handler(req) {
-  if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
-  const { email, password } = await req.json();
-  if (email === 'sanjay@mystore.com' && password === 'sanjay@123') {
-    return new Response(JSON.stringify({ success: true, token: 'test-' + Date.now(), user: { email } }), { 
-      status: 200, headers: { 'Content-Type': 'application/json' } 
-    });
+export default function handler(req, res) {
+  // Only allow POST
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
-  return new Response(JSON.stringify({ error: 'Invalid' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+
+  let body = '';
+  req.on('data', chunk => { body += chunk.toString(); });
+  req.on('end', async () => {
+    try {
+      const { email, password } = body ? JSON.parse(body) : {};
+      
+      if (email === 'sanjay@mystore.com' && password === 'sanjay@123') {
+        return res.status(200).json({ 
+          success: true, 
+          token: 'test-' + Date.now(), 
+          user: { email, role: 'admin' } 
+        });
+      }
+      
+      return res.status(401).json({ error: 'Invalid credentials' });
+    } catch (e) {
+      return res.status(500).json({ error: e.message });
+    }
+  });
 }
