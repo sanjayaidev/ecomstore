@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Success</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header>
+    <nav class="navbar">
+      <div class="container">
+        <div class="logo">🛍️ Store</div>
+        <ul class="nav-links">
+          <li><a href="../">Home</a></li>
+          <li><a href="products.html">Shop</a></li>
+          <li><a href="cart.html">Cart</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <div class="container success-page">
+      <div class="success-container">
+        <div class="success-icon">
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="40" cy="40" r="40" fill="#4CAF50"/>
+            <path d="M30 40L36 46L50 32" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+
+        <h1>Order Successful!</h1>
+        <p class="success-message">Thank you for your purchase. Your order has been confirmed.</p>
+
+        <div class="order-details">
+          <div class="detail-row">
+            <span>Order ID:</span>
+            <span id="order-id" class="order-id">-</span>
+          </div>
+          <div class="detail-row">
+            <span>Order Date:</span>
+            <span id="order-date">-</span>
+          </div>
+          <div class="detail-row">
+            <span>Total Amount:</span>
+            <span id="order-total">₹0</span>
+          </div>
+          <div class="detail-row">
+            <span>Status:</span>
+            <span class="status-badge">Pending</span>
+          </div>
+        </div>
+
+        <div class="next-steps">
+          <h3>What's Next?</h3>
+          <ul>
+            <li>✓ We'll send you an order confirmation email shortly</li>
+            <li>✓ Your order will be processed within 1-2 business days</li>
+            <li>✓ You'll receive tracking information via email</li>
+            <li>✓ Estimated delivery: 5-7 business days</li>
+          </ul>
+        </div>
+
+        <div class="action-buttons">
+          <a href="products.html" class="btn-primary">Continue Shopping</a>
+          <a href="../" class="btn-secondary">Back to Home</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Ecommerce Store. All rights reserved.</p>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const orderId = params.get('id');
+
+      if (orderId) {
+        document.getElementById('order-id').textContent = orderId;
+      }
+
+      const today = new Date();
+      document.getElementById('order-date').textContent = today.toLocaleDateString('en-IN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    });
+  </script>
+</body>
+</html>

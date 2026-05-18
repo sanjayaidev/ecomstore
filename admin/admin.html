@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <header>
+    <nav class="navbar">
+      <div class="container">
+        <div class="logo">🛍️ Admin Panel</div>
+        <ul class="nav-links">
+          <li><a href="../">Back to Store</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <div class="container admin-container">
+      <aside class="admin-sidebar">
+        <div class="sidebar-menu">
+          <button class="menu-item active" data-section="products">
+            📦 Products
+          </button>
+          <button class="menu-item" data-section="add-product">
+            ➕ Add Product
+          </button>
+          <button class="menu-item" data-section="orders">
+            📋 Orders
+          </button>
+        </div>
+      </aside>
+
+      <div class="admin-content">
+        <!-- Products Section -->
+        <section id="products" class="admin-section active">
+          <h2>Products</h2>
+          <div class="products-table-container">
+            <table id="products-table" class="admin-table">
+              <thead>
+                <tr>
+                  <th>Image</th>
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th>Price</th>
+                  <th>Stock</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Add Product Section -->
+        <section id="add-product" class="admin-section">
+          <h2>Add New Product</h2>
+          <form id="product-form" class="admin-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="title">Product Title *</label>
+                <input type="text" id="title" name="title" required>
+              </div>
+              <div class="form-group">
+                <label for="category">Category *</label>
+                <select id="category" name="category" required>
+                  <option value="">Select Category</option>
+                  <option value="saree">Saree</option>
+                  <option value="kurti">Kurti</option>
+                  <option value="dress">Dress</option>
+                  <option value="top">Top</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="price">Price (₹) *</label>
+                <input type="number" id="price" name="price" step="0.01" required>
+              </div>
+              <div class="form-group">
+                <label for="discount_price">Discount Price (₹)</label>
+                <input type="number" id="discount_price" name="discount_price" step="0.01">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="description">Description *</label>
+              <textarea id="description" name="description" rows="3" required></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="long_description">Long Description</label>
+              <textarea id="long_description" name="long_description" rows="4"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="care_instructions">Care Instructions</label>
+              <textarea id="care_instructions" name="care_instructions" rows="3"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="keywords">Keywords (comma-separated)</label>
+              <input type="text" id="keywords" name="keywords" placeholder="e.g., kurti, cotton, blue">
+            </div>
+
+            <fieldset class="images-fieldset">
+              <legend>Product Images</legend>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="image_1">Main Image (Required) *</label>
+                  <input type="url" id="image_1" name="image_1" required>
+                </div>
+                <div class="form-group">
+                  <label for="image_2">Image 2</label>
+                  <input type="url" id="image_2" name="image_2">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="image_3">Image 3</label>
+                  <input type="url" id="image_3" name="image_3">
+                </div>
+                <div class="form-group">
+                  <label for="image_4">Image 4</label>
+                  <input type="url" id="image_4" name="image_4">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="image_5">Image 5</label>
+                <input type="url" id="image_5" name="image_5">
+              </div>
+            </fieldset>
+
+            <fieldset class="sizes-fieldset">
+              <legend>Product Sizes & Stock</legend>
+              <div id="sizes-container"></div>
+              <button type="button" id="add-size-btn" class="btn-secondary">+ Add Size</button>
+            </fieldset>
+
+            <button type="submit" class="btn-primary">Add Product</button>
+          </form>
+        </section>
+
+        <!-- Orders Section -->
+        <section id="orders" class="admin-section">
+          <h2>Orders</h2>
+          <div class="orders-table-container">
+            <table id="orders-table" class="admin-table">
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Customer Email</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Ecommerce Store Admin. All rights reserved.</p>
+  </footer>
+
+  <script src="admin.js"></script>
+</body>
+</html>

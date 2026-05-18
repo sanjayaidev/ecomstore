@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shop - Products</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header>
+    <nav class="navbar">
+      <div class="container">
+        <div class="logo">🛍️ Store</div>
+        <ul class="nav-links">
+          <li><a href="../">Home</a></li>
+          <li><a href="products.html">Shop</a></li>
+          <li><a href="cart.html">Cart <span id="cart-count" class="cart-badge">0</span></a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <div class="container shop-container">
+      <aside class="filters-sidebar">
+        <h3>Filters</h3>
+        
+        <div class="filter-group">
+          <label for="category-filter">Category</label>
+          <select id="category-filter">
+            <option value="">All Categories</option>
+            <option value="saree">Saree</option>
+            <option value="kurti">Kurti</option>
+            <option value="dress">Dress</option>
+            <option value="top">Top</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="price-filter">Max Price (₹)</label>
+          <input type="range" id="price-filter" min="0" max="5000" value="5000">
+          <span id="price-value">₹5000</span>
+        </div>
+
+        <div class="filter-group">
+          <label for="sort-filter">Sort By</label>
+          <select id="sort-filter">
+            <option value="newest">Newest</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+          </select>
+        </div>
+
+        <button id="apply-filters" class="btn-primary">Apply Filters</button>
+      </aside>
+
+      <section class="products-section">
+        <h2>All Products</h2>
+        <div id="products-list" class="products-grid"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Ecommerce Store. All rights reserved.</p>
+  </footer>
+
+  <script src="../js/productRenderer.js"></script>
+  <script src="../js/cartManager.js"></script>
+  <script>
+    let currentFilters = { limit: 100, sort: 'newest' };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadProducts();
+      updateCartCount();
+
+      document.getElementById('apply-filters').addEventListener('click', applyFilters);
+      document.getElementById('price-filter').addEventListener('input', (e) => {
+        document.getElementById('price-value').textContent = `₹${e.target.value}`;
+      });
+    });
+
+    function applyFilters() {
+      currentFilters = { limit: 100 };
+      
+      const category = document.getElementById('category-filter').value;
+      const maxPrice = parseInt(document.getElementById('price-filter').value);
+      const sort = document.getElementById('sort-filter').value;
+
+      if (category) currentFilters.category = category;
+      if (sort) currentFilters.sort = sort;
+      currentFilters.maxPrice = maxPrice;
+
+      loadProducts();
+    }
+
+    function loadProducts() {
+      const container = document.getElementById('products-list');
+      container.innerHTML = '<p>Loading products...</p>';
+
+      fetch(`/api/products?${new URLSearchParams(currentFilters)}`)
+        .then(res => res.json())
+        .then(products => {
+          container.innerHTML = '';
+          
+          // Apply price filter client-side
+          const maxPrice = currentFilters.maxPrice || 5000;
+          const filtered = products.filter(p => (p.discount_price || p.price) <= maxPrice);
+
+          if (filtered.length === 0) {
+            container.innerHTML = '<p>No products found</p>';
+            return;
+          }
+
+          filtered.forEach(product => {
+            const card = createProductCard(product);
+            container.appendChild(card);
+          });
+        })
+        .catch(error => {
+          console.error('Error loading products:', error);
+          container.innerHTML = '<p>Error loading products. Please try again.</p>';
+        });
+    }
+
+    function createProductCard(product) {
+      const card = document.createElement('div');
+      card.className = 'product-card';
+      
+      const displayPrice = product.discount_price || product.price;
+      const discount = product.discount_price ? Math.round(((product.price - product.discount_price) / product.price) * 100) : 0;
+
+      card.innerHTML = `
+        <div class="product-image">
+          <img src="${product.image_1}" alt="${product.title}">
+          ${discount > 0 ? `<span class="discount-badge">${discount}% OFF</span>` : ''}
+        </div>
+        <div class="product-info">
+          <h3>${product.title}</h3>
+          <p class="category">${product.category}</p>
+          <div class="price-section">
+            <span class="price">₹${displayPrice}</span>
+            ${product.discount_price ? `<span class="original-price">₹${product.price}</span>` : ''}
+          </div>
+          <button class="btn-view-details" onclick="viewProduct('${product.id}')">View Details</button>
+        </div>
+      `;
+      return card;
+    }
+
+    function viewProduct(productId) {
+      window.location.href = `product.html?id=${productId}`;
+    }
+
+    function updateCartCount() {
+      const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      document.getElementById('cart-count').textContent = cart.length;
+    }
+
+    window.addEventListener('cartUpdated', updateCartCount);
+  </script>
+</body>
+</html>

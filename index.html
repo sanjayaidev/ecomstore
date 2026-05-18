@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ecommerce Store</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <nav class="navbar">
+      <div class="container">
+        <div class="logo">🛍️ Store</div>
+        <ul class="nav-links">
+          <li><a href="/">Home</a></li>
+          <li><a href="pages/products.html">Shop</a></li>
+          <li><a href="pages/cart.html">Cart <span id="cart-count" class="cart-badge">0</span></a></li>
+          <li><a href="admin/admin.html">Admin</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <h1>Welcome to Our Store</h1>
+        <p>Discover amazing products at great prices</p>
+        <a href="pages/products.html" class="btn-primary">Shop Now</a>
+      </div>
+    </section>
+
+    <section class="featured-products">
+      <div class="container">
+        <h2>Featured Products</h2>
+        <div id="featured" class="products-grid"></div>
+      </div>
+    </section>
+
+    <section class="trending-products">
+      <div class="container">
+        <h2>Trending Now</h2>
+        <div id="trending" class="products-grid"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Ecommerce Store. All rights reserved.</p>
+  </footer>
+
+  <script src="js/productRenderer.js"></script>
+  <script src="js/cartManager.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      productRenderer.renderProducts('featured', { limit: 6, sort: 'newest' });
+      productRenderer.renderProducts('trending', { limit: 4, sort: 'newest' });
+      updateCartCount();
+    });
+
+    function updateCartCount() {
+      const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      document.getElementById('cart-count').textContent = cart.length;
+    }
+
+    // Listen for cart updates
+    window.addEventListener('cartUpdated', updateCartCount);
+  </script>
+</body>
+</html>

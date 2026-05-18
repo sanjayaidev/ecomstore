@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Details</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header>
+    <nav class="navbar">
+      <div class="container">
+        <div class="logo">🛍️ Store</div>
+        <ul class="nav-links">
+          <li><a href="../">Home</a></li>
+          <li><a href="products.html">Shop</a></li>
+          <li><a href="cart.html">Cart <span id="cart-count" class="cart-badge">0</span></a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <div class="container product-detail-container">
+      <div class="product-gallery">
+        <div class="main-image">
+          <img id="main-image" src="" alt="Product">
+        </div>
+        <div class="thumbnail-gallery" id="thumbnails"></div>
+      </div>
+
+      <div class="product-details">
+        <h1 id="product-title"></h1>
+        <p id="product-category" class="category"></p>
+        
+        <div class="rating">
+          <span>⭐⭐⭐⭐⭐ (128 reviews)</span>
+        </div>
+
+        <div class="price-section">
+          <span id="product-price" class="price"></span>
+          <span id="original-price" class="original-price" style="display:none;"></span>
+          <span id="discount-badge" class="discount-badge" style="display:none;"></span>
+        </div>
+
+        <p id="product-description" class="description"></p>
+
+        <div class="size-selection">
+          <label for="size-select">Select Size:</label>
+          <select id="size-select">
+            <option value="">Choose a size</option>
+          </select>
+          <span id="stock-status" class="stock-status"></span>
+        </div>
+
+        <div class="quantity-section">
+          <label for="quantity">Quantity:</label>
+          <div class="quantity-selector">
+            <button id="qty-minus">−</button>
+            <input type="number" id="quantity" value="1" min="1">
+            <button id="qty-plus">+</button>
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button id="add-to-cart" class="btn-primary">Add to Cart</button>
+          <button id="shop-now" class="btn-secondary">Shop Now</button>
+        </div>
+
+        <div class="product-tabs">
+          <div class="tabs">
+            <button class="tab-button active" data-tab="description">Description</button>
+            <button class="tab-button" data-tab="care">Care Instructions</button>
+          </div>
+          <div class="tab-content">
+            <div id="description" class="tab-pane active">
+              <p id="long-description"></p>
+            </div>
+            <div id="care" class="tab-pane">
+              <p id="care-instructions"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section class="related-products">
+      <div class="container">
+        <h2>Related Products</h2>
+        <div id="related" class="products-grid"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Ecommerce Store. All rights reserved.</p>
+  </footer>
+
+  <script src="../js/productRenderer.js"></script>
+  <script src="../js/cartManager.js"></script>
+  <script>
+    let currentProduct = null;
+    let currentSize = null;
+    let currentQuantity = 1;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const productId = new URLSearchParams(window.location.search).get('id');
+      if (productId) {
+        loadProductDetails(productId);
+        updateCartCount();
+      }
+
+      // Quantity controls
+      document.getElementById('qty-minus').addEventListener('click', () => {
+        const qty = parseInt(document.getElementById('quantity').value);
+        if (qty > 1) document.getElementById('quantity').value = qty - 1;
+      });
+
+      document.getElementById('qty-plus').addEventListener('click', () => {
+        const qty = parseInt(document.getElementById('quantity').value);
+        document.getElementById('quantity').value = qty + 1;
+      });
+
+      document.getElementById('quantity').addEventListener('change', (e) => {
+        currentQuantity = Math.max(1, parseInt(e.target.value) || 1);
+      });
+
+      // Tab switching
+      document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', (e) => {
+          document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+          e.target.classList.add('active');
+          document.getElementById(e.target.dataset.tab).classList.add('active');
+        });
+      });
+
+      // Size selection
+      document.getElementById('size-select').addEventListener('change', (e) => {
+        currentSize = e.target.value;
+        updateStockStatus();
+      });
+
+      // Add to cart
+      document.getElementById('add-to-cart').addEventListener('click', addToCart);
+      document.getElementById('shop-now').addEventListener('click', () => {
+        window.location.href = 'products.html';
+      });
+    });
+
+    async function loadProductDetails(productId) {
+      try {
+        const response = await fetch(`/api/products?ids=${productId}`);
+        const products = await response.json();
+        const product = products[0];
+
+        if (!product) {
+          document.querySelector('.product-detail-container').innerHTML = '<p>Product not found</p>';
+          return;
+        }
+
+        currentProduct = product;
+
+        // Update details
+        document.getElementById('product-title').textContent = product.title;
+        document.getElementById('product-category').textContent = product.category;
+        document.getElementById('product-description').textContent = product.description;
+        document.getElementById('long-description').textContent = product.long_description || product.description;
+        document.getElementById('care-instructions').textContent = product.care_instructions || 'No care instructions available.';
+
+        // Price
+        const displayPrice = product.discount_price || product.price;
+        document.getElementById('product-price').textContent = `₹${displayPrice}`;
+        
+        if (product.discount_price) {
+          document.getElementById('original-price').textContent = `₹${product.price}`;
+          document.getElementById('original-price').style.display = 'inline';
+          const discount = Math.round(((product.price - product.discount_price) / product.price) * 100);
+          document.getElementById('discount-badge').textContent = `${discount}% OFF`;
+          document.getElementById('discount-badge').style.display = 'inline';
+        }
+
+        // Images
+        const images = [
+          product.image_1,
+          product.image_2,
+          product.image_3,
+          product.image_4,
+          product.image_5
+        ].filter(img => img);
+
+        document.getElementById('main-image').src = images[0];
+
+        const thumbnailsContainer = document.getElementById('thumbnails');
+        images.forEach((img, idx) => {
+          const thumb = document.createElement('img');
+          thumb.src = img;
+          thumb.className = idx === 0 ? 'active' : '';
+          thumb.addEventListener('click', () => {
+            document.getElementById('main-image').src = img;
+            document.querySelectorAll('#thumbnails img').forEach(t => t.classList.remove('active'));
+            thumb.classList.add('active');
+          });
+          thumbnailsContainer.appendChild(thumb);
+        });
+
+        // Load sizes
+        await loadSizes(productId);
+
+        // Load related products
+        productRenderer.renderProducts('related', { category: product.category, limit: 4 });
+      } catch (error) {
+        console.error('Error loading product:', error);
+      }
+    }
+
+    async function loadSizes(productId) {
+      try {
+        const response = await fetch(`/api/product-sizes?product_id=${productId}`);
+        const sizes = await response.json();
+
+        const sizeSelect = document.getElementById('size-select');
+        sizes.forEach(size => {
+          const option = document.createElement('option');
+          option.value = size.id;
+          option.dataset.size = size.size;
+          option.dataset.stock = size.stock_qty;
+          option.textContent = `${size.size} (${size.stock_qty} in stock)`;
+          sizeSelect.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Error loading sizes:', error);
+      }
+    }
+
+    function updateStockStatus() {
+      if (!currentSize) {
+        document.getElementById('stock-status').textContent = '';
+        return;
+      }
+
+      const selectedOption = document.querySelector(`#size-select option[value="${currentSize}"]`);
+      const stock = parseInt(selectedOption.dataset.stock);
+      const statusElement = document.getElementById('stock-status');
+
+      if (stock > 10) {
+        statusElement.textContent = '✓ In Stock';
+        statusElement.className = 'stock-status in-stock';
+      } else if (stock > 0) {
+        statusElement.textContent = `⚠ Only ${stock} left!`;
+        statusElement.className = 'stock-status low-stock';
+      } else {
+        statusElement.textContent = '✗ Out of Stock';
+        statusElement.className = 'stock-status out-of-stock';
+      }
+    }
+
+    function addToCart() {
+      if (!currentSize) {
+        alert('Please select a size');
+        return;
+      }
+
+      const selectedOption = document.querySelector(`#size-select option[value="${currentSize}"]`);
+      const stock = parseInt(selectedOption.dataset.stock);
+      const quantity = parseInt(document.getElementById('quantity').value);
+
+      if (quantity > stock) {
+        alert(`Only ${stock} items available`);
+        return;
+      }
+
+      const cartItem = {
+        product_id: currentProduct.id,
+        title: currentProduct.title,
+        size: selectedOption.dataset.size,
+        quantity: quantity,
+        price: currentProduct.discount_price || currentProduct.price,
+        image: currentProduct.image_1
+      };
+
+      cartManager.addToCart(cartItem);
+      alert('Added to cart!');
+      document.getElementById('quantity').value = 1;
+    }
+
+    function updateCartCount() {
+      const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      document.getElementById('cart-count').textContent = cart.length;
+    }
+
+    window.addEventListener('cartUpdated', updateCartCount);
+  </script>
+</body>
+</html>

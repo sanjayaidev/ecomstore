@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header>
+    <nav class="navbar">
+      <div class="container">
+        <div class="logo">🛍️ Store</div>
+        <ul class="nav-links">
+          <li><a href="../">Home</a></li>
+          <li><a href="products.html">Shop</a></li>
+          <li><a href="cart.html">Cart</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <div class="container checkout-container">
+      <h1>Checkout</h1>
+
+      <div class="checkout-layout">
+        <form id="checkout-form" class="checkout-form">
+          <div class="form-section">
+            <h3>Billing Information</h3>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="first-name">First Name</label>
+                <input type="text" id="first-name" required>
+              </div>
+              <div class="form-group">
+                <label for="last-name">Last Name</label>
+                <input type="text" id="last-name" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="email">Email Address</label>
+              <input type="email" id="email" required>
+            </div>
+
+            <div class="form-group">
+              <label for="phone">Phone Number</label>
+              <input type="tel" id="phone" required>
+            </div>
+
+            <div class="form-group">
+              <label for="address">Address</label>
+              <input type="text" id="address" required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="city">City</label>
+                <input type="text" id="city" required>
+              </div>
+              <div class="form-group">
+                <label for="state">State</label>
+                <input type="text" id="state" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="pincode">Pincode</label>
+                <input type="text" id="pincode" required>
+              </div>
+              <div class="form-group">
+                <label for="country">Country</label>
+                <input type="text" id="country" value="India" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Payment Method</h3>
+            <div class="payment-options">
+              <label class="payment-option">
+                <input type="radio" name="payment-method" value="card" checked>
+                <span>Credit/Debit Card</span>
+              </label>
+              <label class="payment-option">
+                <input type="radio" name="payment-method" value="upi">
+                <span>UPI</span>
+              </label>
+              <label class="payment-option">
+                <input type="radio" name="payment-method" value="cod">
+                <span>Cash on Delivery</span>
+              </label>
+            </div>
+          </div>
+
+          <button type="submit" id="place-order-btn" class="btn-primary">Place Order</button>
+        </form>
+
+        <aside class="order-summary">
+          <h3>Order Summary</h3>
+          <div id="summary-items"></div>
+          <div class="summary-row">
+            <span>Subtotal:</span>
+            <span id="checkout-subtotal">₹0</span>
+          </div>
+          <div class="summary-row">
+            <span>Tax (10%):</span>
+            <span id="checkout-tax">₹0</span>
+          </div>
+          <div class="summary-row">
+            <span>Shipping:</span>
+            <span id="checkout-shipping">₹100</span>
+          </div>
+          <div class="summary-row total">
+            <span>Total:</span>
+            <span id="checkout-total">₹0</span>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Ecommerce Store. All rights reserved.</p>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      loadOrderSummary();
+
+      document.getElementById('checkout-form').addEventListener('submit', handleCheckout);
+    });
+
+    function loadOrderSummary() {
+      const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      const container = document.getElementById('summary-items');
+      container.innerHTML = '';
+
+      let subtotal = 0;
+      cart.forEach(item => {
+        const itemTotal = item.price * item.quantity;
+        subtotal += itemTotal;
+
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'summary-item';
+        itemDiv.innerHTML = `
+          <span>${item.title} (${item.quantity}x)</span>
+          <span>₹${itemTotal.toFixed(2)}</span>
+        `;
+        container.appendChild(itemDiv);
+      });
+
+      const tax = subtotal * 0.1;
+      const shipping = 100;
+      const total = subtotal + tax + shipping;
+
+      document.getElementById('checkout-subtotal').textContent = `₹${subtotal.toFixed(2)}`;
+      document.getElementById('checkout-tax').textContent = `₹${tax.toFixed(2)}`;
+      document.getElementById('checkout-total').textContent = `₹${total.toFixed(2)}`;
+    }
+
+    async function handleCheckout(e) {
+      e.preventDefault();
+
+      const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      if (cart.length === 0) {
+        alert('Your cart is empty!');
+        return;
+      }
+
+      const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const tax = subtotal * 0.1;
+      const shipping = 100;
+      const total = subtotal + tax + shipping;
+
+      const orderData = {
+        customer_email: document.getElementById('email').value,
+        customer_name: `${document.getElementById('first-name').value} ${document.getElementById('last-name').value}`,
+        customer_phone: document.getElementById('phone').value,
+        customer_address: document.getElementById('address').value,
+        customer_city: document.getElementById('city').value,
+        customer_state: document.getElementById('state').value,
+        customer_pincode: document.getElementById('pincode').value,
+        payment_method: document.querySelector('input[name="payment-method"]:checked').value,
+        total: total,
+        status: 'pending',
+        items: cart
+      };
+
+      try {
+        const response = await fetch('/api/create-order', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(orderData)
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          // Deduct stock for each item
+          await deductStock(cart);
+          // Clear cart
+          localStorage.removeItem('cart');
+          window.location.href = `order-success.html?id=${result.id}`;
+        } else {
+          alert('Error creating order. Please try again.');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error processing order. Please try again.');
+      }
+    }
+
+    async function deductStock(cart) {
+      try {
+        await fetch('/api/processProductOrder', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ items: cart })
+        });
+      } catch (error) {
+        console.error('Error deducting stock:', error);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Cart</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header>
+    <nav class="navbar">
+      <div class="container">
+        <div class="logo">🛍️ Store</div>
+        <ul class="nav-links">
+          <li><a href="../">Home</a></li>
+          <li><a href="products.html">Shop</a></li>
+          <li><a href="cart.html">Cart <span id="cart-count" class="cart-badge">0</span></a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <div class="container cart-container">
+      <h1>Shopping Cart</h1>
+
+      <div class="cart-layout">
+        <div class="cart-items-section">
+          <div id="cart-items" class="cart-items"></div>
+        </div>
+
+        <aside class="order-summary">
+          <h3>Order Summary</h3>
+          <div class="summary-row">
+            <span>Subtotal:</span>
+            <span id="subtotal">₹0</span>
+          </div>
+          <div class="summary-row">
+            <span>Tax (10%):</span>
+            <span id="tax">₹0</span>
+          </div>
+          <div class="summary-row">
+            <span>Shipping:</span>
+            <span id="shipping">₹100</span>
+          </div>
+          <div class="summary-row total">
+            <span>Total:</span>
+            <span id="total">₹0</span>
+          </div>
+          <button id="checkout-btn" class="btn-primary" style="width: 100%; margin-top: 20px;">Proceed to Checkout</button>
+          <a href="products.html" class="btn-secondary" style="display: block; text-align: center; margin-top: 10px;">Continue Shopping</a>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Ecommerce Store. All rights reserved.</p>
+  </footer>
+
+  <script src="../js/cartManager.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      displayCart();
+      updateCartCount();
+
+      document.getElementById('checkout-btn').addEventListener('click', () => {
+        const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        if (cart.length === 0) {
+          alert('Your cart is empty!');
+          return;
+        }
+        window.location.href = 'checkout.html';
+      });
+    });
+
+    function displayCart() {
+      const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      const container = document.getElementById('cart-items');
+
+      if (cart.length === 0) {
+        container.innerHTML = '<p class="empty-cart">Your cart is empty. <a href="products.html">Start shopping!</a></p>';
+        document.getElementById('checkout-btn').disabled = true;
+        updateSummary([]);
+        return;
+      }
+
+      container.innerHTML = '';
+      cart.forEach((item, index) => {
+        const cartItem = document.createElement('div');
+        cartItem.className = 'cart-item';
+        cartItem.innerHTML = `
+          <img src="${item.image}" alt="${item.title}">
+          <div class="item-details">
+            <h4>${item.title}</h4>
+            <p class="size">Size: ${item.size}</p>
+            <p class="price">₹${item.price}</p>
+          </div>
+          <div class="quantity-control">
+            <button onclick="updateQuantity(${index}, -1)">−</button>
+            <input type="number" value="${item.quantity}" min="1" readonly>
+            <button onclick="updateQuantity(${index}, 1)">+</button>
+          </div>
+          <span class="item-total">₹${(item.price * item.quantity).toFixed(2)}</span>
+          <button class="remove-btn" onclick="removeFromCart(${index})">Remove</button>
+        `;
+        container.appendChild(cartItem);
+      });
+
+      updateSummary(cart);
+    }
+
+    function updateQuantity(index, change) {
+      let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      const newQty = cart[index].quantity + change;
+
+      if (newQty > 0) {
+        cart[index].quantity = newQty;
+        localStorage.setItem('cart', JSON.stringify(cart));
+        displayCart();
+        window.dispatchEvent(new Event('cartUpdated'));
+      }
+    }
+
+    function removeFromCart(index) {
+      let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      cart.splice(index, 1);
+      localStorage.setItem('cart', JSON.stringify(cart));
+      displayCart();
+      window.dispatchEvent(new Event('cartUpdated'));
+    }
+
+    function updateSummary(cart) {
+      const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const tax = subtotal * 0.1;
+      const shipping = 100;
+      const total = subtotal + tax + shipping;
+
+      document.getElementById('subtotal').textContent = `₹${subtotal.toFixed(2)}`;
+      document.getElementById('tax').textContent = `₹${tax.toFixed(2)}`;
+      document.getElementById('total').textContent = `₹${total.toFixed(2)}`;
+    }
+
+    function updateCartCount() {
+      const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      document.getElementById('cart-count').textContent = cart.length;
+    }
+
+    window.addEventListener('cartUpdated', updateCartCount);
+  </script>
+</body>
+</html>
