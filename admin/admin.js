@@ -1,197 +1,273 @@
-/**
- * Admin Dashboard - Product Management
- */
+// admin/admin.js
+const API = {
+  auth: '/api/auth/login',
+  products: '/api/admin/products',
+  tokenKey: 'admin_token'
+};
 
-let products = [];
-let orders = [];
-
+// --- AUTH & INIT ---
 document.addEventListener('DOMContentLoaded', () => {
-  // Setup menu navigation
-  document.querySelectorAll('.menu-item').forEach(button => {
-    button.addEventListener('click', (e) => {
-      document.querySelectorAll('.menu-item').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
-      
-      e.target.classList.add('active');
-      const section = e.target.dataset.section;
-      document.getElementById(section).classList.add('active');
-    });
-  });
-
-  // Load initial data
-  loadProducts();
-  loadOrders();
-
-  // Form handlers
-  document.getElementById('product-form').addEventListener('submit', handleAddProduct);
-  document.getElementById('add-size-btn').addEventListener('click', addSizeInput);
-
-  // Add initial size input
-  addSizeInput();
+  const token = localStorage.getItem(API.tokenKey);
+  if (!token) {
+    showLoginModal();
+    return;
+  }
+  initAdmin(token);
 });
 
-// Load products from API
-async function loadProducts() {
-  try {
-    const response = await fetch('/api/products?limit=100');
-    products = await response.json();
-    displayProducts();
-  } catch (error) {
-    console.error('Error loading products:', error);
+function showLoginModal() {
+  let modal = document.getElementById('auth-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'auth-modal';
+    modal.className = 'auth-overlay';
+    modal.innerHTML = `
+      <div class="auth-box">
+        <h2>🔐 Admin Login</h2>
+        <form id="login-form">
+          <input type="email" id="login-email" placeholder="Email" required>
+          <input type="password" id="login-password" placeholder="Password" required>
+          <button type="submit">Login</button>
+          <p id="login-error" style="color:red; margin-top:10px; font-size:0.9rem;"></p>
+        </form>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Minimal modal CSS
+    const style = document.createElement('style');
+    style.textContent = `
+      .auth-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.9); display:flex; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(4px); }
+      .auth-box { background:#fff; padding:2rem; border-radius:12px; width:90%; max-width:380px; box-shadow:0 20px 40px rgba(0,0,0,0.2); }
+      .auth-box input, .auth-box button { width:100%; padding:12px; margin:6px 0; border:1px solid #ddd; border-radius:6px; font-size:14px; }
+      .auth-box button { background:#2563eb; color:white; border:none; cursor:pointer; font-weight:600; }
+      .auth-box button:hover { background:#1d4ed8; }
+    `;
+    document.head.appendChild(style);
+
+    document.getElementById('login-form').addEventListener('submit', handleLogin);
   }
 }
 
-// Display products in table
-function displayProducts() {
-  const tbody = document.querySelector('#products-table tbody');
-  tbody.innerHTML = '';
-
-  products.forEach(product => {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td><img src="${product.image_1}" alt="${product.title}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;"></td>
-      <td>${product.title}</td>
-      <td>${product.category}</td>
-      <td>₹${product.price}</td>
-      <td><a href="#" onclick="viewProductStock('${product.id}')">View</a></td>
-      <td>
-        <button onclick="editProduct('${product.id}')" class="btn-small">Edit</button>
-        <button onclick="deleteProduct('${product.id}')" class="btn-small btn-danger">Delete</button>
-      </td>
-    `;
-    tbody.appendChild(row);
-  });
-}
-
-// Load orders from API
-async function loadOrders() {
-  try {
-    const response = await fetch('/api/orders');
-    orders = await response.json();
-    displayOrders();
-  } catch (error) {
-    console.error('Error loading orders:', error);
-  }
-}
-
-// Display orders in table
-function displayOrders() {
-  const tbody = document.querySelector('#orders-table tbody');
-  tbody.innerHTML = '';
-
-  orders.forEach(order => {
-    const date = new Date(order.created_at).toLocaleDateString('en-IN');
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${order.id.substring(0, 8)}...</td>
-      <td>${order.customer_email || 'N/A'}</td>
-      <td>₹${order.total}</td>
-      <td><span class="status-badge status-${order.status}">${order.status}</span></td>
-      <td>${date}</td>
-      <td>
-        <button onclick="viewOrder('${order.id}')" class="btn-small">View</button>
-      </td>
-    `;
-    tbody.appendChild(row);
-  });
-}
-
-// Add size input
-function addSizeInput() {
-  const container = document.getElementById('sizes-container');
-  const input = document.createElement('div');
-  input.className = 'size-input';
-  input.innerHTML = `
-    <input type="text" placeholder="Size (e.g., S, M, L, 28, 30)" class="size-name">
-    <input type="number" placeholder="Stock Qty" min="0" class="stock-qty">
-    <button type="button" onclick="this.parentElement.remove()" class="btn-small btn-danger">Remove</button>
-  `;
-  container.appendChild(input);
-}
-
-// Handle add product
-async function handleAddProduct(e) {
+async function handleLogin(e) {
   e.preventDefault();
-
-  const sizes = [];
-  document.querySelectorAll('.size-input').forEach(input => {
-    const name = input.querySelector('.size-name').value;
-    const qty = input.querySelector('.stock-qty').value;
-    if (name && qty) {
-      sizes.push({ size: name, stock_qty: parseInt(qty) });
-    }
-  });
-
-  const productData = {
-    title: document.getElementById('title').value,
-    description: document.getElementById('description').value,
-    long_description: document.getElementById('long_description').value,
-    care_instructions: document.getElementById('care_instructions').value,
-    category: document.getElementById('category').value,
-    keywords: document.getElementById('keywords').value.split(',').map(k => k.trim()),
-    price: parseFloat(document.getElementById('price').value),
-    discount_price: document.getElementById('discount_price').value ? parseFloat(document.getElementById('discount_price').value) : null,
-    image_1: document.getElementById('image_1').value,
-    image_2: document.getElementById('image_2').value || null,
-    image_3: document.getElementById('image_3').value || null,
-    image_4: document.getElementById('image_4').value || null,
-    image_5: document.getElementById('image_5').value || null,
-    sizes: sizes
-  };
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+  const errorEl = document.getElementById('login-error');
+  errorEl.textContent = 'Authenticating...';
 
   try {
-    const response = await fetch('/api/products', {
+    const res = await fetch(API.auth, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(productData)
+      body: JSON.stringify({ email, password })
     });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Invalid credentials');
 
-    if (response.ok) {
-      alert('Product added successfully!');
-      document.getElementById('product-form').reset();
-      document.getElementById('sizes-container').innerHTML = '';
-      addSizeInput();
-      loadProducts();
-    } else {
-      alert('Error adding product');
-    }
-  } catch (error) {
-    console.error('Error:', error);
-    alert('Error adding product');
+    localStorage.setItem(API.tokenKey, data.token);
+    document.getElementById('auth-modal').remove();
+    initAdmin(data.token);
+  } catch (err) {
+    errorEl.textContent = err.message;
   }
 }
 
-// Delete product
-async function deleteProduct(productId) {
-  if (!confirm('Are you sure you want to delete this product?')) return;
+async function initAdmin(token) {
+  try {
+    // Verify token works
+    await authFetch(API.products);
+    setupNavigation();
+    loadProducts();
+    setupSizeInputs();
+    setupAddProductForm();
+  } catch (err) {
+    console.error('Auth failed:', err);
+    localStorage.removeItem(API.tokenKey);
+    showLoginModal();
+  }
+}
+
+window.logout = () => {
+  localStorage.removeItem(API.tokenKey);
+  location.reload();
+};
+
+// --- API HELPER ---
+async function authFetch(url, options = {}) {
+  const token = localStorage.getItem(API.tokenKey);
+  if (!token) throw new Error('Session expired. Please login again.');
+
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      ...options.headers
+    }
+  });
+
+  if (res.status === 401) {
+    window.logout();
+    throw new Error('Session expired');
+  }
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Request failed' }));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+// --- NAVIGATION ---
+function setupNavigation() {
+  const menuItems = document.querySelectorAll('.menu-item');
+  const sections = document.querySelectorAll('.admin-section');
+
+  menuItems.forEach(btn => {
+    btn.addEventListener('click', () => {
+      menuItems.forEach(i => i.classList.remove('active'));
+      sections.forEach(s => s.classList.remove('active'));
+
+      btn.classList.add('active');
+      const target = btn.dataset.section;
+      document.getElementById(target)?.classList.add('active');
+
+      if (target === 'products') loadProducts();
+      if (target === 'orders') loadOrders(); // Stub for now
+    });
+  });
+}
+
+// --- PRODUCTS ---
+async function loadProducts() {
+  const tbody = document.querySelector('#products-table tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;">Loading products...</td></tr>';
 
   try {
-    const response = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
-    if (response.ok) {
-      alert('Product deleted successfully!');
-      loadProducts();
-    } else {
-      alert('Error deleting product');
-    }
-  } catch (error) {
-    console.error('Error:', error);
+    const products = await authFetch(API.products);
+    tbody.innerHTML = products.length === 0
+      ? '<tr><td colspan="6" style="padding:20px;text-align:center;">No products found</td></tr>'
+      : products.map(p => `
+        <tr>
+          <td><img src="${p.image_1}" width="48" height="48" style="object-fit:cover; border-radius:6px;" onerror="this.src='/images/placeholder.webp'"></td>
+          <td><strong>${p.title}</strong></td>
+          <td><span class="badge">${p.category}</span></td>
+          <td>₹${p.price} ${p.discount_price ? `<br><span style="color:#16a34a; font-size:0.85em;">₹${p.discount_price}</span>` : ''}</td>
+          <td>${p.sizes ? (typeof p.sizes === 'string' ? p.sizes : p.sizes.join(', ')) : 'N/A'}</td>
+          <td>
+            <button onclick="editProduct('${p.id}')" class="btn-sm btn-edit">Edit</button>
+            <button onclick="deleteProduct('${p.id}')" class="btn-sm btn-delete">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" style="color:#dc2626; padding:20px;">${err.message}</td></tr>`;
   }
 }
 
-// View product stock
-function viewProductStock(productId) {
-  alert('View stock details for product: ' + productId);
-  // Could open a modal with detailed stock info
+// --- DYNAMIC SIZES ---
+function setupSizeInputs() {
+  const container = document.getElementById('sizes-container');
+  const addBtn = document.getElementById('add-size-btn');
+  if (!container || !addBtn) return;
+
+  window.addSizeRow = (name = '', stock = 10) => {
+    const row = document.createElement('div');
+    row.className = 'size-row';
+    row.style.cssText = 'display:flex; gap:8px; margin:6px 0; align-items:center;';
+    row.innerHTML = `
+      <input type="text" name="size_name" placeholder="Size (e.g., M, L)" value="${name}" required style="flex:1; padding:8px; border:1px solid #cbd5e1; border-radius:4px;">
+      <input type="number" name="size_stock" placeholder="Stock" value="${stock}" min="0" required style="width:80px; padding:8px; border:1px solid #cbd5e1; border-radius:4px;">
+      <button type="button" onclick="this.parentElement.remove()" style="width:32px; height:32px; background:#fee2e2; color:#dc2626; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">×</button>
+    `;
+    container.appendChild(row);
+  };
+
+  addBtn.addEventListener('click', () => window.addSizeRow());
+  if (container.children.length === 0) window.addSizeRow();
 }
 
-// View order
-function viewOrder(orderId) {
-  alert('View order: ' + orderId);
-  // Could open a modal with order details
+// --- ADD PRODUCT FORM ---
+function setupAddProductForm() {
+  const form = document.getElementById('product-form');
+  if (!form) return;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = form.querySelector('button[type="submit"]');
+    const originalText = btn.textContent;
+    btn.textContent = 'Adding...';
+    btn.disabled = true;
+
+    try {
+      const data = {
+        title: form.title.value.trim(),
+        category: form.category.value,
+        price: parseFloat(form.price.value),
+        discount_price: form.discount_price.value ? parseFloat(form.discount_price.value) : null,
+        description: form.description.value.trim(),
+        long_description: form.long_description.value.trim() || null,
+        care_instructions: form.care_instructions.value.trim() || null,
+        keywords: form.keywords.value.split(',').map(k => k.trim()).filter(Boolean),
+        image_1: form.image_1.value.trim(),
+        image_2: form.image_2.value.trim() || null,
+        image_3: form.image_3.value.trim() || null,
+        image_4: form.image_4.value.trim() || null,
+        image_5: form.image_5.value.trim() || null,
+        sizes: []
+      };
+
+      // Collect sizes
+      document.querySelectorAll('#sizes-container .size-row').forEach(row => {
+        const name = row.querySelector('[name="size_name"]').value.trim();
+        const stock = parseInt(row.querySelector('[name="size_stock"]').value) || 0;
+        if (name) data.sizes.push({ name, stock });
+      });
+
+      await authFetch(API.products, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+
+      alert('✅ Product added successfully!');
+      form.reset();
+      document.getElementById('sizes-container').innerHTML = '';
+      setupSizeInputs();
+      loadProducts();
+      // Auto-switch to products tab
+      document.querySelector('[data-section="products"]').click();
+
+    } catch (err) {
+      alert('❌ Error: ' + err.message);
+    } finally {
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }
+  });
 }
 
-// Edit product
-function editProduct(productId) {
-  alert('Edit product: ' + productId);
-  // Could open a modal to edit product
+// --- EDIT / DELETE ---
+window.editProduct = (id) => {
+  alert('🔧 Edit modal coming next. For now, use Delete & Re-add.');
+};
+
+window.deleteProduct = async (id) => {
+  if (!confirm('Are you sure you want to permanently delete this product?')) return;
+  try {
+    await authFetch(API.products, {
+      method: 'DELETE',
+      body: JSON.stringify({ id })
+    });
+    alert('✅ Product deleted');
+    loadProducts();
+  } catch (err) {
+    alert('❌ Delete failed: ' + err.message);
+  }
+};
+
+// --- ORDERS STUB ---
+async function loadOrders() {
+  const tbody = document.querySelector('#orders-table tbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;">Orders system coming next step...</td></tr>';
 }
