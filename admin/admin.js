@@ -9,7 +9,7 @@
 // ⚠️  Move credentials to server-side (api/login.js) in production!
 const CONFIG = {
   loginUrl:    '/api/login',
-  productsUrl: '/api/products',
+  productsUrl: '/api/admin/products',
   ordersUrl:   '/api/orders',
   tokenKey:    'admin_token',
   pageSize:    10
