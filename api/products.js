@@ -30,10 +30,19 @@ export default async function handler(req) {
       const conditions = [];
       const values = [];
 
-      // Filter by IDs
-      if (params.get('ids')) {
-        const ids = params.get('ids').split(',').map(id => id.trim());
-        conditions.push(sql`id = ANY(${ids})`);
+      // Filter by ID or IDs
+      if (params.get('id')) {
+        const id = Number(params.get('id'));
+        if (!Number.isNaN(id)) {
+          conditions.push(sql`id = ${id}`);
+        }
+      } else if (params.get('ids')) {
+        const ids = params.get('ids').split(',')
+          .map(id => Number(id.trim()))
+          .filter(id => !Number.isNaN(id));
+        if (ids.length > 0) {
+          conditions.push(sql`id = ANY(${ids})`);
+        }
       }
       
       // Filter by category

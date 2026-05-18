@@ -152,9 +152,9 @@
 
     async function loadProductDetails(productId) {
       try {
-        const response = await fetch(`/api/products?ids=${productId}`);
-        const products = await response.json();
-        const product = products[0];
+const response = await fetch(`/api/products?id=${encodeURIComponent(productId)}`);
+      const products = await response.json();
+      const product = Array.isArray(products) ? products[0] : products;
 
         if (!product) {
           document.querySelector('.product-detail-container').innerHTML = '<p>Product not found</p>';

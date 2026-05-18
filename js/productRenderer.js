@@ -200,7 +200,7 @@ const productRenderer = (() => {
     document.querySelectorAll('.btn-add-cart').forEach(btn => {
       btn.onclick = (e) => {
         e.preventDefault();
-        if (!window.cartManager) {
+        if (typeof cartManager === 'undefined') {
           alert('Cart is not available yet.');
           return;
         }
@@ -214,7 +214,7 @@ const productRenderer = (() => {
           size: btn.dataset.size || 'One size'
         };
 
-        window.cartManager.addToCart(item);
+        cartManager.addToCart(item);
         alert('Product added to cart!');
       };
     });
