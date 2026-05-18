@@ -19,15 +19,31 @@ export default async function handler(req, res) {
 
   try {
     // 🔹 GET: Fetch all products
-    if (req.method === 'GET') {
-      const products = await sql`SELECT * FROM products ORDER BY created_at DESC`;
-      const formatted = products.map(p => ({
-        ...p,
-        sizes: typeof p.sizes === 'string' ? JSON.parse(p.sizes) : (p.sizes || []),
-        keywords: typeof p.keywords === 'string' ? JSON.parse(p.keywords) : (p.keywords || [])
-      }));
-      return res.status(200).json(formatted);
+if (req.method === 'GET') {
+  const products = await sql`SELECT * FROM products ORDER BY created_at DESC`;
+  
+  // Safely parse JSONB fields regardless of driver behavior
+  const formatted = products.map(p => {
+    let sizes = p.sizes;
+    let keywords = p.keywords;
+    
+    // Handle if returned as string (TEXT column or driver quirk)
+    if (typeof sizes === 'string') {
+      try { sizes = JSON.parse(sizes); } catch { sizes = []; }
     }
+    if (typeof keywords === 'string') {
+      try { keywords = JSON.parse(keywords); } catch { keywords = []; }
+    }
+    
+    // Ensure arrays even if null/undefined
+    if (!Array.isArray(sizes)) sizes = [];
+    if (!Array.isArray(keywords)) keywords = [];
+    
+    return { ...p, sizes, keywords };
+  });
+  
+  return res.status(200).json(formatted);
+}
 
     // 🔹 POST: Create product
     if (req.method === 'POST') {
