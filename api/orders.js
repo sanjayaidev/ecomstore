@@ -1,4 +1,4 @@
-// api/orders.js — Vercel Serverless (Node.js runtime)
+// api/orders.js — Vercel Node.js Runtime (FIXED)
 import { neon } from '@neondatabase/serverless';
 
 export const config = { runtime: 'nodejs' };
@@ -19,9 +19,11 @@ export default async function handler(req, res) {
 
   try {
     const sql = neon(process.env.DATABASE_URL);
-    const body = req.method !== 'GET' ? await req.json() : {};
+    
+    // ✅ FIX: In Vercel Node.js runtime, body is already parsed as req.body
+    const body = req.method !== 'GET' ? (req.body || {}) : {};
 
-    // 🔹 GET: Fetch all orders (admin)
+    // 🔹 GET: Fetch all orders
     if (req.method === 'GET') {
       const orders = await sql`
         SELECT o.*, 
@@ -30,15 +32,15 @@ export default async function handler(req, res) {
            WHERE oi.order_id = o.id) as items_detail
         FROM orders o ORDER BY o.created_at DESC
       `;
-      return res.status(200).json(orders);
+      return res.status(200).json(orders || []);
     }
 
-    // 🔹 POST: Create new order (checkout)
+    // 🔹 POST: Create new order
     if (req.method === 'POST') {
       const { customer_name, customer_email, customer_phone, customer_address, items, total, payment_method, notes } = body;
       
       if (!customer_email || !items?.length || !total) {
-        return res.status(400).json({ error: 'Missing required fields: customer_email, items, total' });
+        return res.status(400).json({ error: 'Missing: customer_email, items, or total' });
       }
 
       // Create order
@@ -57,7 +59,7 @@ export default async function handler(req, res) {
         `;
       }
 
-      // Fetch full order with items for response
+      // Fetch full order with items
       const fullOrder = await sql`
         SELECT o.*, 
           (SELECT json_agg(json_build_object('product_id', oi.product_id, 'title', p.title, 'price', oi.price, 'quantity', oi.quantity, 'size', oi.size))
@@ -84,11 +86,11 @@ export default async function handler(req, res) {
         UPDATE orders SET ${sql.join(updates, sql`, `)} WHERE id = ${id} RETURNING *
       `;
       
-      if (result.length === 0) return res.status(404).json({ error: 'Order not found' });
+      if (!result?.length) return res.status(404).json({ error: 'Order not found' });
       return res.status(200).json(result[0]);
     }
 
-    // 🔹 DELETE: Cancel order (soft delete)
+    // 🔹 DELETE: Cancel order
     if (req.method === 'DELETE') {
       const { id } = body;
       if (!id) return res.status(400).json({ error: 'Order ID required' });
@@ -96,7 +98,7 @@ export default async function handler(req, res) {
       const result = await sql`
         UPDATE orders SET status = 'cancelled', updated_at = NOW() WHERE id = ${id} RETURNING id
       `;
-      if (result.length === 0) return res.status(404).json({ error: 'Order not found' });
+      if (!result?.length) return res.status(404).json({ error: 'Order not found' });
       return res.status(200).json({ success: true });
     }
 
