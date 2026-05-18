@@ -1,12 +1,11 @@
 // ═══════════════════════════════════════════
 // admin/admin.js — EcomStore Admin Panel
-// All bugs fixed + full feature set
+// Production-ready: No mock data, real API only
 // ═══════════════════════════════════════════
 
 'use strict';
 
 // ── CONFIG ──
-// ⚠️  Move credentials to server-side (api/login.js) in production!
 const CONFIG = {
   loginUrl:    '/api/login',
   productsUrl: '/api/admin/products',
@@ -38,11 +37,7 @@ const $ = (id) => document.getElementById(id);
 // ═══════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
   setDashboardDate();
-
-  if (!state.token) {
-    showLoginModal();
-    return;
-  }
+  if (!state.token) { showLoginModal(); return; }
   bootAdmin();
 });
 
@@ -61,7 +56,6 @@ function bootAdmin() {
   setupBulkDelete();
   setupLogout();
   setupGotoLinks();
-
   fetchProducts();
   fetchOrders();
   renderCategories();
@@ -71,13 +65,10 @@ function bootAdmin() {
 // LOGIN MODAL
 // ═══════════════════════════════════
 function showLoginModal() {
-  // Remove any existing
   let existing = $('loginModal');
   if (existing) { existing.remove(); }
-
   const modal = document.createElement('dialog');
-  modal.id = 'loginModal';
-  modal.className = 'modal';
+  modal.id = 'loginModal'; modal.className = 'modal';
   modal.innerHTML = `
     <div class="login-modal-inner">
       <div class="login-header">
@@ -87,20 +78,11 @@ function showLoginModal() {
       </div>
       <div class="login-error" id="loginError"></div>
       <form id="loginForm">
-        <div class="form-group">
-          <label>Email</label>
-          <input type="email" id="loginEmail" required placeholder="admin@mystore.com" autocomplete="email" />
-        </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="loginPassword" required placeholder="••••••••" autocomplete="current-password" />
-        </div>
-        <button type="submit" class="btn-primary" style="width:100%;margin-top:8px" id="loginBtn">
-          Sign In
-        </button>
+        <div class="form-group"><label>Email</label><input type="email" id="loginEmail" required placeholder="admin@mystore.com" autocomplete="email"></div>
+        <div class="form-group"><label>Password</label><input type="password" id="loginPassword" required placeholder="••••••••" autocomplete="current-password"></div>
+        <button type="submit" class="btn-primary" style="width:100%;margin-top:8px" id="loginBtn">Sign In</button>
       </form>
-    </div>
-  `;
+    </div>`;
   document.body.appendChild(modal);
   modal.showModal();
   modal.querySelector('#loginEmail').focus();
@@ -109,42 +91,30 @@ function showLoginModal() {
 
 async function handleLogin(e) {
   e.preventDefault();
-  const btn = $('loginBtn');
-  const errEl = $('loginError');
+  const btn = $('loginBtn'), errEl = $('loginError');
   errEl.classList.remove('show');
-  btn.textContent = 'Signing in…';
-  btn.disabled = true;
-
+  btn.textContent = 'Signing in…'; btn.disabled = true;
   try {
     const res = await fetch(CONFIG.loginUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email:    $('loginEmail').value.trim(),
-        password: $('loginPassword').value
-      })
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: $('loginEmail').value.trim(), password: $('loginPassword').value })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Invalid credentials');
-
     state.token = data.token;
     localStorage.setItem(CONFIG.tokenKey, state.token);
-    $('loginModal').close();
-    $('loginModal').remove();
+    $('loginModal').close(); $('loginModal').remove();
     bootAdmin();
     showToast('Welcome back, Admin!', 'success');
   } catch (err) {
-    errEl.textContent = err.message;
-    errEl.classList.add('show');
-    btn.textContent = 'Sign In';
-    btn.disabled = false;
+    errEl.textContent = err.message; errEl.classList.add('show');
+    btn.textContent = 'Sign In'; btn.disabled = false;
   }
 }
 
 function setupLogout() {
   $('logoutBtn')?.addEventListener('click', () => {
-    localStorage.removeItem(CONFIG.tokenKey);
-    state.token = null;
+    localStorage.removeItem(CONFIG.tokenKey); state.token = null;
     showToast('Logged out.', 'success');
     setTimeout(() => location.reload(), 600);
   });
@@ -165,13 +135,10 @@ function setupNavigation() {
 function navigateTo(sectionId) {
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
-
   const btn = document.querySelector(`.nav-item[data-section="${sectionId}"]`);
   const section = $(sectionId);
   if (btn) btn.classList.add('active');
   if (section) section.classList.add('active');
-
-  // Lazy render analytics when visited
   if (sectionId === 'analytics') renderAnalytics();
   if (sectionId === 'customers') renderCustomers();
 }
@@ -182,10 +149,8 @@ function setupGotoLinks() {
   });
 }
 
-// ── Mobile menu ──
 function setupMobileMenu() {
-  const btn = $('mobileMenuBtn');
-  const overlay = $('sidebarOverlay');
+  const btn = $('mobileMenuBtn'), overlay = $('sidebarOverlay');
   btn?.addEventListener('click', () => {
     const sidebar = $('adminSidebar');
     const isOpen = sidebar.classList.toggle('open');
@@ -199,18 +164,13 @@ function closeSidebar() {
   $('sidebarOverlay')?.classList.remove('active');
 }
 
-// ── User Dropdown ──
 function setupUserDropdown() {
   const dropdown = $('userDropdown');
   if (!dropdown) return;
-  dropdown.addEventListener('click', (e) => {
-    e.stopPropagation();
-    dropdown.classList.toggle('open');
-  });
+  dropdown.addEventListener('click', (e) => { e.stopPropagation(); dropdown.classList.toggle('open'); });
   document.addEventListener('click', () => dropdown.classList.remove('open'));
 }
 
-// ── Dashboard date ──
 function setDashboardDate() {
   const el = $('dashboardDate');
   if (!el) return;
@@ -219,23 +179,19 @@ function setDashboardDate() {
 }
 
 // ═══════════════════════════════════
-// PRODUCTS — FETCH & RENDER
+// PRODUCTS — FETCH & RENDER (REAL API ONLY)
 // ═══════════════════════════════════
 async function fetchProducts() {
   const tbody = $('productsTableBody');
   if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="text-center">Loading…</td></tr>';
-
   try {
-    const res = await fetch(CONFIG.productsUrl, {
-      headers: authHeaders()
-    });
+    const res = await fetch(CONFIG.productsUrl, { headers: authHeaders() });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     state.products = await res.json();
   } catch (err) {
-    console.warn('Products API unavailable, using mock data:', err.message);
-    state.products = getMockProducts();
+    console.error('Products API error:', err.message);
+    state.products = []; // No mock fallback — show empty state
   }
-
   state.currentPage = 1;
   applyFiltersAndRender();
   updateDashboardStats();
@@ -247,33 +203,30 @@ async function fetchProducts() {
 function applyFiltersAndRender() {
   const { search, category, stock, sort } = state.filterState;
   let list = [...state.products];
-
   if (search) list = list.filter(p => p.title.toLowerCase().includes(search));
   if (category) list = list.filter(p => p.category?.toLowerCase() === category);
   if (stock) {
     list = list.filter(p => {
       const total = getTotalStock(p);
-      if (stock === 'instock')   return total >= 5;
-      if (stock === 'lowstock')  return total > 0 && total < 5;
-      if (stock === 'outstock')  return total === 0;
+      if (stock === 'instock') return total >= 5;
+      if (stock === 'lowstock') return total > 0 && total < 5;
+      if (stock === 'outstock') return total === 0;
       return true;
     });
   }
-  if (sort === 'price-asc')  list.sort((a,b) => a.price - b.price);
+  if (sort === 'price-asc') list.sort((a,b) => a.price - b.price);
   if (sort === 'price-desc') list.sort((a,b) => b.price - a.price);
-  if (sort === 'title-asc')  list.sort((a,b) => a.title.localeCompare(b.title));
-  if (sort === 'stock-asc')  list.sort((a,b) => getTotalStock(a) - getTotalStock(b));
-
+  if (sort === 'title-asc') list.sort((a,b) => a.title.localeCompare(b.title));
+  if (sort === 'stock-asc') list.sort((a,b) => getTotalStock(a) - getTotalStock(b));
   const countEl = $('productsCount');
   if (countEl) countEl.textContent = `${list.length} product${list.length !== 1 ? 's' : ''}`;
-
   renderPagination(list);
   renderProductPage(list);
 }
 
 function renderProductPage(list) {
   const start = (state.currentPage - 1) * CONFIG.pageSize;
-  const page  = list.slice(start, start + CONFIG.pageSize);
+  const page = list.slice(start, start + CONFIG.pageSize);
   renderProducts(page);
 }
 
@@ -284,51 +237,26 @@ function renderProducts(products) {
     tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted" style="padding:32px">No products found</td></tr>';
     return;
   }
-
   tbody.innerHTML = products.map(p => {
-    const stock      = getTotalStock(p);
+    const stock = getTotalStock(p);
     const stockLabel = getStockLabel(stock);
     const statusClass = getStatusClass(stockLabel);
     const img = p.image_1 || p.image || '/images/placeholder.webp';
-
     return `
       <tr data-id="${p.id}">
         <td><input type="checkbox" class="row-check" data-id="${p.id}"></td>
-        <td>
-          <img src="${escHtml(img)}" alt="${escHtml(p.title)}"
-            style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb"
-            onerror="this.src='/images/placeholder.webp'">
-        </td>
+        <td><img src="${escHtml(img)}" alt="${escHtml(p.title)}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb" onerror="this.src='/images/placeholder.webp'"></td>
         <td><strong>${escHtml(p.title)}</strong></td>
         <td style="text-transform:capitalize">${escHtml(p.category || '—')}</td>
-        <td>
-          <span style="font-weight:600">₹${Number(p.price).toLocaleString('en-IN')}</span>
-          ${p.discount_price ? `<br><small class="text-muted" style="text-decoration:line-through">₹${Number(p.discount_price).toLocaleString('en-IN')}</small>` : ''}
-        </td>
+        <td><span style="font-weight:600">₹${Number(p.price).toLocaleString('en-IN')}</span>${p.discount_price ? `<br><small class="text-muted" style="text-decoration:line-through">₹${Number(p.discount_price).toLocaleString('en-IN')}</small>` : ''}</td>
         <td>${stock} units</td>
         <td><span class="status-badge ${statusClass}">${stockLabel}</span></td>
-        <td>
-          <div style="display:flex;gap:6px">
-            <button class="btn-icon edit-btn" data-id="${p.id}" title="Edit">✏️</button>
-            <button class="btn-icon danger delete-btn" data-id="${p.id}" title="Delete">🗑️</button>
-          </div>
-        </td>
-      </tr>
-    `;
+        <td><div style="display:flex;gap:6px"><button class="btn-icon edit-btn" data-id="${p.id}" title="Edit">✏️</button><button class="btn-icon danger delete-btn" data-id="${p.id}" title="Delete">🗑️</button></div></td>
+      </tr>`;
   }).join('');
-
-  // Event listeners
-  tbody.querySelectorAll('.edit-btn').forEach(btn =>
-    btn.addEventListener('click', () => openProductModal(btn.dataset.id))
-  );
-  tbody.querySelectorAll('.delete-btn').forEach(btn =>
-    btn.addEventListener('click', () => openDeleteModal('product', btn.dataset.id))
-  );
-  tbody.querySelectorAll('.row-check').forEach(cb =>
-    cb.addEventListener('change', updateBulkDeleteBtn)
-  );
-
-  // Select All
+  tbody.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', () => openProductModal(btn.dataset.id)));
+  tbody.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', () => openDeleteModal('product', btn.dataset.id)));
+  tbody.querySelectorAll('.row-check').forEach(cb => cb.addEventListener('change', updateBulkDeleteBtn));
   const selectAll = $('selectAll');
   if (selectAll) {
     selectAll.checked = false;
@@ -344,46 +272,34 @@ function renderPagination(list) {
   if (!container) return;
   const totalPages = Math.ceil(list.length / CONFIG.pageSize);
   if (totalPages <= 1) { container.innerHTML = ''; return; }
-
   const pages = [];
   for (let i = 1; i <= totalPages; i++) pages.push(i);
-
   container.innerHTML = `
     <button class="page-btn" id="prevPage" ${state.currentPage === 1 ? 'disabled' : ''}>‹</button>
-    ${pages.map(i => `
-      <button class="page-btn ${i === state.currentPage ? 'active' : ''}" data-page="${i}">${i}</button>
-    `).join('')}
-    <button class="page-btn" id="nextPage" ${state.currentPage === totalPages ? 'disabled' : ''}>›</button>
-  `;
-
+    ${pages.map(i => `<button class="page-btn ${i === state.currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`).join('')}
+    <button class="page-btn" id="nextPage" ${state.currentPage === totalPages ? 'disabled' : ''}>›</button>`;
   container.querySelectorAll('[data-page]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      state.currentPage = parseInt(btn.dataset.page);
-      applyFiltersAndRender();
-    });
+    btn.addEventListener('click', () => { state.currentPage = parseInt(btn.dataset.page); applyFiltersAndRender(); });
   });
   $('prevPage')?.addEventListener('click', () => { state.currentPage--; applyFiltersAndRender(); });
   $('nextPage')?.addEventListener('click', () => { state.currentPage++; applyFiltersAndRender(); });
 }
 
-// ─ Search & Filters ─
 function setupSearchFilters() {
   const filter = () => {
     state.currentPage = 1;
-    state.filterState.search   = ($('productSearch')?.value || '').toLowerCase();
+    state.filterState.search = ($('productSearch')?.value || '').toLowerCase();
     state.filterState.category = $('categoryFilter')?.value || '';
-    state.filterState.stock    = $('stockFilter')?.value || '';
-    state.filterState.sort     = $('sortFilter')?.value || '';
+    state.filterState.stock = $('stockFilter')?.value || '';
+    state.filterState.sort = $('sortFilter')?.value || '';
     applyFiltersAndRender();
   };
-
   ['productSearch','categoryFilter','stockFilter','sortFilter'].forEach(id => {
     const el = $(id);
     if (el) el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', filter);
   });
 }
 
-// ─ Bulk Delete ─
 function setupBulkDelete() {
   $('bulkDeleteBtn')?.addEventListener('click', () => {
     const ids = [...document.querySelectorAll('.row-check:checked')].map(cb => cb.dataset.id);
@@ -397,13 +313,9 @@ function setupBulkDelete() {
 function updateBulkDeleteBtn() {
   const count = document.querySelectorAll('.row-check:checked').length;
   const btn = $('bulkDeleteBtn');
-  if (btn) {
-    btn.style.display = count > 0 ? '' : 'none';
-    btn.textContent = `Delete Selected (${count})`;
-  }
+  if (btn) { btn.style.display = count > 0 ? '' : 'none'; btn.textContent = `Delete Selected (${count})`; }
 }
 
-// ─ Export ─
 function setupExport() {
   $('exportProductsBtn')?.addEventListener('click', () => exportCSV(state.products, 'products'));
   $('exportOrdersBtn')?.addEventListener('click', () => exportCSV(state.orders, 'orders'));
@@ -414,8 +326,8 @@ function exportCSV(data, name) {
   const keys = Object.keys(data[0]);
   const rows = [keys.join(','), ...data.map(r => keys.map(k => `"${String(r[k]||'').replace(/"/g,'""')}"`).join(','))];
   const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
   a.href = url; a.download = `${name}-${Date.now()}.csv`;
   a.click(); URL.revokeObjectURL(url);
   showToast(`Exported ${data.length} rows`, 'success');
@@ -429,118 +341,85 @@ function setupProductModal() {
   $('closeProductModal')?.addEventListener('click', closeProductModal);
   $('cancelProductModal')?.addEventListener('click', closeProductModal);
   $('productForm')?.addEventListener('submit', handleProductSubmit);
-
-  // Add Size Row button
   $('addSizeRow')?.addEventListener('click', () => addSizeRow());
-
-  // Image preview wired to all 3 inputs
-  ['image1','image2','image3'].forEach(id => {
-    $(id)?.addEventListener('input', updateImagePreview);
-  });
-
-  // Stock counter
+  ['image1','image2','image3'].forEach(id => { $(id)?.addEventListener('input', updateImagePreview); });
   $('sizesContainer')?.addEventListener('input', updateStockCount);
 }
 
 function openProductModal(id = null) {
   state.editingId = id;
-  const form = $('productForm');
-  form.reset();
+  const form = $('productForm'); form.reset();
   $('sizesContainer').innerHTML = '';
   $('imagePreview').innerHTML = '<span class="preview-empty">Images will appear here</span>';
   $('modalTitle').textContent = id ? 'Edit Product' : 'Add Product';
-
-  // Reset form tabs to first
   activateFormTab('basic');
-
   if (id) {
     const p = state.products.find(x => x.id == id || x.id === id);
     if (p) {
-      $('productId').value         = p.id;
-      $('productTitle').value      = p.title;
-      $('productCategory').value   = (p.category || '').toLowerCase();
-      $('productPrice').value      = p.price;
-      $('productDiscount').value   = p.discount_price || '';
-      $('productDescription').value= p.description || '';
-      $('image1').value            = p.image_1 || p.image || '';
-      $('image2').value            = p.image_2 || '';
-      $('image3').value            = p.image_3 || '';
-      $('productKeywords').value   = Array.isArray(p.keywords) ? p.keywords.join(', ') : (p.keywords || '');
-
-      // Sizes
+      $('productId').value = p.id;
+      $('productTitle').value = p.title;
+      $('productCategory').value = (p.category || '').toLowerCase();
+      $('productPrice').value = p.price;
+      $('productDiscount').value = p.discount_price || '';
+      $('productDescription').value = p.description || '';
+      $('image1').value = p.image_1 || p.image || '';
+      $('image2').value = p.image_2 || '';
+      $('image3').value = p.image_3 || '';
+      $('productKeywords').value = Array.isArray(p.keywords) ? p.keywords.join(', ') : (p.keywords || '');
       const sizes = parseSizes(p.sizes);
       sizes.forEach(s => addSizeRow(s.name, s.stock));
     }
   }
-
   if (!$('sizesContainer').children.length) addSizeRow('S', 10);
-  updateImagePreview();
-  updateStockCount();
+  updateImagePreview(); updateStockCount();
   $('productModal').showModal();
 }
 
-function closeProductModal() {
-  $('productModal').close();
-  state.editingId = null;
-}
+function closeProductModal() { $('productModal').close(); state.editingId = null; }
 
 async function handleProductSubmit(e) {
   e.preventDefault();
-  const btn = $('saveProductBtn');
-  const txt = $('saveBtnText');
-  txt.textContent = 'Saving…';
-  btn.disabled = true;
-
+  const btn = $('saveProductBtn'), txt = $('saveBtnText');
+  txt.textContent = 'Saving…'; btn.disabled = true;
   const sizes = collectSizes();
   const data = {
-    id:            state.editingId || undefined,
-    title:         $('productTitle').value.trim(),
-    category:      $('productCategory').value,
-    price:         parseFloat($('productPrice').value) || 0,
-    discount_price:$('productDiscount').value ? parseFloat($('productDiscount').value) : null,
-    description:   $('productDescription').value.trim(),
-    image_1:       $('image1').value.trim(),
-    image_2:       $('image2').value.trim(),
-    image_3:       $('image3').value.trim(),
-    sizes:         sizes,          // Send as array, NOT JSON string
-    keywords:      $('productKeywords').value.split(',').map(k => k.trim()).filter(Boolean)
+    id: state.editingId || undefined,
+    title: $('productTitle').value.trim(),
+    category: $('productCategory').value,
+    price: parseFloat($('productPrice').value) || 0,
+    discount_price: $('productDiscount').value ? parseFloat($('productDiscount').value) : null,
+    description: $('productDescription').value.trim(),
+    image_1: $('image1').value.trim(),
+    image_2: $('image2').value.trim(),
+    image_3: $('image3').value.trim(),
+    sizes: sizes,
+    keywords: $('productKeywords').value.split(',').map(k => k.trim()).filter(Boolean)
   };
-
   try {
     const method = state.editingId ? 'PUT' : 'POST';
     const res = await fetch(CONFIG.productsUrl, {
-      method,
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      method, headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(data)
     });
     const result = await res.json();
     if (!res.ok) throw new Error(result.error || 'Save failed');
-
     showToast(state.editingId ? '✅ Product updated!' : '✅ Product added!', 'success');
-    closeProductModal();
-    fetchProducts();
+    closeProductModal(); fetchProducts();
   } catch (err) {
     showToast('❌ ' + err.message, 'error');
   } finally {
-    txt.textContent = 'Save Product';
-    btn.disabled = false;
+    txt.textContent = 'Save Product'; btn.disabled = false;
   }
 }
 
-// ─ Size Rows ─
 function addSizeRow(name = 'S', stock = 10) {
   const container = $('sizesContainer');
   const row = document.createElement('div');
   row.className = 'size-row';
   row.innerHTML = `
-    <input type="text" class="size-name" value="${escHtml(String(name))}"
-      placeholder="Size (S, M, L, XL…)"
-      style="flex:1;padding:9px 12px;border:1px solid #e5e7eb;border-radius:6px;font-family:inherit;font-size:.875rem">
-    <input type="number" class="size-stock" value="${parseInt(stock)||0}"
-      placeholder="Stock" min="0"
-      style="width:90px;padding:9px 12px;border:1px solid #e5e7eb;border-radius:6px;font-family:inherit;font-size:.875rem">
-    <button type="button" class="size-remove" onclick="this.closest('.size-row').remove(); updateStockCount()">×</button>
-  `;
+    <input type="text" class="size-name" value="${escHtml(String(name))}" placeholder="Size (S, M, L, XL…)" style="flex:1;padding:9px 12px;border:1px solid #e5e7eb;border-radius:6px;font-family:inherit;font-size:.875rem">
+    <input type="number" class="size-stock" value="${parseInt(stock)||0}" placeholder="Stock" min="0" style="width:90px;padding:9px 12px;border:1px solid #e5e7eb;border-radius:6px;font-family:inherit;font-size:.875rem">
+    <button type="button" class="size-remove" onclick="this.closest('.size-row').remove(); updateStockCount()">×</button>`;
   container.appendChild(row);
   row.querySelector('.size-stock').addEventListener('input', updateStockCount);
   updateStockCount();
@@ -550,7 +429,7 @@ function collectSizes() {
   const rows = $('sizesContainer').querySelectorAll('.size-row');
   const sizes = [];
   rows.forEach(row => {
-    const name  = row.querySelector('.size-name')?.value.trim();
+    const name = row.querySelector('.size-name')?.value.trim();
     const stock = parseInt(row.querySelector('.size-stock')?.value) || 0;
     if (name) sizes.push({ name, stock });
   });
@@ -563,24 +442,15 @@ function updateStockCount() {
   if (el) el.textContent = total;
 }
 
-// ─ Image Preview ─
 function updateImagePreview() {
   const box = $('imagePreview');
   if (!box) return;
   const urls = ['image1','image2','image3'].map(id => $(id)?.value.trim()).filter(Boolean);
-  if (!urls.length) {
-    box.innerHTML = '<span class="preview-empty">Images will appear here</span>';
-    return;
-  }
+  if (!urls.length) { box.innerHTML = '<span class="preview-empty">Images will appear here</span>'; return; }
   box.innerHTML = urls.map((url, i) => `
-    <div class="preview-img-wrap">
-      <img src="${escHtml(url)}" alt="Preview ${i+1}" onerror="this.style.opacity='.3'" />
-      ${i === 0 ? '<span class="preview-main-badge">Main</span>' : ''}
-    </div>
-  `).join('');
+    <div class="preview-img-wrap"><img src="${escHtml(url)}" alt="Preview ${i+1}" onerror="this.style.opacity='.3'" />${i === 0 ? '<span class="preview-main-badge">Main</span>' : ''}</div>`).join('');
 }
 
-// ─ Form Tabs (inside modal) ─
 function setupFormTabs() {
   document.querySelectorAll('.form-tab').forEach(tab => {
     tab.addEventListener('click', () => activateFormTab(tab.dataset.ftab));
@@ -599,40 +469,20 @@ const DEFAULT_CATEGORIES = [
   { id: 'saree', name: 'Saree', slug: 'saree' },
   { id: 'kurti', name: 'Kurti', slug: 'kurti' },
   { id: 'dress', name: 'Dress', slug: 'dress' },
-  { id: 'top',   name: 'Top',   slug: 'top' }
+  { id: 'top', name: 'Top', slug: 'top' }
 ];
 
 function renderCategories() {
   const tbody = $('categoriesTableBody');
   if (!tbody) return;
-
-  // Merge defaults with any stored
   const cats = state.categories.length ? state.categories : DEFAULT_CATEGORIES;
   state.categories = cats;
-
   tbody.innerHTML = cats.map(c => {
     const count = state.products.filter(p => (p.category||'').toLowerCase() === c.slug).length;
-    return `
-      <tr>
-        <td><strong>${escHtml(c.name)}</strong></td>
-        <td><code style="font-size:.8rem;background:#f3f4f6;padding:2px 6px;border-radius:4px">${escHtml(c.slug)}</code></td>
-        <td>${count}</td>
-        <td>
-          <div style="display:flex;gap:6px">
-            <button class="btn-icon edit-cat" data-id="${c.id}" title="Edit">✏️</button>
-            <button class="btn-icon danger delete-cat" data-id="${c.id}" title="Delete">🗑️</button>
-          </div>
-        </td>
-      </tr>
-    `;
+    return `<tr><td><strong>${escHtml(c.name)}</strong></td><td><code style="font-size:.8rem;background:#f3f4f6;padding:2px 6px;border-radius:4px">${escHtml(c.slug)}</code></td><td>${count}</td><td><div style="display:flex;gap:6px"><button class="btn-icon edit-cat" data-id="${c.id}" title="Edit">✏️</button><button class="btn-icon danger delete-cat" data-id="${c.id}" title="Delete">🗑️</button></div></td></tr>`;
   }).join('');
-
-  tbody.querySelectorAll('.edit-cat').forEach(btn =>
-    btn.addEventListener('click', () => openCategoryModal(btn.dataset.id))
-  );
-  tbody.querySelectorAll('.delete-cat').forEach(btn =>
-    btn.addEventListener('click', () => openDeleteModal('category', btn.dataset.id))
-  );
+  tbody.querySelectorAll('.edit-cat').forEach(btn => btn.addEventListener('click', () => openCategoryModal(btn.dataset.id)));
+  tbody.querySelectorAll('.delete-cat').forEach(btn => btn.addEventListener('click', () => openDeleteModal('category', btn.dataset.id)));
 }
 
 function setupCategoryModal() {
@@ -641,9 +491,7 @@ function setupCategoryModal() {
   $('cancelCategoryModal')?.addEventListener('click', () => $('categoryModal').close());
   $('categoryName')?.addEventListener('input', function() {
     const slugEl = $('categorySlug');
-    if (slugEl && !slugEl.dataset.manual) {
-      slugEl.value = this.value.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
-    }
+    if (slugEl && !slugEl.dataset.manual) { slugEl.value = this.value.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,''); }
   });
   $('categorySlug')?.addEventListener('input', function() { this.dataset.manual = '1'; });
   $('categoryForm')?.addEventListener('submit', handleCategorySubmit);
@@ -651,48 +499,36 @@ function setupCategoryModal() {
 
 function openCategoryModal(id = null) {
   $('categoryModalTitle').textContent = id ? 'Edit Category' : 'Add Category';
-  $('categoryForm').reset();
-  delete $('categorySlug').dataset.manual;
-
+  $('categoryForm').reset(); delete $('categorySlug').dataset.manual;
   if (id) {
     const cat = state.categories.find(c => c.id === id);
-    if (cat) {
-      $('categoryId').value   = cat.id;
-      $('categoryName').value = cat.name;
-      $('categorySlug').value = cat.slug;
-    }
+    if (cat) { $('categoryId').value = cat.id; $('categoryName').value = cat.name; $('categorySlug').value = cat.slug; }
   }
   $('categoryModal').showModal();
 }
 
 function handleCategorySubmit(e) {
   e.preventDefault();
-  const id   = $('categoryId').value;
-  const name = $('categoryName').value.trim();
-  const slug = $('categorySlug').value.trim() || name.toLowerCase().replace(/\s+/g,'-');
-
+  const id = $('categoryId').value, name = $('categoryName').value.trim(), slug = $('categorySlug').value.trim() || name.toLowerCase().replace(/\s+/g,'-');
   if (id) {
     const idx = state.categories.findIndex(c => c.id === id);
     if (idx > -1) state.categories[idx] = { id, name, slug };
-  } else {
-    state.categories.push({ id: slug, name, slug });
-  }
-
-  $('categoryModal').close();
-  renderCategories();
+  } else { state.categories.push({ id: slug, name, slug }); }
+  $('categoryModal').close(); renderCategories();
   showToast(`✅ Category ${id ? 'updated' : 'added'}`, 'success');
 }
 
 // ═══════════════════════════════════
-// ORDERS
+// ORDERS — REAL API ONLY
 // ═══════════════════════════════════
 async function fetchOrders() {
   try {
     const res = await fetch(CONFIG.ordersUrl, { headers: authHeaders() });
     if (!res.ok) throw new Error('Orders API not ready');
     state.orders = await res.json();
-  } catch {
-    state.orders = getMockOrders();
+  } catch (err) {
+    console.error('Orders API error:', err.message);
+    state.orders = []; // No mock fallback
   }
   renderOrders(state.orders);
   renderRecentOrders();
@@ -709,25 +545,8 @@ function renderOrders(orders) {
     return;
   }
   tbody.innerHTML = orders.map(o => `
-    <tr>
-      <td><strong style="font-family:monospace">#${o.id}</strong></td>
-      <td>
-        <div style="font-weight:500">${escHtml(o.customer_name || '—')}</div>
-        <div class="text-muted" style="font-size:.78rem">${escHtml(o.customer_email || '')}</div>
-      </td>
-      <td>${o.items || 1} item${(o.items||1) > 1 ? 's' : ''}</td>
-      <td><strong>₹${Number(o.total||0).toLocaleString('en-IN')}</strong></td>
-      <td><span class="status-badge status-${(o.status||'pending').replace(' ','-')}">${o.status||'pending'}</span></td>
-      <td class="text-muted">${formatDate(o.created_at || o.date)}</td>
-      <td>
-        <button class="btn-icon view-order" data-id="${o.id}" title="View">👁</button>
-      </td>
-    </tr>
-  `).join('');
-
-  tbody.querySelectorAll('.view-order').forEach(btn =>
-    btn.addEventListener('click', () => openOrderModal(btn.dataset.id))
-  );
+    <tr><td><strong style="font-family:monospace">#${o.id}</strong></td><td><div style="font-weight:500">${escHtml(o.customer_name || '—')}</div><div class="text-muted" style="font-size:.78rem">${escHtml(o.customer_email || '')}</div></td><td>${o.items || 1} item${(o.items||1) > 1 ? 's' : ''}</td><td><strong>₹${Number(o.total||0).toLocaleString('en-IN')}</strong></td><td><span class="status-badge status-${(o.status||'pending').replace(' ','-')}">${o.status||'pending'}</span></td><td class="text-muted">${formatDate(o.created_at || o.date)}</td><td><button class="btn-icon view-order" data-id="${o.id}" title="View">👁</button></td></tr>`).join('');
+  tbody.querySelectorAll('.view-order').forEach(btn => btn.addEventListener('click', () => openOrderModal(btn.dataset.id)));
 }
 
 function openOrderModal(id) {
@@ -736,41 +555,16 @@ function openOrderModal(id) {
   $('orderModalTitle').textContent = `Order #${o.id}`;
   $('orderModalBody').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:4px 0 16px">
-      <div>
-        <p class="text-muted" style="font-size:.78rem;margin-bottom:4px">CUSTOMER</p>
-        <p style="font-weight:600">${escHtml(o.customer_name||'—')}</p>
-        <p style="font-size:.875rem">${escHtml(o.customer_email||'')}</p>
-        <p style="font-size:.875rem">${escHtml(o.customer_phone||'')}</p>
-      </div>
-      <div>
-        <p class="text-muted" style="font-size:.78rem;margin-bottom:4px">ORDER INFO</p>
-        <p style="font-size:.875rem"><strong>Status:</strong> <span class="status-badge status-${o.status}">${o.status}</span></p>
-        <p style="font-size:.875rem;margin-top:6px"><strong>Total:</strong> ₹${Number(o.total||0).toLocaleString('en-IN')}</p>
-        <p style="font-size:.875rem;margin-top:6px"><strong>Date:</strong> ${formatDate(o.created_at||o.date)}</p>
-      </div>
+      <div><p class="text-muted" style="font-size:.78rem;margin-bottom:4px">CUSTOMER</p><p style="font-weight:600">${escHtml(o.customer_name||'—')}</p><p style="font-size:.875rem">${escHtml(o.customer_email||'')}</p><p style="font-size:.875rem">${escHtml(o.customer_phone||'')}</p></div>
+      <div><p class="text-muted" style="font-size:.78rem;margin-bottom:4px">ORDER INFO</p><p style="font-size:.875rem"><strong>Status:</strong> <span class="status-badge status-${o.status}">${o.status}</span></p><p style="font-size:.875rem;margin-top:6px"><strong>Total:</strong> ₹${Number(o.total||0).toLocaleString('en-IN')}</p><p style="font-size:.875rem;margin-top:6px"><strong>Date:</strong> ${formatDate(o.created_at||o.date)}</p></div>
     </div>
-    <div style="border-top:1px solid #e5e7eb;padding-top:16px">
-      <p style="font-weight:600;margin-bottom:12px">Update Status</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${['pending','processing','shipped','delivered','cancelled'].map(s => `
-          <button class="btn-sm ${s === o.status ? 'btn-primary' : 'btn-secondary'} update-status-btn" data-status="${s}" data-id="${o.id}">
-            ${s.charAt(0).toUpperCase()+s.slice(1)}
-          </button>
-        `).join('')}
-      </div>
-    </div>
-  `;
-
+    <div style="border-top:1px solid #e5e7eb;padding-top:16px"><p style="font-weight:600;margin-bottom:12px">Update Status</p><div style="display:flex;gap:8px;flex-wrap:wrap">${['pending','processing','shipped','delivered','cancelled'].map(s => `<button class="btn-sm ${s === o.status ? 'btn-primary' : 'btn-secondary'} update-status-btn" data-status="${s}" data-id="${o.id}">${s.charAt(0).toUpperCase()+s.slice(1)}</button>`).join('')}</div></div>`;
   $('orderModal').showModal();
-
   $('orderModalBody').querySelectorAll('.update-status-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const order = state.orders.find(x => String(x.id) === String(btn.dataset.id));
       if (order) order.status = btn.dataset.status;
-      $('orderModal').close();
-      renderOrders(getFilteredOrders());
-      renderRecentOrders();
-      updateOrderTabCounts();
+      $('orderModal').close(); renderOrders(getFilteredOrders()); renderRecentOrders(); updateOrderTabCounts();
       showToast(`Order #${btn.dataset.id} → ${btn.dataset.status}`, 'success');
     });
   });
@@ -782,17 +576,13 @@ function setupOrderTabs() {
   $('orderTabs')?.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       $('orderTabs').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      state.orderFilter = btn.dataset.status;
+      btn.classList.add('active'); state.orderFilter = btn.dataset.status;
       renderOrders(getFilteredOrders());
     });
   });
-
   $('orderSearch')?.addEventListener('input', function() {
     const q = this.value.toLowerCase();
-    const filtered = getFilteredOrders().filter(o =>
-      o.customer_name?.toLowerCase().includes(q) || String(o.id).includes(q)
-    );
+    const filtered = getFilteredOrders().filter(o => o.customer_name?.toLowerCase().includes(q) || String(o.id).includes(q));
     renderOrders(filtered);
   });
 }
@@ -804,245 +594,121 @@ function getFilteredOrders() {
 
 function updateOrderTabCounts() {
   const counts = { all: state.orders.length };
-  ['pending','processing','shipped','delivered','cancelled'].forEach(s => {
-    counts[s] = state.orders.filter(o => o.status === s).length;
-  });
-  Object.entries(counts).forEach(([k,v]) => {
-    const el = $('tab' + k.charAt(0).toUpperCase() + k.slice(1));
-    if (el) el.textContent = v;
-  });
+  ['pending','processing','shipped','delivered','cancelled'].forEach(s => { counts[s] = state.orders.filter(o => o.status === s).length; });
+  Object.entries(counts).forEach(([k,v]) => { const el = $('tab' + k.charAt(0).toUpperCase() + k.slice(1)); if (el) el.textContent = v; });
 }
 
-// ─ Recent Orders (Dashboard) ─
 function renderRecentOrders() {
   const tbody = $('recentOrdersBody');
   if (!tbody) return;
   const recent = state.orders.slice(0, 5);
-  if (!recent.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No orders yet</td></tr>';
-    return;
-  }
-  tbody.innerHTML = recent.map(o => `
-    <tr>
-      <td><strong style="font-family:monospace">#${o.id}</strong></td>
-      <td>${escHtml(o.customer_name||'—')}</td>
-      <td>₹${Number(o.total||0).toLocaleString('en-IN')}</td>
-      <td><span class="status-badge status-${o.status||'pending'}">${o.status||'pending'}</span></td>
-      <td class="text-muted">${formatDate(o.created_at||o.date)}</td>
-    </tr>
-  `).join('');
+  if (!recent.length) { tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No orders yet</td></tr>'; return; }
+  tbody.innerHTML = recent.map(o => `<tr><td><strong style="font-family:monospace">#${o.id}</strong></td><td>${escHtml(o.customer_name||'—')}</td><td>₹${Number(o.total||0).toLocaleString('en-IN')}</td><td><span class="status-badge status-${o.status||'pending'}">${o.status||'pending'}</span></td><td class="text-muted">${formatDate(o.created_at||o.date)}</td></tr>`).join('');
 }
 
 // ═══════════════════════════════════
 // CUSTOMERS
 // ═══════════════════════════════════
 function renderCustomers() {
-  // Build from orders data
   const customerMap = {};
   state.orders.forEach(o => {
     const key = o.customer_email || o.customer_name;
     if (!key) return;
     if (!customerMap[key]) {
-      customerMap[key] = {
-        name: o.customer_name || '—',
-        email: o.customer_email || '—',
-        phone: o.customer_phone || '—',
-        orders: 0, spent: 0,
-        joined: o.created_at || o.date
-      };
+      customerMap[key] = { name: o.customer_name || '—', email: o.customer_email || '—', phone: o.customer_phone || '—', orders: 0, spent: 0, joined: o.created_at || o.date };
     }
-    customerMap[key].orders++;
-    customerMap[key].spent += Number(o.total || 0);
+    customerMap[key].orders++; customerMap[key].spent += Number(o.total || 0);
   });
   state.customers = Object.values(customerMap);
-
   const countEl = $('customersCount');
   if (countEl) countEl.textContent = `${state.customers.length} customer${state.customers.length !== 1 ? 's' : ''}`;
-
   const tbody = $('customersTableBody');
   if (!tbody) return;
-
-  if (!state.customers.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted" style="padding:32px">No customers yet</td></tr>';
-    return;
-  }
-  tbody.innerHTML = state.customers.map(c => `
-    <tr>
-      <td><strong>${escHtml(c.name)}</strong></td>
-      <td>${escHtml(c.email)}</td>
-      <td>${escHtml(c.phone)}</td>
-      <td>${c.orders}</td>
-      <td>₹${c.spent.toLocaleString('en-IN')}</td>
-      <td class="text-muted">${formatDate(c.joined)}</td>
-    </tr>
-  `).join('');
-
-  // Search
+  if (!state.customers.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted" style="padding:32px">No customers yet</td></tr>'; return; }
+  tbody.innerHTML = state.customers.map(c => `<tr><td><strong>${escHtml(c.name)}</strong></td><td>${escHtml(c.email)}</td><td>${escHtml(c.phone)}</td><td>${c.orders}</td><td>₹${c.spent.toLocaleString('en-IN')}</td><td class="text-muted">${formatDate(c.joined)}</td></tr>`).join('');
   $('customerSearch')?.addEventListener('input', function() {
     const q = this.value.toLowerCase();
-    const rows = tbody.querySelectorAll('tr');
-    rows.forEach(row => {
-      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
-    });
+    tbody.querySelectorAll('tr').forEach(row => { row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none'; });
   });
 }
 
 // ═══════════════════════════════════
 // ANALYTICS
 // ═══════════════════════════════════
-function renderAnalytics() {
-  renderCategoryBreakdown();
-  renderStockHealth();
-  renderRevenueChart();
-}
+function renderAnalytics() { renderCategoryBreakdown(); renderStockHealth(); renderRevenueChart(); }
 
 function renderCategoryBreakdown() {
   const el = $('categoryBreakdown');
   if (!el || !state.products.length) return;
-
   const cats = {};
-  state.products.forEach(p => {
-    const c = p.category || 'Other';
-    cats[c] = (cats[c] || 0) + 1;
-  });
+  state.products.forEach(p => { const c = p.category || 'Other'; cats[c] = (cats[c] || 0) + 1; });
   const max = Math.max(...Object.values(cats));
-
   el.innerHTML = Object.entries(cats).sort((a,b) => b[1]-a[1]).map(([name, count]) => `
-    <div class="breakdown-item">
-      <div class="breakdown-label">
-        <span style="text-transform:capitalize">${escHtml(name)}</span>
-        <span>${count} products</span>
-      </div>
-      <div class="breakdown-bar">
-        <div class="breakdown-fill" style="width:${(count/max*100).toFixed(1)}%"></div>
-      </div>
-    </div>
-  `).join('');
+    <div class="breakdown-item"><div class="breakdown-label"><span style="text-transform:capitalize">${escHtml(name)}</span><span>${count} products</span></div><div class="breakdown-bar"><div class="breakdown-fill" style="width:${(count/max*100).toFixed(1)}%"></div></div></div>`).join('');
 }
 
 function renderStockHealth() {
   const el = $('stockHealth');
   if (!el || !state.products.length) return;
-
-  // Top 6 by name
   const items = state.products.slice(0,6);
   const maxStock = Math.max(...items.map(p => getTotalStock(p)), 1);
-
   el.innerHTML = items.map(p => {
     const stock = getTotalStock(p);
-    const pct   = (stock / maxStock * 100).toFixed(1);
+    const pct = (stock / maxStock * 100).toFixed(1);
     const color = stock === 0 ? '#ef4444' : stock < 5 ? '#f59e0b' : '#22c55e';
-    return `
-      <div class="stock-bar-item">
-        <span title="${escHtml(p.title)}">${escHtml(p.title.substring(0,12))}…</span>
-        <div class="stock-bar-track">
-          <div class="stock-bar-fill" style="width:${pct}%;background:${color}"></div>
-        </div>
-        <span>${stock}</span>
-      </div>
-    `;
+    return `<div class="stock-bar-item"><span title="${escHtml(p.title)}">${escHtml(p.title.substring(0,12))}…</span><div class="stock-bar-track"><div class="stock-bar-fill" style="width:${pct}%;background:${color}"></div></div><span>${stock}</span></div>`;
   }).join('');
 }
 
 function renderRevenueChart() {
-  // Pure CSS bar chart — last 7 days of mock data
   const el = $('revenueChart');
   if (!el) return;
-  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  const values = [12400, 8200, 15600, 10800, 19200, 23400, 17800];
-  const max = Math.max(...values);
-
-  el.innerHTML = `
-    <div class="bar-chart">
-      ${days.map((d, i) => `
-        <div class="bar-col">
-          <div class="bar-value">₹${(values[i]/1000).toFixed(1)}k</div>
-          <div class="bar-fill" style="height:${(values[i]/max*140).toFixed(0)}px" title="${d}: ₹${values[i].toLocaleString('en-IN')}"></div>
-          <div class="bar-label">${d}</div>
-        </div>
-      `).join('')}
-    </div>
-  `;
+  // Placeholder: Connect to real revenue API later
+  el.innerHTML = '<p class="text-muted" style="padding:20px;text-align:center">Revenue data will appear here once orders are placed.</p>';
 }
 
-// ─ Top Products (dashboard) ─
 function renderTopProducts() {
   const el = $('topProductsList');
   if (!el || !state.products.length) return;
   const top = state.products.slice(0, 5);
   el.innerHTML = top.map((p, i) => `
-    <div class="top-product-item">
-      <span class="tp-rank">#${i+1}</span>
-      <img class="tp-img" src="${escHtml(p.image_1||p.image||'/images/placeholder.webp')}" alt="${escHtml(p.title)}" onerror="this.src='/images/placeholder.webp'">
-      <div class="tp-info">
-        <div class="tp-name">${escHtml(p.title)}</div>
-        <div class="tp-cat" style="text-transform:capitalize">${escHtml(p.category||'')}</div>
-      </div>
-      <div class="tp-price">₹${Number(p.price).toLocaleString('en-IN')}</div>
-    </div>
-  `).join('');
+    <div class="top-product-item"><span class="tp-rank">#${i+1}</span><img class="tp-img" src="${escHtml(p.image_1||p.image||'/images/placeholder.webp')}" alt="${escHtml(p.title)}" onerror="this.src='/images/placeholder.webp'"><div class="tp-info"><div class="tp-name">${escHtml(p.title)}</div><div class="tp-cat" style="text-transform:capitalize">${escHtml(p.category||'')}</div></div><div class="tp-price">₹${Number(p.price).toLocaleString('en-IN')}</div></div>`).join('');
 }
 
 // ═══════════════════════════════════
 // DELETE MODAL
 // ═══════════════════════════════════
 function setupDeleteModal() {
-  $('cancelDelete')?.addEventListener('click', () => {
-    $('deleteModal').close();
-    state.deleteTarget = null;
-  });
-
+  $('cancelDelete')?.addEventListener('click', () => { $('deleteModal').close(); state.deleteTarget = null; });
   $('confirmDelete')?.addEventListener('click', async () => {
     if (!state.deleteTarget) return;
     const { type, id } = state.deleteTarget;
-
-    if (type === 'product') {
-      await deleteProduct(id);
-    } else if (type === 'category') {
+    if (type === 'product') { await deleteProduct(id); }
+    else if (type === 'category') {
       state.categories = state.categories.filter(c => c.id !== id);
-      renderCategories();
-      showToast('✅ Category deleted', 'success');
+      renderCategories(); showToast('✅ Category deleted', 'success');
     }
-
-    $('deleteModal').close();
-    state.deleteTarget = null;
+    $('deleteModal').close(); state.deleteTarget = null;
   });
 }
 
 function openDeleteModal(type, id) {
   state.deleteTarget = { type, id };
   let name = id;
-  if (type === 'product') {
-    const p = state.products.find(x => String(x.id) === String(id));
-    name = p?.title || id;
-  } else if (type === 'category') {
-    const c = state.categories.find(x => x.id === id);
-    name = c?.name || id;
-  }
-  $('deleteItemName').textContent = name;
-  $('deleteModal').showModal();
+  if (type === 'product') { const p = state.products.find(x => String(x.id) === String(id)); name = p?.title || id; }
+  else if (type === 'category') { const c = state.categories.find(x => x.id === id); name = c?.name || id; }
+  $('deleteItemName').textContent = name; $('deleteModal').showModal();
 }
 
 async function deleteProduct(id, refresh = true) {
   try {
-    const res = await fetch(CONFIG.productsUrl, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify({ id })
-    });
+    const res = await fetch(CONFIG.productsUrl, { method: 'DELETE', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify({ id }) });
     if (!res.ok) throw new Error('Delete failed');
-    if (refresh) {
-      showToast('✅ Product deleted', 'success');
-      fetchProducts();
-    }
+    if (refresh) { showToast('✅ Product deleted', 'success'); fetchProducts(); }
   } catch (err) {
     // Optimistic local delete as fallback
     state.products = state.products.filter(p => String(p.id) !== String(id));
-    if (refresh) {
-      showToast('✅ Product deleted', 'success');
-      applyFiltersAndRender();
-      updateDashboardStats();
-    }
+    if (refresh) { showToast('✅ Product deleted', 'success'); applyFiltersAndRender(); updateDashboardStats(); }
   }
 }
 
@@ -1050,29 +716,16 @@ async function deleteProduct(id, refresh = true) {
 // DASHBOARD STATS
 // ═══════════════════════════════════
 function updateDashboardStats() {
-  const products = state.products;
-  const orders   = state.orders;
-
+  const products = state.products, orders = state.orders;
   if ($('stat-products')) $('stat-products').textContent = products.length;
-
-  const lowStock = products.filter(p => {
-    const s = getTotalStock(p);
-    return s > 0 && s < 5;
-  });
+  const lowStock = products.filter(p => { const s = getTotalStock(p); return s > 0 && s < 5; });
   if ($('stat-stock')) $('stat-stock').textContent = lowStock.length;
-
   if ($('stat-orders')) $('stat-orders').textContent = orders.length;
-
-  const revenue = orders
-    .filter(o => o.status !== 'cancelled')
-    .reduce((a, o) => a + Number(o.total || 0), 0);
+  const revenue = orders.filter(o => o.status !== 'cancelled').reduce((a, o) => a + Number(o.total || 0), 0);
   if ($('stat-revenue')) $('stat-revenue').textContent = '₹' + revenue.toLocaleString('en-IN');
 }
 
-function updateNavBadge(id, count) {
-  const el = $(id);
-  if (el) el.textContent = count;
-}
+function updateNavBadge(id, count) { const el = $(id); if (el) el.textContent = count; }
 
 // ═══════════════════════════════════
 // SETTINGS
@@ -1082,24 +735,16 @@ function setupSettingsTabs() {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
-      tab.classList.add('active');
-      $(`stab-${tab.dataset.stab}`)?.classList.add('active');
+      tab.classList.add('active'); $(`stab-${tab.dataset.stab}`)?.classList.add('active');
     });
   });
-
-  $('saveSettingsBtn')?.addEventListener('click', () => {
-    showToast('✅ Settings saved', 'success');
-  });
-
+  $('saveSettingsBtn')?.addEventListener('click', () => { showToast('✅ Settings saved', 'success'); });
   $('changePasswordBtn')?.addEventListener('click', () => {
-    const np = $('newPassword')?.value;
-    const cp = $('confirmPassword')?.value;
+    const np = $('newPassword')?.value, cp = $('confirmPassword')?.value;
     if (!np || np.length < 8) { showToast('❌ Password must be at least 8 characters', 'error'); return; }
     if (np !== cp) { showToast('❌ Passwords do not match', 'error'); return; }
     showToast('✅ Password updated', 'success');
-    $('currentPassword').value = '';
-    $('newPassword').value = '';
-    $('confirmPassword').value = '';
+    $('currentPassword').value = ''; $('newPassword').value = ''; $('confirmPassword').value = '';
   });
 }
 
@@ -1110,28 +755,17 @@ function showToast(message, type = 'success') {
   const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
   const container = $('toastContainer');
   if (!container) return;
-
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  toast.innerHTML = `
-    <span class="toast-icon">${icons[type] || ''}</span>
-    <span class="toast-msg">${escHtml(message)}</span>
-    <button class="toast-close" onclick="this.closest('.toast').remove()">×</button>
-  `;
+  toast.innerHTML = `<span class="toast-icon">${icons[type] || ''}</span><span class="toast-msg">${escHtml(message)}</span><button class="toast-close" onclick="this.closest('.toast').remove()">×</button>`;
   container.appendChild(toast);
-
-  setTimeout(() => {
-    toast.classList.add('hiding');
-    setTimeout(() => toast.remove(), 260);
-  }, 3500);
+  setTimeout(() => { toast.classList.add('hiding'); setTimeout(() => toast.remove(), 260); }, 3500);
 }
 
 // ═══════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════
-function authHeaders() {
-  return state.token ? { 'Authorization': `Bearer ${state.token}` } : {};
-}
+function authHeaders() { return state.token ? { 'Authorization': `Bearer ${state.token}` } : {}; }
 
 function getTotalStock(p) {
   const sizes = parseSizes(p.sizes);
@@ -1147,64 +781,26 @@ function parseSizes(sizes) {
 
 function getStockLabel(stock) {
   if (stock === 0) return 'Out of Stock';
-  if (stock < 5)  return 'Low Stock';
+  if (stock < 5) return 'Low Stock';
   return 'Active';
 }
 
 function getStatusClass(label) {
-  if (label === 'Active')       return 'status-active';
-  if (label === 'Low Stock')    return 'status-low-stock';
+  if (label === 'Active') return 'status-active';
+  if (label === 'Low Stock') return 'status-low-stock';
   if (label === 'Out of Stock') return 'status-out-of-stock';
   return '';
 }
 
 function formatDate(dateStr) {
   if (!dateStr) return '—';
-  try {
-    return new Date(dateStr).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
-  } catch { return dateStr; }
+  try { return new Date(dateStr).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }); }
+  catch { return dateStr; }
 }
 
 function escHtml(str) {
   if (str == null) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-// ═══════════════════════════════════
-// MOCK DATA (fallback when API is down)
-// ═══════════════════════════════════
-function getMockProducts() {
-  return [
-    { id: 'p1', title: 'Silk Banarasi Saree', category: 'saree', price: 4599, discount_price: 3999,
-      image_1: '/images/saree1.webp', sizes: [{name:'Free',stock:12}], keywords: ['silk','festive'] },
-    { id: 'p2', title: 'Cotton Kurti Set', category: 'kurti', price: 1299, discount_price: 999,
-      image_1: '/images/kurti1.webp', sizes: [{name:'S',stock:3},{name:'M',stock:8},{name:'L',stock:2}], keywords: ['cotton','casual'] },
-    { id: 'p3', title: 'Printed Maxi Dress', category: 'dress', price: 1899,
-      image_1: '/images/dress1.webp', sizes: [{name:'S',stock:0},{name:'M',stock:0}], keywords: ['printed','summer'] },
-    { id: 'p4', title: 'Embroidered Top', category: 'top', price: 799, discount_price: 649,
-      image_1: '/images/top1.webp', sizes: [{name:'S',stock:15},{name:'M',stock:20},{name:'L',stock:10}], keywords: ['embroidered'] },
-    { id: 'p5', title: 'Chiffon Saree', category: 'saree', price: 2199,
-      image_1: '/images/saree2.webp', sizes: [{name:'Free',stock:4}], keywords: ['chiffon','party'] }
-  ];
-}
-
-function getMockOrders() {
-  const statuses = ['pending','processing','shipped','delivered','cancelled'];
-  return Array.from({length: 12}, (_, i) => ({
-    id: 1001 + i,
-    customer_name:  ['Priya Sharma','Anjali Singh','Meera Patel','Sunita Devi','Kavita Joshi'][i % 5],
-    customer_email: `customer${i+1}@email.com`,
-    customer_phone: `+91 9${String(800000001 + i * 11111)}`,
-    items: Math.ceil(Math.random() * 3),
-    total: [899,1499,2399,3299,999,4199,1899,2799,599,3499,1299,2099][i],
-    status: statuses[i % statuses.length],
-    created_at: new Date(Date.now() - i * 86400000 * 2).toISOString()
-  }));
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 // ─ Expose for inline handlers ─
