@@ -1,55 +1,69 @@
+// api/products.js — Vercel Serverless (Node.js runtime)
 import { neon } from '@neondatabase/serverless';
 
-export default async function handler(req) {
-  const sql = neon(process.env.DATABASE_URL);
-  const method = req.method;
-  
-  const cors = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-  };
+export const config = {
+  runtime: 'nodejs', // Use Node.js runtime for full fetch API support
+};
 
-  if (method === 'OPTIONS') return new Response(null, { status: 200, headers: cors });
+export default async function handler(req, res) {
+  // CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  const sql = neon(process.env.DATABASE_URL);
 
   try {
-    // 🔹 GET: Fetch all products (public)
-    if (method === 'GET') {
+    // 🔹 GET: Fetch all products
+    if (req.method === 'GET') {
       const products = await sql`SELECT * FROM products ORDER BY created_at DESC`;
-      // Ensure JSONB arrays are parsed correctly for frontend
+      // Ensure JSONB fields are parsed
       const formatted = products.map(p => ({
         ...p,
         sizes: typeof p.sizes === 'string' ? JSON.parse(p.sizes) : (p.sizes || []),
         keywords: typeof p.keywords === 'string' ? JSON.parse(p.keywords) : (p.keywords || [])
       }));
-      return new Response(JSON.stringify(formatted), { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } });
+      return res.status(200).json(formatted);
     }
 
-    // 🔹 POST: Create product (admin)
-    if (method === 'POST') {
-      const body = await req.json();
+    // 🔹 POST: Create new product
+    if (req.method === 'POST') {
+      const body = req.body;
       if (!body.title || !body.price || !body.category) {
-        return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: cors });
+        return res.status(400).json({ error: 'Missing required fields: title, price, category' });
       }
 
-      const sizes = typeof body.sizes === 'string' ? JSON.parse(body.sizes) : (body.sizes || []);
-      const keywords = Array.isArray(body.keywords) ? body.keywords : (body.keywords || '').split(',').map(k => k.trim()).filter(Boolean);
+      const sizes = Array.isArray(body.sizes) ? body.sizes : [];
+      const keywords = Array.isArray(body.keywords) ? body.keywords : [];
 
       const result = await sql`
-        INSERT INTO products (title, description, price, discount_price, category, image_1, image_2, image_3, sizes, keywords, created_at, updated_at)
-        VALUES (${body.title}, ${body.description || ''}, ${body.price}, ${body.discount_price || null}, ${body.category}, ${body.image_1 || ''}, ${body.image_2 || ''}, ${body.image_3 || ''}, ${JSON.stringify(sizes)}, ${JSON.stringify(keywords)}, NOW(), NOW())
-        RETURNING *
+        INSERT INTO products (
+          title, description, price, discount_price, category,
+          image_1, image_2, image_3, sizes, keywords,
+          created_at, updated_at
+        ) VALUES (
+          ${body.title}, ${body.description || ''}, ${body.price}, ${body.discount_price || null}, ${body.category},
+          ${body.image_1 || ''}, ${body.image_2 || ''}, ${body.image_3 || ''}, ${JSON.stringify(sizes)}, ${JSON.stringify(keywords)},
+          NOW(), NOW()
+        ) RETURNING *
       `;
-      return new Response(JSON.stringify(result[0]), { status: 201, headers: { ...cors, 'Content-Type': 'application/json' } });
+      return res.status(201).json(result[0]);
     }
 
-    // 🔹 PUT: Update product (admin)
-    if (method === 'PUT') {
-      const body = await req.json();
-      if (!body.id) return new Response(JSON.stringify({ error: 'Product ID required' }), { status: 400, headers: cors });
+    // 🔹 PUT: Update existing product
+    if (req.method === 'PUT') {
+      const body = req.body;
+      if (!body.id) {
+        return res.status(400).json({ error: 'Product ID required for update' });
+      }
 
-      const sizes = typeof body.sizes === 'string' ? JSON.parse(body.sizes) : (body.sizes || []);
-      const keywords = Array.isArray(body.keywords) ? body.keywords : (body.keywords || '').split(',').map(k => k.trim()).filter(Boolean);
+      const sizes = Array.isArray(body.sizes) ? body.sizes : [];
+      const keywords = Array.isArray(body.keywords) ? body.keywords : [];
 
       const result = await sql`
         UPDATE products SET
@@ -67,23 +81,32 @@ export default async function handler(req) {
         WHERE id = ${body.id}
         RETURNING *
       `;
-      if (result.length === 0) return new Response(JSON.stringify({ error: 'Product not found' }), { status: 404, headers: cors });
-      return new Response(JSON.stringify(result[0]), { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } });
+
+      if (result.length === 0) {
+        return res.status(404).json({ error: 'Product not found' });
+      }
+      return res.status(200).json(result[0]);
     }
 
-    // 🔹 DELETE: Remove product (admin)
-    if (method === 'DELETE') {
-      const { id } = await req.json();
-      if (!id) return new Response(JSON.stringify({ error: 'Product ID required' }), { status: 400, headers: cors });
+    // 🔹 DELETE: Remove product
+    if (req.method === 'DELETE') {
+      const { id } = req.body || {};
+      if (!id) {
+        return res.status(400).json({ error: 'Product ID required' });
+      }
 
       const result = await sql`DELETE FROM products WHERE id = ${id} RETURNING id`;
-      if (result.length === 0) return new Response(JSON.stringify({ error: 'Product not found' }), { status: 404, headers: cors });
-      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } });
+      if (result.length === 0) {
+        return res.status(404).json({ error: 'Product not found' });
+      }
+      return res.status(200).json({ success: true });
     }
 
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: cors });
+    // 🔹 Unknown method
+    return res.status(405).json({ error: `Method ${req.method} not allowed` });
+
   } catch (error) {
     console.error('Products API Error:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: cors });
+    return res.status(500).json({ error: 'Internal server error: ' + error.message });
   }
 }
