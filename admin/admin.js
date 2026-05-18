@@ -1,6 +1,6 @@
 // admin/admin.js
 const API = {
-  auth: '/api/auth/login',
+  auth: '/api/login',
   products: '/api/admin/products',
   tokenKey: 'admin_token'
 };
