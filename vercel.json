@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/api/cms/sliders/:id",        "destination": "/api/cms/sliders" },
+    { "source": "/api/cms/categories/:id",     "destination": "/api/cms/categories" },
+    { "source": "/api/cms/banners/:id",        "destination": "/api/cms/banners" },
+    { "source": "/api/cms/sections/:id",       "destination": "/api/cms/sections" },
+    { "source": "/api/cms/trust-features/:id", "destination": "/api/cms/trust-features" }
+  ]
+}
