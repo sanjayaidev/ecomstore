@@ -473,189 +473,102 @@
             </section>
 
             <!-- Homepage CMS Section -->
-            <section id="cms-section" class="admin-section" style="display: none;">
+            <section id="cms" class="admin-section">
                 <div class="admin-card">
                     <h2>Homepage Content Manager</h2>
                     <p>Manage sliders, categories, banners, and sections for your homepage.</p>
                     
-                    <div class="cms-tabs">
-                        <button class="cms-tab active" data-tab="sliders">Hero Sliders</button>
-                        <button class="cms-tab" data-tab="categories">Categories</button>
-                        <button class="cms-tab" data-tab="banners">Offer Banners</button>
-                        <button class="cms-tab" data-tab="sections">Product Sections</button>
-                        <button class="cms-tab" data-tab="trust">Trust Features</button>
-                        <button class="cms-tab" data-tab="newsletter">Newsletter</button>
+                    <div class="cms-tabs" id="cmsTabs">
+                        <button class="cms-tab settings-tab active" data-tab="sliders" data-cmstab="sliders">Hero Sliders</button>
+                        <button class="cms-tab settings-tab" data-tab="categories" data-cmstab="categories">Categories</button>
+                        <button class="cms-tab settings-tab" data-tab="banners" data-cmstab="banners">Offer Banners</button>
+                        <button class="cms-tab settings-tab" data-tab="sections" data-cmstab="sections">Product Sections</button>
+                        <button class="cms-tab settings-tab" data-tab="trust" data-cmstab="trust">Trust Features</button>
+                        <button class="cms-tab settings-tab" data-tab="newsletter" data-cmstab="newsletter">Newsletter</button>
                     </div>
 
                     <!-- Sliders Tab -->
-                    <div id="sliders-tab" class="cms-tab-content active">
-                        <button class="add-btn" onclick="openSliderModal()">+ Add New Slider</button>
+                    <div id="cmstab-sliders" class="cms-tab-content settings-panel active">
+                        <button class="add-btn" id="addSliderBtn">+ Add New Slider</button>
                         <div id="sliders-loading" class="loading-spinner">
                             <div class="spinner"></div>
                             <p>Loading sliders...</p>
                         </div>
-                        <table class="data-table" id="sliders-table" style="display: none;">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Image</th>
-                                    <th>Title</th>
-                                    <th>Subtitle</th>
-                                    <th>CTA Text</th>
-                                    <th>Order</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="sliders-table-body">
-                                <!-- Dynamic content -->
-                            </tbody>
-                        </table>
-                        <div id="sliders-empty" class="empty-state" style="display: none;">
-                            <p>No sliders found. Click "Add New Slider" to create one.</p>
+                        <div id="slidersList" class="cms-list">
+                            <!-- Dynamic content -->
                         </div>
                     </div>
 
                     <!-- Categories Tab -->
-                    <div id="categories-tab" class="cms-tab-content">
-                        <button class="add-btn" onclick="openCategoryModal()">+ Add New Category</button>
+                    <div id="cmstab-categories" class="cms-tab-content settings-panel">
+                        <button class="add-btn" id="addCategoryBtn">+ Add New Category</button>
                         <div id="categories-loading" class="loading-spinner">
                             <div class="spinner"></div>
                             <p>Loading categories...</p>
                         </div>
-                        <table class="data-table" id="categories-table" style="display: none;">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Icon</th>
-                                    <th>Name</th>
-                                    <th>Slug</th>
-                                    <th>Order</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="categories-table-body">
-                                <!-- Dynamic content -->
-                            </tbody>
-                        </table>
-                        <div id="categories-empty" class="empty-state" style="display: none;">
-                            <p>No categories found. Click "Add New Category" to create one.</p>
+                        <div id="categoriesList" class="cms-list">
+                            <!-- Dynamic content -->
                         </div>
                     </div>
 
                     <!-- Banners Tab -->
-                    <div id="banners-tab" class="cms-tab-content">
-                        <button class="add-btn" onclick="openBannerModal()">+ Add New Banner</button>
+                    <div id="cmstab-banners" class="cms-tab-content settings-panel">
+                        <button class="add-btn" id="addBannerBtn">+ Add New Banner</button>
                         <div id="banners-loading" class="loading-spinner">
                             <div class="spinner"></div>
                             <p>Loading banners...</p>
                         </div>
-                        <table class="data-table" id="banners-table" style="display: none;">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Title</th>
-                                    <th>Subtitle</th>
-                                    <th>CTA Text</th>
-                                    <th>Bg Color</th>
-                                    <th>Order</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="banners-table-body">
-                                <!-- Dynamic content -->
-                            </tbody>
-                        </table>
-                        <div id="banners-empty" class="empty-state" style="display: none;">
-                            <p>No banners found. Click "Add New Banner" to create one.</p>
+                        <div id="bannersList" class="cms-list">
+                            <!-- Dynamic content -->
                         </div>
                     </div>
 
                     <!-- Sections Tab -->
-                    <div id="sections-tab" class="cms-tab-content">
+                    <div id="cmstab-sections" class="cms-tab-content settings-panel">
                         <button class="add-btn" onclick="openSectionModal()">+ Add New Section</button>
                         <div id="sections-loading" class="loading-spinner">
                             <div class="spinner"></div>
                             <p>Loading sections...</p>
                         </div>
-                        <table class="data-table" id="sections-table" style="display: none;">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Title</th>
-                                    <th>Subtitle</th>
-                                    <th>Type</th>
-                                    <th>API Endpoint</th>
-                                    <th>Order</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="sections-table-body">
-                                <!-- Dynamic content -->
-                            </tbody>
-                        </table>
-                        <div id="sections-empty" class="empty-state" style="display: none;">
-                            <p>No sections found. Click "Add New Section" to create one.</p>
+                        <div id="sectionsList" class="cms-list">
+                            <!-- Dynamic content -->
                         </div>
                     </div>
 
                     <!-- Trust Features Tab -->
-                    <div id="trust-tab" class="cms-tab-content">
+                    <div id="cmstab-trust" class="cms-tab-content settings-panel">
                         <button class="add-btn" onclick="openTrustModal()">+ Add New Feature</button>
                         <div id="trust-loading" class="loading-spinner">
                             <div class="spinner"></div>
                             <p>Loading trust features...</p>
                         </div>
-                        <table class="data-table" id="trust-table" style="display: none;">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Icon</th>
-                                    <th>Title</th>
-                                    <th>Description</th>
-                                    <th>Order</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="trust-table-body">
-                                <!-- Dynamic content -->
-                            </tbody>
-                        </table>
-                        <div id="trust-empty" class="empty-state" style="display: none;">
-                            <p>No trust features found. Click "Add New Feature" to create one.</p>
+                        <div id="trustList" class="cms-list">
+                            <!-- Dynamic content -->
                         </div>
                     </div>
 
                     <!-- Newsletter Tab -->
-                    <div id="newsletter-tab" class="cms-tab-content">
+                    <div id="cmstab-newsletter" class="cms-tab-content settings-panel">
                         <div id="newsletter-loading" class="loading-spinner">
                             <div class="spinner"></div>
                             <p>Loading newsletter settings...</p>
                         </div>
                         <div id="newsletter-form-container" style="display: none;">
-                            <form id="newsletter-settings-form">
-                                <input type="hidden" id="newsletter-id">
+                            <form id="newsletterForm" class="modal-form">
                                 <div class="form-group">
-                                    <label for="newsletter-title">Section Title</label>
-                                    <input type="text" id="newsletter-title" class="form-control" required>
+                                    <label for="nl_title">Section Title</label>
+                                    <input type="text" name="nl_title" id="nl_title" class="form-control" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="newsletter-subtitle">Section Subtitle</label>
-                                    <input type="text" id="newsletter-subtitle" class="form-control" required>
+                                    <label for="nl_subtitle">Section Subtitle</label>
+                                    <input type="text" name="nl_subtitle" id="nl_subtitle" class="form-control" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="newsletter-placeholder">Input Placeholder</label>
-                                    <input type="text" id="newsletter-placeholder" class="form-control" required>
+                                    <label>
+                                        <input type="checkbox" name="nl_is_active" id="nl_is_active"> Enable Newsletter
+                                    </label>
                                 </div>
-                                <div class="form-group">
-                                    <label for="newsletter-button-text">Button Text</label>
-                                    <input type="text" id="newsletter-button-text" class="form-control" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="newsletter-success-message">Success Message</label>
-                                    <input type="text" id="newsletter-success-message" class="form-control" required>
-                                </div>
-                                <button type="submit" class="btn-save">Save Settings</button>
+                                <button type="submit" class="btn-save" id="saveNewsletterBtn">Save Settings</button>
                             </form>
                         </div>
                     </div>
