@@ -70,83 +70,90 @@
     .cms-loading { text-align: center; padding: 32px; color: var(--text-muted); font-size: 0.875rem; }
   </style>
 </head>
-<body>
-    <div class="admin-container">
-        <!-- Sidebar -->
-        <aside class="admin-sidebar">
-            <h2>EcomStore Admin</h2>
-            <ul class="admin-nav">
-                <li><a href="#" class="active" data-section="dashboard"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
-                <li><a href="#" data-section="products"><i class="fas fa-box"></i> <span>Products</span></a></li>
-                <li><a href="#" data-section="orders"><i class="fas fa-shopping-cart"></i> <span>Orders</span></a></li>
-                <li><a href="#" data-section="customers"><i class="fas fa-users"></i> <span>Customers</span></a></li>
-                <li><a href="#" data-section="cms"><i class="fas fa-paint-brush"></i> <span>Homepage CMS</span></a></li>
-                <li><a href="#" data-section="settings"><i class="fas fa-cog"></i> <span>Settings</span></a></li>
-                <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></a></li>
-            </ul>
-        </aside>
+<body class="admin-body">
 
-        <!-- Main Content -->
-        <main class="admin-content">
-            <header class="admin-header">
-                <h1 id="page-title">Dashboard</h1>
-                <div class="user-info">
-                    <span id="admin-name">Admin User</span>
-                    <i class="fas fa-user-circle" style="font-size: 1.5rem; margin-left: 10px; vertical-align: middle;"></i>
-                </div>
-            </header>
-
-  <div class="admin-layout">
-
-    <!-- Sidebar -->
-    <aside class="admin-sidebar" id="adminSidebar">
-      <div class="sidebar-store-badge">
-        <div class="store-dot"></div>
-        <span>EcomStore</span>
-        <span class="store-status">● Live</span>
+<!-- ══════════════ HEADER ══════════════ -->
+<header class="admin-header">
+  <div class="admin-header__left">
+    <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+    <div class="logo">🛍️ EcomStore</div>
+  </div>
+  <div class="admin-header__right">
+    <div class="header-search">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Search…" id="globalSearch">
+    </div>
+    <div class="notification-btn">🔔<span class="notif-badge">3</span></div>
+    <div class="user-dropdown" id="userDropdown">
+      <div class="user-avatar">A</div>
+      <span class="user-info">Admin</span>
+      <span class="dropdown-arrow">▾</span>
+      <div class="dropdown-menu">
+        <button class="dropdown-item" id="logoutBtn">🚪 Logout</button>
       </div>
+    </div>
+  </div>
+</header>
 
-      <nav class="sidebar-nav">
-        <div class="nav-group-label">MAIN</div>
-        <button class="nav-item active" data-section="dashboard">
-          <span class="nav-icon">📊</span> Dashboard
-        </button>
-        <button class="nav-item" data-section="products">
-          <span class="nav-icon">📦</span> Products
-          <span class="nav-badge" id="navBadgeProducts">0</span>
-        </button>
-        <button class="nav-item" data-section="orders">
-          <span class="nav-icon">📋</span> Orders
-          <span class="nav-badge pending" id="navBadgeOrders">0</span>
-        </button>
+<div class="admin-layout">
 
-        <div class="nav-group-label">STORE</div>
-        <button class="nav-item" data-section="customers">
-          <span class="nav-icon">👥</span> Customers
-        </button>
-        <button class="nav-item" data-section="categories">
-          <span class="nav-icon">🏷️</span> Categories
-        </button>
-        <button class="nav-item" data-section="analytics">
-          <span class="nav-icon">📈</span> Analytics
-        </button>
+<!-- ══════════════ SIDEBAR ══════════════ -->
+<aside class="admin-sidebar" id="adminSidebar">
+  <div class="sidebar-store-badge">
+    <span class="store-dot"></span>
+    EcomStore
+    <span class="store-status">Live</span>
+  </div>
 
-        <div class="nav-group-label">SYSTEM</div>
-        <button class="nav-item" data-section="settings">
-          <span class="nav-icon">⚙️</span> Settings
-        </button>
-      </nav>
+  <nav class="sidebar-nav admin-nav">
+    <span class="nav-group-label">Overview</span>
+    <a class="nav-item active" data-section="dashboard">
+      <span class="nav-icon">📊</span> Dashboard
+    </a>
 
-      <div class="sidebar-footer">
-        <a href="../" target="_blank" class="btn-store-link">🏪 View Store →</a>
-      </div>
-    </aside>
+    <span class="nav-group-label">Catalogue</span>
+    <a class="nav-item" data-section="products">
+      <span class="nav-icon">📦</span> Products
+      <span class="nav-badge" id="navBadgeProducts">0</span>
+    </a>
+    <a class="nav-item" data-section="categories">
+      <span class="nav-icon">🗂️</span> Categories
+    </a>
 
-    <!-- Sidebar Overlay (mobile) -->
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <span class="nav-group-label">Sales</span>
+    <a class="nav-item" data-section="orders">
+      <span class="nav-icon">🛒</span> Orders
+      <span class="nav-badge pending" id="navBadgeOrders">0</span>
+    </a>
+    <a class="nav-item" data-section="customers">
+      <span class="nav-icon">👥</span> Customers
+    </a>
 
-    <!-- Main Content -->
-    <main class="admin-main">
+    <span class="nav-group-label">Content</span>
+    <a class="nav-item" data-section="cms">
+      <span class="nav-icon">🎨</span> Homepage CMS
+    </a>
+
+    <span class="nav-group-label">Insights</span>
+    <a class="nav-item" data-section="analytics">
+      <span class="nav-icon">📈</span> Analytics
+    </a>
+
+    <span class="nav-group-label">System</span>
+    <a class="nav-item" data-section="settings">
+      <span class="nav-icon">⚙️</span> Settings
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <a href="/" class="btn-store-link" target="_blank">🔗 View Store</a>
+  </div>
+</aside>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ══════════════ MAIN ══════════════ -->
+<main class="admin-main">
 
   <!-- ── DASHBOARD ── -->
   <section id="dashboard" class="admin-section active">
@@ -283,225 +290,199 @@
     </div>
   </section>
 
-            <!-- Homepage CMS Section -->
-            <section id="cms-section" class="admin-section" style="display: none;">
-                <div class="admin-card">
-                    <h2>Homepage Content Manager</h2>
-                    <p>Manage sliders, categories, banners, and sections for your homepage.</p>
-                    
-                    <div class="cms-tabs">
-                        <button class="cms-tab active" data-tab="sliders">Hero Sliders</button>
-                        <button class="cms-tab" data-tab="categories">Categories</button>
-                        <button class="cms-tab" data-tab="banners">Offer Banners</button>
-                        <button class="cms-tab" data-tab="sections">Product Sections</button>
-                        <button class="cms-tab" data-tab="trust">Trust Features</button>
-                        <button class="cms-tab" data-tab="newsletter">Newsletter</button>
-                    </div>
+  <!-- ── ORDERS ── -->
+  <section id="orders" class="admin-section">
+    <div class="section-header">
+      <div><h1>Orders</h1><p class="text-muted">Manage customer orders</p></div>
+      <div class="header-actions">
+        <button class="btn-secondary btn-sm" id="exportOrdersBtn">⬇ Export CSV</button>
+      </div>
+    </div>
 
-                    <!-- Sliders Tab -->
-                    <div id="sliders-tab" class="cms-tab-content active">
-                        <button class="add-btn" onclick="openSliderModal()">+ Add New Slider</button>
-                        <div id="sliders-loading" class="loading-spinner">
-                            <div class="spinner"></div>
-                            <p>Loading sliders...</p>
-                        </div>
-                        <table class="data-table" id="sliders-table" style="display: none;">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Image</th>
-                                    <th>Title</th>
-                                    <th>Subtitle</th>
-                                    <th>CTA Text</th>
-                                    <th>Order</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="sliders-table-body">
-                                <!-- Dynamic content -->
-                            </tbody>
-                        </table>
-                        <div id="sliders-empty" class="empty-state" style="display: none;">
-                            <p>No sliders found. Click "Add New Slider" to create one.</p>
-                        </div>
-                    </div>
+    <div class="admin-toolbar">
+      <input class="search-input" type="text" placeholder="Search by order ID or customer…" id="orderSearch">
+    </div>
 
-                    <!-- Categories Tab -->
-                    <div id="categories-tab" class="cms-tab-content">
-                        <button class="add-btn" onclick="openCategoryModal()">+ Add New Category</button>
-                        <div id="categories-loading" class="loading-spinner">
-                            <div class="spinner"></div>
-                            <p>Loading categories...</p>
-                        </div>
-                        <table class="data-table" id="categories-table" style="display: none;">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Icon</th>
-                                    <th>Name</th>
-                                    <th>Slug</th>
-                                    <th>Order</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="categories-table-body">
-                                <!-- Dynamic content -->
-                            </tbody>
-                        </table>
-                        <div id="categories-empty" class="empty-state" style="display: none;">
-                            <p>No categories found. Click "Add New Category" to create one.</p>
-                        </div>
-                    </div>
+    <div class="order-status-tabs" id="orderTabs">
+      <button class="tab-btn active" data-status="all">All <span class="tab-count" id="tabAll">0</span></button>
+      <button class="tab-btn" data-status="pending">Pending <span class="tab-count" id="tabPending">0</span></button>
+      <button class="tab-btn" data-status="processing">Processing <span class="tab-count" id="tabProcessing">0</span></button>
+      <button class="tab-btn" data-status="shipped">Shipped <span class="tab-count" id="tabShipped">0</span></button>
+      <button class="tab-btn" data-status="delivered">Delivered <span class="tab-count" id="tabDelivered">0</span></button>
+      <button class="tab-btn" data-status="cancelled">Cancelled <span class="tab-count" id="tabCancelled">0</span></button>
+    </div>
 
-                    <!-- Banners Tab -->
-                    <div id="banners-tab" class="cms-tab-content">
-                        <button class="add-btn" onclick="openBannerModal()">+ Add New Banner</button>
-                        <div id="banners-loading" class="loading-spinner">
-                            <div class="spinner"></div>
-                            <p>Loading banners...</p>
-                        </div>
-                        <table class="data-table" id="banners-table" style="display: none;">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Title</th>
-                                    <th>Subtitle</th>
-                                    <th>CTA Text</th>
-                                    <th>Bg Color</th>
-                                    <th>Order</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="banners-table-body">
-                                <!-- Dynamic content -->
-                            </tbody>
-                        </table>
-                        <div id="banners-empty" class="empty-state" style="display: none;">
-                            <p>No banners found. Click "Add New Banner" to create one.</p>
-                        </div>
-                    </div>
+    <div class="table-container">
+      <table class="admin-table">
+        <thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+        <tbody id="ordersTableBody"><tr><td colspan="7" class="text-center">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
 
-                    <!-- Sections Tab -->
-                    <div id="sections-tab" class="cms-tab-content">
-                        <button class="add-btn" onclick="openSectionModal()">+ Add New Section</button>
-                        <div id="sections-loading" class="loading-spinner">
-                            <div class="spinner"></div>
-                            <p>Loading sections...</p>
-                        </div>
-                        <table class="data-table" id="sections-table" style="display: none;">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Title</th>
-                                    <th>Subtitle</th>
-                                    <th>Type</th>
-                                    <th>API Endpoint</th>
-                                    <th>Order</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="sections-table-body">
-                                <!-- Dynamic content -->
-                            </tbody>
-                        </table>
-                        <div id="sections-empty" class="empty-state" style="display: none;">
-                            <p>No sections found. Click "Add New Section" to create one.</p>
-                        </div>
-                    </div>
+  <!-- ── CUSTOMERS ── -->
+  <section id="customers" class="admin-section">
+    <div class="section-header">
+      <div><h1>Customers</h1><p class="text-muted" id="customersCount">Loading…</p></div>
+    </div>
+    <div class="admin-toolbar">
+      <input class="search-input" type="text" placeholder="Search customers…" id="customerSearch">
+    </div>
+    <div class="table-container">
+      <table class="admin-table">
+        <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Orders</th><th>Spent</th><th>Joined</th></tr></thead>
+        <tbody id="customersTableBody"><tr><td colspan="6" class="text-center">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
 
-                    <!-- Trust Features Tab -->
-                    <div id="trust-tab" class="cms-tab-content">
-                        <button class="add-btn" onclick="openTrustModal()">+ Add New Feature</button>
-                        <div id="trust-loading" class="loading-spinner">
-                            <div class="spinner"></div>
-                            <p>Loading trust features...</p>
-                        </div>
-                        <table class="data-table" id="trust-table" style="display: none;">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Icon</th>
-                                    <th>Title</th>
-                                    <th>Description</th>
-                                    <th>Order</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="trust-table-body">
-                                <!-- Dynamic content -->
-                            </tbody>
-                        </table>
-                        <div id="trust-empty" class="empty-state" style="display: none;">
-                            <p>No trust features found. Click "Add New Feature" to create one.</p>
-                        </div>
-                    </div>
+  <!-- ── CMS ── -->
+  <section id="cms" class="admin-section">
+    <div class="section-header">
+      <div><h1>Homepage CMS</h1><p class="text-muted">Manage homepage content</p></div>
+    </div>
 
-                    <!-- Newsletter Tab -->
-                    <div id="newsletter-tab" class="cms-tab-content">
-                        <div id="newsletter-loading" class="loading-spinner">
-                            <div class="spinner"></div>
-                            <p>Loading newsletter settings...</p>
-                        </div>
-                        <div id="newsletter-form-container" style="display: none;">
-                            <form id="newsletter-settings-form">
-                                <input type="hidden" id="newsletter-id">
-                                <div class="form-group">
-                                    <label for="newsletter-title">Section Title</label>
-                                    <input type="text" id="newsletter-title" class="form-control" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="newsletter-subtitle">Section Subtitle</label>
-                                    <input type="text" id="newsletter-subtitle" class="form-control" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="newsletter-placeholder">Input Placeholder</label>
-                                    <input type="text" id="newsletter-placeholder" class="form-control" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="newsletter-button-text">Button Text</label>
-                                    <input type="text" id="newsletter-button-text" class="form-control" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="newsletter-success-message">Success Message</label>
-                                    <input type="text" id="newsletter-success-message" class="form-control" required>
-                                </div>
-                                <button type="submit" class="btn-save">Save Settings</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </section>
+    <div class="settings-tabs" id="cmsTabs">
+      <button class="settings-tab active" data-cmstab="sliders">Hero Sliders</button>
+      <button class="settings-tab" data-cmstab="categories">Categories</button>
+      <button class="settings-tab" data-cmstab="banners">Offer Banners</button>
+      <button class="settings-tab" data-cmstab="sections">Product Sections</button>
+      <button class="settings-tab" data-cmstab="trust">Trust Features</button>
+      <button class="settings-tab" data-cmstab="newsletter">Newsletter</button>
+    </div>
 
-            <!-- Other sections (Products, Orders, etc.) would go here -->
-            <section id="products-section" class="admin-section" style="display: none;">
-                <div class="admin-card">
-                    <h2>Products Management</h2>
-                    <p>Product management interface coming soon...</p>
-                </div>
-            </section>
-            
-            <section id="orders-section" class="admin-section" style="display: none;">
-                <div class="admin-card">
-                    <h2>Orders Management</h2>
-                    <p>Orders management interface coming soon...</p>
-                </div>
-            </section>
-            
-            <section id="customers-section" class="admin-section" style="display: none;">
-                <div class="admin-card">
-                    <h2>Customers Management</h2>
-                    <p>Customers management interface coming soon...</p>
-                </div>
-            </section>
-            
-            <section id="settings-section" class="admin-section" style="display: none;">
-                <div class="admin-card">
-                    <h2>Site Settings</h2>
-                    <p>Global site settings coming soon...</p>
-                </div>
-            </section>
-        </main>
+    <!-- Sliders -->
+    <div id="cmstab-sliders" class="settings-panel active">
+      <div class="settings-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3>Hero Sliders</h3>
+          <button class="btn-primary btn-sm" id="addSliderBtn">+ Add Slider</button>
+        </div>
+        <div id="slidersList"><div class="cms-loading">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- CMS Categories -->
+    <div id="cmstab-categories" class="settings-panel">
+      <div class="settings-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3>Homepage Categories</h3>
+          <button class="btn-primary btn-sm" id="addCmsCategoryBtn">+ Add Category</button>
+        </div>
+        <div id="cmsCategoriesList"><div class="cms-loading">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- Banners -->
+    <div id="cmstab-banners" class="settings-panel">
+      <div class="settings-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3>Offer Banners</h3>
+          <button class="btn-primary btn-sm" id="addBannerBtn">+ Add Banner</button>
+        </div>
+        <div id="bannersList"><div class="cms-loading">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- Sections -->
+    <div id="cmstab-sections" class="settings-panel">
+      <div class="settings-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3>Product Sections</h3>
+          <button class="btn-primary btn-sm" id="addSectionBtn">+ Add Section</button>
+        </div>
+        <div id="sectionsList"><div class="cms-loading">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- Trust -->
+    <div id="cmstab-trust" class="settings-panel">
+      <div class="settings-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3>Trust Features</h3>
+          <button class="btn-primary btn-sm" id="addTrustBtn">+ Add Feature</button>
+        </div>
+        <div id="trustList"><div class="cms-loading">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- Newsletter -->
+    <div id="cmstab-newsletter" class="settings-panel">
+      <div class="settings-card">
+        <h3>Newsletter Settings</h3>
+        <div id="newsletterFormWrap" style="display:none">
+          <div class="form-group">
+            <label>Section Title</label>
+            <input type="text" id="nl_title" class="form-group input">
+          </div>
+          <div class="form-group">
+            <label>Section Subtitle</label>
+            <input type="text" id="nl_subtitle">
+          </div>
+          <div class="toggle-item" style="border:none;padding:0;margin-bottom:16px">
+            <div><strong>Enable Newsletter</strong></div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="nl_is_active">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <button class="btn-primary" id="saveNewsletterBtn">Save Settings</button>
+        </div>
+        <div id="newsletterLoading" class="cms-loading">Loading…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ANALYTICS ── -->
+  <section id="analytics" class="admin-section">
+    <div class="section-header"><div><h1>Analytics</h1><p class="text-muted">Store performance overview</p></div></div>
+    <div class="analytics-grid">
+      <div class="analytics-card">
+        <h3>Products by Category</h3>
+        <div class="breakdown-list" id="categoryBreakdown"></div>
+      </div>
+      <div class="analytics-card">
+        <h3>Stock Health</h3>
+        <div class="stock-bars" id="stockHealth"></div>
+      </div>
+      <div class="analytics-card wide">
+        <h3>Revenue Overview</h3>
+        <div id="revenueChart"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SETTINGS ── -->
+  <section id="settings" class="admin-section">
+    <div class="section-header"><div><h1>Settings</h1><p class="text-muted">Store configuration</p></div></div>
+    <div class="settings-tabs">
+      <button class="settings-tab active" data-stab="general">General</button>
+      <button class="settings-tab" data-stab="security">Security</button>
+      <button class="settings-tab" data-stab="notifications">Notifications</button>
+    </div>
+
+    <div id="stab-general" class="settings-panel active">
+      <div class="settings-card">
+        <h3>Store Details</h3>
+        <div class="form-row">
+          <div class="form-group"><label>Store Name</label><input type="text" value="EcomStore"></div>
+          <div class="form-group"><label>Store Email</label><input type="email" value="admin@ecomstore.in"></div>
+        </div>
+        <div class="form-group"><label>Store Address</label><textarea rows="2">Mumbai, Maharashtra, India</textarea></div>
+        <button class="btn-primary" id="saveSettingsBtn">Save Changes</button>
+      </div>
+    </div>
+
+    <div id="stab-security" class="settings-panel">
+      <div class="settings-card">
+        <h3>Change Password</h3>
+        <div class="form-group"><label>Current Password</label><input type="password" id="currentPassword" placeholder="••••••••"></div>
+        <div class="form-row">
+          <div class="form-group"><label>New Password</label><input type="password" id="newPassword" placeholder="••••••••"></div>
+          <div class="form-group"><label>Confirm Password</label><input type="password" id="confirmPassword" placeholder="••••••••"></div>
+        </div>
+        <button class="btn-primary" id="changePasswordBtn">Update Password</button>
+      </div>
     </div>
 
     <div id="stab-notifications" class="settings-panel">
@@ -687,10 +668,10 @@
           <button type="button" class="btn-secondary" onclick="CMS.closeModal('cmsCategoryModal')">Cancel</button>
           <button type="submit" class="btn-primary">Save Category</button>
         </div>
-      </section>
-
-    </main>
+      </form>
+    </div>
   </div>
+</div>
 
 <!-- Banner Modal -->
 <div class="cms-modal-overlay" id="cmsBannerModal">
@@ -765,53 +746,39 @@
   </div>
 </div>
 
-    <!-- Trust Feature Modal -->
-    <div id="trust-modal" class="modal">
-        <div class="modal-content">
-            <h2 id="trust-modal-title">Add New Trust Feature</h2>
-            <form id="trust-form">
-                <input type="hidden" id="trust-id">
-                <div class="form-group">
-                    <label for="trust-icon">Icon Class (FontAwesome)</label>
-                    <input type="text" id="trust-icon" class="form-control" placeholder="fas fa-truck" value="fas fa-shipping-fast">
-                </div>
-                <div class="form-group">
-                    <label for="trust-title">Title</label>
-                    <input type="text" id="trust-title" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="trust-description">Description</label>
-                    <textarea id="trust-description" class="form-control" rows="3" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="trust-order">Display Order</label>
-                    <input type="number" id="trust-order" class="form-control" value="1" min="1">
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="closeTrustModal()">Cancel</button>
-                    <button type="submit" class="btn-save">Save Feature</button>
-                </div>
-            </form>
+<!-- Trust Feature Modal -->
+<div class="cms-modal-overlay" id="cmsTrustModal">
+  <div class="cms-modal-box">
+    <div class="cms-modal-header">
+      <h3 id="cmsTrustModalTitle">Add Trust Feature</h3>
+      <button class="modal-close" onclick="CMS.closeModal('cmsTrustModal')">×</button>
+    </div>
+    <div class="cms-modal-body">
+      <form id="cmsTrustForm">
+        <input type="hidden" name="edit_id">
+        <div class="form-row">
+          <div class="form-group"><label>Icon Emoji</label><input type="text" name="icon_emoji" value="✓" maxlength="5"></div>
+          <div class="form-group"><label>Display Order</label><input type="number" name="display_order" value="0" min="0"></div>
         </div>
+        <div class="form-group"><label>Title *</label><input type="text" name="title" required placeholder="Free Shipping"></div>
+        <div class="form-group"><label>Description</label><textarea name="description" rows="2" placeholder="On orders above ₹999"></textarea></div>
+        <div class="form-group" style="display:flex;align-items:center;gap:10px">
+          <label class="toggle-switch"><input type="checkbox" name="is_active" checked><span class="toggle-slider"></span></label>
+          <span>Active</span>
+        </div>
+        <div class="cms-modal-actions">
+          <button type="button" class="btn-secondary" onclick="CMS.closeModal('cmsTrustModal')">Cancel</button>
+          <button type="submit" class="btn-primary">Save Feature</button>
+        </div>
+      </form>
     </div>
-  </dialog>
-
-  <!-- ── DELETE CONFIRM MODAL ── -->
-  <dialog class="modal modal-sm modal-danger" id="deleteModal">
-    <div class="modal-content" style="padding:28px;text-align:center;">
-      <div style="font-size:2.5rem;margin-bottom:12px">🗑️</div>
-      <h3 style="margin-bottom:8px">Confirm Delete</h3>
-      <p class="text-muted">Are you sure you want to delete <strong id="deleteItemName">this item</strong>? This cannot be undone.</p>
-      <div class="modal-actions" style="justify-content:center;margin-top:20px;gap:12px">
-        <button class="btn-secondary" id="cancelDelete">Cancel</button>
-        <button class="btn-danger" id="confirmDelete">Yes, Delete</button>
-      </div>
-    </div>
-  </dialog>
+  </div>
+</div>
 
 <!-- Toast -->
 <div id="toastContainer" class="toast-container"></div>
 
-  <script src="/admin/admin.js"></script>
+<script src="/admin/admin.js"></script>
+<script src="/admin/cms-manager.js"></script>
 </body>
 </html>

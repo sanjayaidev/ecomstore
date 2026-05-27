@@ -1,5 +1,11 @@
-// CMS Manager - Homepage Content Management System
-(function() {
+// ═══════════════════════════════════════════
+// admin/cms-manager.js — Homepage CMS Manager
+// Runs AFTER admin.js; no conflicts with product/category admin logic
+// ═══════════════════════════════════════════
+
+'use strict';
+
+const CMS = (() => {
   const API_BASE = '/api/cms';
 
   // ── State ──
@@ -13,11 +19,13 @@
     newsletter: null
   };
 
-  // Initialize
-  document.addEventListener('DOMContentLoaded', () => {
-    initTabs();
-    loadCMSData();
-  });
+  // ── Bootstrap ──
+  // Called by admin.js navigateTo() when user clicks "cms" nav item.
+  // Also exposed as window.loadCMSData for compatibility.
+  function loadCMSData() {
+    fetchAll();
+  }
+  window.loadCMSData = loadCMSData;
 
   // ── Tab wiring (runs on DOMContentLoaded) ──
   function initTabs() {
@@ -112,8 +120,14 @@
       const res    = await fetch(`${API_BASE}/content`);
       const result = await res.json();
       if (result.success) {
-        cmsData = result.data;
-        renderCurrentTab();
+        data.sliders       = result.data.sliders       || [];
+        data.categories    = result.data.categories    || [];
+        data.banners       = result.data.banners       || [];
+        data.sections      = result.data.sections      || [];
+        data.trustFeatures = result.data.trustFeatures || [];
+        data.newsletter    = result.data.newsletter    || null;
+        renderTab(currentTab);
+        renderNewsletter(); // always pre-populate newsletter form
       } else {
         showToast('❌ Failed to load CMS data', 'error');
       }
@@ -245,119 +259,112 @@
   }
 
   function renderNewsletter() {
-    const form = document.getElementById('newsletterForm');
-    if (!form) return;
-    
-    if (cmsData.newsletter) {
-      form.querySelector('[name="nl_title"]').value = cmsData.newsletter.title || '';
-      form.querySelector('[name="nl_subtitle"]').value = cmsData.newsletter.subtitle || '';
-      form.querySelector('[name="nl_is_active"]').checked = cmsData.newsletter.is_active !== false;
+    const loading = document.getElementById('newsletterLoading');
+    const wrap    = document.getElementById('newsletterFormWrap');
+    if (!wrap) return;
+    if (loading) loading.style.display = 'none';
+    wrap.style.display = 'block';
+    if (data.newsletter) {
+      const nl = data.newsletter;
+      const title = document.getElementById('nl_title');
+      const sub   = document.getElementById('nl_subtitle');
+      const chk   = document.getElementById('nl_is_active');
+      if (title) title.value = nl.title || '';
+      if (sub)   sub.value   = nl.subtitle || '';
+      if (chk)   chk.checked = nl.is_active !== false;
     }
   }
 
-  // Edit functions (open modals)
-  window.editSlider = function(id) {
-    const slider = cmsData.sliders.find(s => s.id === id);
-    if (!slider) return;
-    
-    openModal('sliderModal', {
-      edit_id: slider.id,
-      title: slider.title || '',
-      subtitle: slider.subtitle || '',
-      image_url: slider.image_url || '',
-      cta_text: slider.cta_text || '',
-      cta_link: slider.cta_link || '',
-      background_color: slider.background_color || '#ffffff',
-      text_color: slider.text_color || '#000000',
-      display_order: slider.display_order || 0,
-      is_active: slider.is_active !== false
+  // ── Modal open/close ──
+  function openModal(modalId, fieldData) {
+    const overlay = document.getElementById(modalId);
+    if (!overlay) return;
+    // Reset all inputs
+    overlay.querySelectorAll('input:not([type=submit]), textarea, select').forEach(el => {
+      if (el.type === 'checkbox') el.checked = el.defaultChecked;
+      else if (el.type === 'color') el.value = el.defaultValue || '#ffffff';
+      else el.value = el.defaultValue || '';
+    });
+    // Populate with data
+    Object.entries(fieldData).forEach(([key, val]) => {
+      const field = overlay.querySelector(`[name="${key}"]`);
+      if (!field) return;
+      if (field.type === 'checkbox') field.checked = !!val;
+      else field.value = val ?? '';
+    });
+    overlay.classList.add('open');
+  }
+
+  function closeModal(modalId) {
+    document.getElementById(modalId)?.classList.remove('open');
+  }
+  // Expose for inline onclick
+  CMS.closeModal = closeModal;
+
+  // Close on backdrop click
+  document.addEventListener('click', e => {
+    if (e.target.classList.contains('cms-modal-overlay')) {
+      e.target.classList.remove('open');
+    }
+  });
+
+  // ── Edit helpers ──
+  CMS.editSlider = function(id) {
+    const s = data.sliders.find(x => x.id === id);
+    if (!s) return;
+    document.getElementById('cmsSliderModalTitle').textContent = 'Edit Slider';
+    openModal('cmsSliderModal', {
+      edit_id: s.id, title: s.title, subtitle: s.subtitle || '',
+      image_url: s.image_url || '', cta_text: s.cta_text || '', cta_link: s.cta_link || '',
+      background_color: s.background_color || '#f0f9ff', text_color: s.text_color || '#1e3a8a',
+      display_order: s.display_order, is_active: s.is_active !== false
     });
   };
 
-  window.editCategory = function(id) {
-    const cat = cmsData.categories.find(c => c.id === id);
-    if (!cat) return;
-    
-    openModal('categoryModal', {
-      edit_id: cat.id,
-      name: cat.name || '',
-      slug: cat.slug || '',
-      icon_emoji: cat.icon_emoji || '📂',
-      image_url: cat.image_url || '',
-      description: cat.description || '',
-      display_order: cat.display_order || 0,
-      is_active: cat.is_active !== false
+  CMS.editCategory = function(id) {
+    const c = data.categories.find(x => x.id === id);
+    if (!c) return;
+    document.getElementById('cmsCategoryModalTitle').textContent = 'Edit Category';
+    openModal('cmsCategoryModal', {
+      edit_id: c.id, name: c.name, slug: c.slug, icon_emoji: c.icon_emoji || '📂',
+      image_url: c.image_url || '', description: c.description || '',
+      display_order: c.display_order, is_active: c.is_active !== false
     });
   };
 
-  window.editBanner = function(id) {
-    const banner = cmsData.banners.find(b => b.id === id);
-    if (!banner) return;
-    
-    openModal('bannerModal', {
-      edit_id: banner.id,
-      title: banner.title || '',
-      subtitle: banner.subtitle || '',
-      offer_text: banner.offer_text || '',
-      image_url: banner.image_url || '',
-      gradient_start: banner.gradient_start || '#667eea',
-      gradient_end: banner.gradient_end || '#764ba2',
-      cta_text: banner.cta_text || '',
-      cta_link: banner.cta_link || '',
-      display_order: banner.display_order || 0,
-      is_active: banner.is_active !== false
+  CMS.editBanner = function(id) {
+    const b = data.banners.find(x => x.id === id);
+    if (!b) return;
+    document.getElementById('cmsBannerModalTitle').textContent = 'Edit Banner';
+    openModal('cmsBannerModal', {
+      edit_id: b.id, title: b.title, subtitle: b.subtitle || '',
+      offer_text: b.offer_text || '', gradient_start: b.gradient_start || '#667eea',
+      gradient_end: b.gradient_end || '#764ba2', cta_text: b.cta_text || '',
+      cta_link: b.cta_link || '', display_order: b.display_order, is_active: b.is_active !== false
     });
   };
 
-  window.editSection = function(id) {
-    const section = cmsData.sections.find(s => s.id === id);
-    if (!section) return;
-    
-    openModal('sectionModal', {
-      edit_id: section.id,
-      title: section.title || '',
-      subtitle: section.subtitle || '',
-      section_type: section.section_type || 'featured',
-      display_order: section.display_order || 0,
-      is_active: section.is_active !== false
+  CMS.editSection = function(id) {
+    const s = data.sections.find(x => x.id === id);
+    if (!s) return;
+    document.getElementById('cmsSectionModalTitle').textContent = 'Edit Section';
+    openModal('cmsSectionModal', {
+      edit_id: s.id, title: s.title, subtitle: s.subtitle || '',
+      section_type: s.section_type || 'featured', display_order: s.display_order,
+      is_active: s.is_active !== false
     });
   };
 
-  window.editTrustFeature = function(id) {
-    const feature = cmsData.trustFeatures.find(f => f.id === id);
-    if (!feature) return;
-    
-    openModal('trustModal', {
-      edit_id: feature.id,
-      icon_emoji: feature.icon_emoji || '✓',
-      title: feature.title || '',
-      description: feature.description || '',
-      display_order: feature.display_order || 0,
-      is_active: feature.is_active !== false
+  CMS.editTrust = function(id) {
+    const f = data.trustFeatures.find(x => x.id === id);
+    if (!f) return;
+    document.getElementById('cmsTrustModalTitle').textContent = 'Edit Trust Feature';
+    openModal('cmsTrustModal', {
+      edit_id: f.id, icon_emoji: f.icon_emoji || '✓', title: f.title,
+      description: f.description || '', display_order: f.display_order,
+      is_active: f.is_active !== false
     });
   };
-
-  // Open modal functions for Add buttons
-  window.openSectionModal = function() {
-    openModal('section-modal', {
-      section_type: 'featured',
-      is_active: true
-    });
-  };
-
-  window.openTrustModal = function() {
-    openModal('trust-modal', {
-      icon_emoji: '✓',
-      is_active: true
-    });
-  };
-
-  // Close modal functions
-  window.closeSliderModal = function() { closeModal('slider-modal'); };
-  window.closeCategoryModal = function() { closeModal('category-modal'); };
-  window.closeBannerModal = function() { closeModal('banner-modal'); };
-  window.closeSectionModal = function() { closeModal('section-modal'); };
-  window.closeTrustModal = function() { closeModal('trust-modal'); };
 
   // ── Delete helpers ──
   CMS.deleteSlider = async function(id) {
@@ -383,88 +390,69 @@
     }
   }
 
-  // Add button handlers
-  document.getElementById('addSliderBtn')?.addEventListener('click', () => {
-    openModal('sliderModal', {
-      background_color: '#ffffff',
-      text_color: '#000000',
-      is_active: true
+  // ── Utilities ──
+  function normalizePayload(raw) {
+    const out = {};
+    Object.entries(raw).forEach(([k, v]) => {
+      if (v === '') { out[k] = null; return; }
+      if (k === 'display_order') { out[k] = parseInt(v) || 0; return; }
+      // checkboxes come through as 'on' from FormData only when checked;
+      // unchecked checkboxes are simply absent — handle below
+      out[k] = v;
     });
-  });
-
-  document.getElementById('addCategoryBtn')?.addEventListener('click', () => {
-    openModal('categoryModal', {
-      icon_emoji: '📂',
-      is_active: true
+    // Ensure boolean fields that may be absent (unchecked checkbox = false)
+    ['is_active'].forEach(boolKey => {
+      if (!(boolKey in out)) out[boolKey] = false;
+      else if (out[boolKey] === 'on') out[boolKey] = true;
     });
-  });
+    return out;
+  }
 
-  document.getElementById('addBannerBtn')?.addEventListener('click', () => {
-    openModal('bannerModal', {
-      gradient_start: '#667eea',
-      gradient_end: '#764ba2',
-      is_active: true
-    });
-  });
+  function esc(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
 
-  // Newsletter form
-  document.getElementById('saveNewsletterBtn')?.addEventListener('click', async () => {
-    const form = document.getElementById('newsletterForm');
-    const data = {
-      title: form.nl_title.value,
-      subtitle: form.nl_subtitle.value,
-      is_active: form.nl_is_active.checked
-    };
-    
-    try {
-      const response = await fetch(`${API_BASE}/newsletter`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      
-      const result = await response.json();
-      if (result.success) {
-        showToast('Newsletter settings saved!', 'success');
-        loadCMSData();
-      } else {
-        showToast(result.error || 'Save failed', 'error');
-      }
-    } catch (error) {
-      showToast('Network error', 'error');
+  function emptyState(msg) {
+    return `<p class="text-muted text-center" style="padding:2rem">${esc(msg)}</p>`;
+  }
+
+  function showToast(message, type = 'success') {
+    // Prefer admin.js showToast if available, otherwise fall back
+    if (typeof window.adminShowToast === 'function') {
+      window.adminShowToast(message, type);
+      return;
     }
+    const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `<span class="toast-icon">${icons[type] || ''}</span><span class="toast-msg">${esc(message)}</span><button class="toast-close" onclick="this.closest('.toast').remove()">×</button>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.classList.add('hiding'); setTimeout(() => toast.remove(), 260); }, 3500);
+  }
+
+  // ── Init on DOM ready ──
+  document.addEventListener('DOMContentLoaded', () => {
+    initTabs();
+    initAddButtons();
+    initForms();
   });
 
-  // Utility: Escape HTML
-  function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
-  // Toast notifications
-  function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.textContent = message;
-    toast.style.cssText = `
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      padding: 12px 24px;
-      border-radius: 8px;
-      color: white;
-      font-weight: 500;
-      z-index: 10000;
-      animation: slideIn 0.3s ease;
-      background: ${type === 'success' ? '#22c55e' : type === 'error' ? '#ef4444' : '#3b82f6'};
-    `;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-      toast.style.animation = 'slideOut 0.3s ease';
-      setTimeout(() => toast.remove(), 300);
-    }, 3000);
-  }
-
+  // ── Public API ──
+  return {
+    loadCMSData,
+    closeModal,
+    editSlider:   CMS.editSlider,
+    editCategory: CMS.editCategory,
+    editBanner:   CMS.editBanner,
+    editSection:  CMS.editSection,
+    editTrust:    CMS.editTrust,
+    deleteSlider:   CMS.deleteSlider,
+    deleteCategory: CMS.deleteCategory,
+    deleteBanner:   CMS.deleteBanner
+  };
 })();
