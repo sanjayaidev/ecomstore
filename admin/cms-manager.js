@@ -55,6 +55,9 @@ const CMS = (() => {
         renderTab(currentTab);
       });
     });
+    
+    // Render initial tab content after setting up handlers
+    renderTab(currentTab);
   }
 
   // ── "Add" button wiring ──

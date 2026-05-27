@@ -756,6 +756,13 @@ function setupSettingsTabs() {
       document.getElementById(panelId)?.classList.add('active');
     });
   });
+  
+  // Prevent settings tab handler from interfering with CMS tabs
+  document.querySelectorAll('#cmsTabs .settings-tab').forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      e.stopPropagation();
+    }, true);
+  });
   $('saveSettingsBtn')?.addEventListener('click', () => { showToast('✅ Settings saved', 'success'); });
   $('changePasswordBtn')?.addEventListener('click', () => {
     const np = $('newPassword')?.value, cp = $('confirmPassword')?.value;
