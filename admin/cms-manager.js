@@ -31,6 +31,19 @@ const CMS = (() => {
   function initTabs() {
     const tabBar = document.getElementById('cmsTabs');
     if (!tabBar) return;
+    
+    // Set default active tab (sliders) and render initial data
+    const defaultTab = 'sliders';
+    const defaultBtn = tabBar.querySelector(`.settings-tab[data-cmstab="${defaultTab}"]`);
+    if (defaultBtn && !defaultBtn.classList.contains('active')) {
+      defaultBtn.classList.add('active');
+    }
+    const defaultPanel = document.getElementById(`cmstab-${defaultTab}`);
+    if (defaultPanel && !defaultPanel.classList.contains('active')) {
+      defaultPanel.classList.add('active');
+    }
+    currentTab = defaultTab;
+    
     tabBar.querySelectorAll('.settings-tab').forEach(btn => {
       btn.addEventListener('click', () => {
         tabBar.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
@@ -157,7 +170,7 @@ const CMS = (() => {
     el.innerHTML = data.sliders.map(s => `
       <div class="data-row">
         <div class="data-row__preview" style="background:${esc(s.background_color || '#f3f4f6')}">
-          ${s.image_url ? `<img src="${esc(s.image_url)}" alt="">` : `<span>${esc(s.icon_emoji || '🎠')}</span>`}
+          ${s.image_url ? `<img src="${esc(s.image_url)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}<span style="display:${s.image_url ? 'none' : 'flex'};font-size:2rem">${esc(s.icon_emoji || '🎠')}</span>
         </div>
         <div class="data-row__info">
           <div class="data-row__title">${esc(s.title)}</div>
