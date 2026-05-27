@@ -732,11 +732,28 @@ function updateNavBadge(id, count) { const el = $(id); if (el) el.textContent = 
 // SETTINGS
 // ═══════════════════════════════════
 function setupSettingsTabs() {
+  // Set default active tab for Settings (General)
+  const settingsContainer = document.getElementById('settings');
+  if (settingsContainer) {
+    const generalTab = settingsContainer.querySelector('.settings-tab[data-stab="general"]');
+    if (generalTab && !generalTab.classList.contains('active')) {
+      generalTab.classList.add('active');
+    }
+    const generalPanel = settingsContainer.querySelector('#stab-general');
+    if (generalPanel && !generalPanel.classList.contains('active')) {
+      generalPanel.classList.add('active');
+    }
+  }
+
   document.querySelectorAll('.settings-tab').forEach(tab => {
     tab.addEventListener('click', () => {
-      document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
-      tab.classList.add('active'); $(`stab-${tab.dataset.stab}`)?.classList.add('active');
+      // Only handle settings tabs (not CMS tabs)
+      if (!tab.dataset.stab) return;
+      document.querySelectorAll('#settings .settings-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('#settings .settings-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      const panelId = `stab-${tab.dataset.stab}`;
+      document.getElementById(panelId)?.classList.add('active');
     });
   });
   $('saveSettingsBtn')?.addEventListener('click', () => { showToast('✅ Settings saved', 'success'); });
