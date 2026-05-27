@@ -124,7 +124,7 @@ function setupLogout() {
 // NAVIGATION
 // ═══════════════════════════════════
 function setupNavigation() {
-  document.querySelectorAll('.nav-item').forEach(btn => {
+  document.querySelectorAll('.admin-nav a').forEach(btn => {
     btn.addEventListener('click', () => {
       navigateTo(btn.dataset.section);
       if (window.innerWidth < 768) closeSidebar();
@@ -133,9 +133,9 @@ function setupNavigation() {
 }
 
 function navigateTo(sectionId) {
-  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.admin-nav a').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
-  const btn = document.querySelector(`.nav-item[data-section="${sectionId}"]`);
+  const btn = document.querySelector(`.admin-nav a[data-section="${sectionId}"]`);
   const section = $(sectionId);
   if (btn) btn.classList.add('active');
   if (section) section.classList.add('active');

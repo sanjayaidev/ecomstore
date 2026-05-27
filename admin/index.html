@@ -466,7 +466,7 @@
 
                     <!-- Sections Tab -->
                     <div id="cmstab-sections" class="cms-tab-content settings-panel">
-                        <button class="add-btn" onclick="openSectionModal()">+ Add New Section</button>
+                        <button class="add-btn" id="addSectionBtn">+ Add New Section</button>
                         <div id="sections-loading" class="loading-spinner">
                             <div class="spinner"></div>
                             <p>Loading sections...</p>
@@ -478,7 +478,7 @@
 
                     <!-- Trust Features Tab -->
                     <div id="cmstab-trust" class="cms-tab-content settings-panel">
-                        <button class="add-btn" onclick="openTrustModal()">+ Add New Feature</button>
+                        <button class="add-btn" id="addTrustBtn">+ Add New Feature</button>
                         <div id="trust-loading" class="loading-spinner">
                             <div class="spinner"></div>
                             <p>Loading trust features...</p>
@@ -516,29 +516,28 @@
                 </div>
             </section>
 
-            <!-- Other sections (Products, Orders, etc.) would go here -->
-            <section id="products-section" class="admin-section" style="display: none;">
+            <section id="products" class="admin-section">
                 <div class="admin-card">
                     <h2>Products Management</h2>
                     <p>Product management interface coming soon...</p>
                 </div>
             </section>
             
-            <section id="orders-section" class="admin-section" style="display: none;">
+            <section id="orders" class="admin-section">
                 <div class="admin-card">
                     <h2>Orders Management</h2>
                     <p>Orders management interface coming soon...</p>
                 </div>
             </section>
             
-            <section id="customers-section" class="admin-section" style="display: none;">
+            <section id="customers" class="admin-section">
                 <div class="admin-card">
                     <h2>Customers Management</h2>
                     <p>Customers management interface coming soon...</p>
                 </div>
             </section>
             
-            <section id="settings-section" class="admin-section" style="display: none;">
+            <section id="settings" class="admin-section">
                 <div class="admin-card">
                     <h2>Site Settings</h2>
                     <p>Global site settings coming soon...</p>
