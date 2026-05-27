@@ -335,6 +335,21 @@ const CMS = (function() {
     });
   };
 
+  // Open modal functions for Add buttons
+  window.openSectionModal = function() {
+    openModal('section-modal', {
+      section_type: 'featured',
+      is_active: true
+    });
+  };
+
+  window.openTrustModal = function() {
+    openModal('trust-modal', {
+      icon_emoji: '✓',
+      is_active: true
+    });
+  };
+
   // Close modal functions
   window.closeSliderModal = function() { closeModal('slider-modal'); };
   window.closeCategoryModal = function() { closeModal('category-modal'); };
@@ -466,6 +481,20 @@ const CMS = (function() {
       openModal('banner-modal', {
         gradient_start: '#667eea',
         gradient_end: '#764ba2',
+        is_active: true
+      });
+    });
+
+    document.getElementById('addSectionBtn')?.addEventListener('click', () => {
+      openModal('section-modal', {
+        section_type: 'featured',
+        is_active: true
+      });
+    });
+
+    document.getElementById('addTrustBtn')?.addEventListener('click', () => {
+      openModal('trust-modal', {
+        icon_emoji: '✓',
         is_active: true
       });
     });
