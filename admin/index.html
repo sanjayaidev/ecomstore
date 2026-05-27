@@ -76,6 +76,9 @@
         <button class="nav-item" data-section="settings">
           <span class="nav-icon">⚙️</span> Settings
         </button>
+        <button class="nav-item" data-section="cms">
+          <span class="nav-icon">🎨</span> Homepage CMS
+        </button>
       </nav>
 
       <div class="sidebar-footer">
@@ -483,6 +486,156 @@
         </div>
       </section>
 
+      <!-- ── CMS HOMEPAGE MANAGER ── -->
+      <section id="cms" class="admin-section">
+        <div class="section-header">
+          <div>
+            <h1>Homepage CMS</h1>
+            <p class="text-muted">Manage banners, categories, sections and more</p>
+          </div>
+        </div>
+
+        <div class="settings-tabs" id="cmsTabs">
+          <button class="settings-tab active" data-cmstab="sliders">🎠 Hero Sliders</button>
+          <button class="settings-tab" data-cmstab="categories">📂 Categories</button>
+          <button class="settings-tab" data-cmstab="banners">🏷️ Offer Banners</button>
+          <button class="settings-tab" data-cmstab="sections">📦 Product Sections</button>
+          <button class="settings-tab" data-cmstab="trust">✓ Trust Features</button>
+          <button class="settings-tab" data-cmstab="newsletter">📧 Newsletter</button>
+        </div>
+
+        <!-- Sliders Panel -->
+        <div id="cmstab-sliders" class="settings-panel active">
+          <div class="settings-card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+              <h3>Hero Sliders</h3>
+              <button class="btn-primary btn-sm" id="addSliderBtn">+ Add Slider</button>
+            </div>
+            <div class="table-container">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Order</th><th>Title</th><th>Subtitle</th><th>CTA Text</th><th>Colors</th><th>Status</th><th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="slidersTableBody">
+                  <tr><td colspan="7" class="text-center text-muted">Loading sliders...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Categories Panel -->
+        <div id="cmstab-categories" class="settings-panel">
+          <div class="settings-card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+              <h3>Homepage Categories</h3>
+              <button class="btn-primary btn-sm" id="addCategoryCmsBtn">+ Add Category</button>
+            </div>
+            <div class="table-container">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Order</th><th>Name</th><th>Slug</th><th>Icon</th><th>Description</th><th>Status</th><th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="categoriesCmsTableBody">
+                  <tr><td colspan="7" class="text-center text-muted">Loading categories...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Banners Panel -->
+        <div id="cmstab-banners" class="settings-panel">
+          <div class="settings-card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+              <h3>Offer Banners</h3>
+              <button class="btn-primary btn-sm" id="addBannerBtn">+ Add Banner</button>
+            </div>
+            <div class="table-container">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Order</th><th>Title</th><th>Offer Text</th><th>Gradient</th><th>CTA</th><th>Status</th><th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="bannersTableBody">
+                  <tr><td colspan="7" class="text-center text-muted">Loading banners...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sections Panel -->
+        <div id="cmstab-sections" class="settings-panel">
+          <div class="settings-card">
+            <h3>Product Sections</h3>
+            <p class="text-muted" style="margin-bottom:16px">Configure featured, trending and other product sections</p>
+            <div class="table-container">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Order</th><th>Section Key</th><th>Title</th><th>Type</th><th>Config</th><th>Status</th><th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="sectionsTableBody">
+                  <tr><td colspan="7" class="text-center text-muted">Loading sections...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trust Features Panel -->
+        <div id="cmstab-trust" class="settings-panel">
+          <div class="settings-card">
+            <h3>Trust Features</h3>
+            <p class="text-muted" style="margin-bottom:16px">Features displayed to build customer trust</p>
+            <div class="table-container">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Order</th><th>Icon</th><th>Title</th><th>Description</th><th>Status</th><th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="trustTableBody">
+                  <tr><td colspan="6" class="text-center text-muted">Loading trust features...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Newsletter Panel -->
+        <div id="cmstab-newsletter" class="settings-panel">
+          <div class="settings-card">
+            <h3>Newsletter Settings</h3>
+            <div class="form-row" style="margin-top:16px">
+              <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="newsletterTitle" placeholder="Newsletter title" />
+              </div>
+              <div class="form-group">
+                <label>Subtitle</label>
+                <input type="text" id="newsletterSubtitle" placeholder="Newsletter subtitle" />
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:12px">
+              <label class="toggle-switch">
+                <input type="checkbox" id="newsletterActive" checked />
+                <span class="toggle-slider"></span>
+                <span style="margin-left:8px">Enable Newsletter Section</span>
+              </label>
+            </div>
+            <button class="btn-primary" id="saveNewsletterBtn" style="margin-top:16px">Save Settings</button>
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
 
@@ -645,9 +798,158 @@
     </div>
   </dialog>
 
+  <!-- CMS Edit Modals -->
+  <dialog class="modal" id="sliderModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="sliderModalTitle">Edit Slider</h3>
+        <button class="modal-close" id="closeSliderModal">&times;</button>
+      </div>
+      <form id="sliderForm" class="modal-form">
+        <input type="hidden" id="sliderId" />
+        <div class="form-row">
+          <div class="form-group"><label>Title</label><input type="text" id="sliderTitle" required /></div>
+          <div class="form-group"><label>Subtitle</label><input type="text" id="sliderSubtitle" /></div>
+        </div>
+        <div class="form-group"><label>Image URL</label><input type="text" id="sliderImage" placeholder="/images/banner.jpg" /></div>
+        <div class="form-row">
+          <div class="form-group"><label>CTA Text</label><input type="text" id="sliderCtaText" /></div>
+          <div class="form-group"><label>CTA Link</label><input type="text" id="sliderCtaLink" /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Background Color</label><input type="color" id="sliderBgColor" value="#f0f9ff" /></div>
+          <div class="form-group"><label>Text Color</label><input type="color" id="sliderTextColor" value="#1e3a8a" /></div>
+        </div>
+        <div class="form-group"><label>Display Order</label><input type="number" id="sliderOrder" min="0" value="0" /></div>
+        <div class="form-group">
+          <label class="toggle-switch"><input type="checkbox" id="sliderActive" checked /><span class="toggle-slider"></span> Active</label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="cancelSlider">Cancel</button>
+          <button type="submit" class="btn-primary">Save Slider</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="categoryCmsModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="categoryCmsModalTitle">Edit Category</h3>
+        <button class="modal-close" id="closeCategoryCmsModal">&times;</button>
+      </div>
+      <form id="categoryCmsForm" class="modal-form">
+        <input type="hidden" id="categoryCmsId" />
+        <div class="form-row">
+          <div class="form-group"><label>Name</label><input type="text" id="categoryCmsName" required /></div>
+          <div class="form-group"><label>Slug</label><input type="text" id="categoryCmsSlug" required /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Icon Emoji</label><input type="text" id="categoryCmsIcon" maxlength="10" placeholder="👘" /></div>
+          <div class="form-group"><label>Display Order</label><input type="number" id="categoryCmsOrder" min="0" value="0" /></div>
+        </div>
+        <div class="form-group"><label>Image URL</label><input type="text" id="categoryCmsImage" /></div>
+        <div class="form-group"><label>Description</label><textarea id="categoryCmsDesc" rows="2"></textarea></div>
+        <div class="form-group">
+          <label class="toggle-switch"><input type="checkbox" id="categoryCmsActive" checked /><span class="toggle-slider"></span> Active</label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="cancelCategoryCms">Cancel</button>
+          <button type="submit" class="btn-primary">Save Category</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="bannerModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="bannerModalTitle">Edit Banner</h3>
+        <button class="modal-close" id="closeBannerModal">&times;</button>
+      </div>
+      <form id="bannerForm" class="modal-form">
+        <input type="hidden" id="bannerId" />
+        <div class="form-row">
+          <div class="form-group"><label>Title</label><input type="text" id="bannerTitle" required /></div>
+          <div class="form-group"><label>Subtitle</label><input type="text" id="bannerSubtitle" /></div>
+        </div>
+        <div class="form-group"><label>Offer Text</label><input type="text" id="bannerOfferText" placeholder="50% OFF" /></div>
+        <div class="form-row">
+          <div class="form-group"><label>Gradient Start</label><input type="color" id="gradientStart" value="#667eea" /></div>
+          <div class="form-group"><label>Gradient End</label><input type="color" id="gradientEnd" value="#764ba2" /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>CTA Text</label><input type="text" id="bannerCtaText" /></div>
+          <div class="form-group"><label>CTA Link</label><input type="text" id="bannerCtaLink" /></div>
+        </div>
+        <div class="form-group"><label>Display Order</label><input type="number" id="bannerOrder" min="0" value="0" /></div>
+        <div class="form-group">
+          <label class="toggle-switch"><input type="checkbox" id="bannerActive" checked /><span class="toggle-slider"></span> Active</label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="cancelBanner">Cancel</button>
+          <button type="submit" class="btn-primary">Save Banner</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="sectionModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="sectionModalTitle">Edit Section</h3>
+        <button class="modal-close" id="closeSectionModal">&times;</button>
+      </div>
+      <form id="sectionForm" class="modal-form">
+        <input type="hidden" id="sectionId" />
+        <div class="form-row">
+          <div class="form-group"><label>Title</label><input type="text" id="sectionTitle" required /></div>
+          <div class="form-group"><label>Subtitle</label><input type="text" id="sectionSubtitle" /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Section Key</label><input type="text" id="sectionKey" readonly /></div>
+          <div class="form-group"><label>Display Order</label><input type="number" id="sectionOrder" min="0" value="0" /></div>
+        </div>
+        <div class="form-group">
+          <label class="toggle-switch"><input type="checkbox" id="sectionActive" checked /><span class="toggle-slider"></span> Active</label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="cancelSection">Cancel</button>
+          <button type="submit" class="btn-primary">Save Section</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="trustModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="trustModalTitle">Edit Trust Feature</h3>
+        <button class="modal-close" id="closeTrustModal">&times;</button>
+      </div>
+      <form id="trustForm" class="modal-form">
+        <input type="hidden" id="trustId" />
+        <div class="form-row">
+          <div class="form-group"><label>Icon Emoji</label><input type="text" id="trustIcon" maxlength="10" required /></div>
+          <div class="form-group"><label>Display Order</label><input type="number" id="trustOrder" min="0" value="0" /></div>
+        </div>
+        <div class="form-group"><label>Title</label><input type="text" id="trustTitle" required /></div>
+        <div class="form-group"><label>Description</label><textarea id="trustDesc" rows="2"></textarea></div>
+        <div class="form-group">
+          <label class="toggle-switch"><input type="checkbox" id="trustActive" checked /><span class="toggle-slider"></span> Active</label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="cancelTrust">Cancel</button>
+          <button type="submit" class="btn-primary">Save Feature</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
   <!-- Toast Notifications -->
   <div id="toastContainer" class="toast-container"></div>
 
   <script src="/admin/admin.js"></script>
+  <script src="/admin/cms-manager.js"></script>
 </body>
 </html>
