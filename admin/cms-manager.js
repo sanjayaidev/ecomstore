@@ -497,4 +497,7 @@
     }, 3000);
   }
 
+  // Expose loadCMSData globally for admin.js to call
+  window.loadCMSData = loadCMSData;
+
 })();

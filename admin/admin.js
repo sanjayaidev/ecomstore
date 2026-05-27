@@ -141,6 +141,7 @@ function navigateTo(sectionId) {
   if (section) section.classList.add('active');
   if (sectionId === 'analytics') renderAnalytics();
   if (sectionId === 'customers') renderCustomers();
+  if (sectionId === 'cms') loadCMSData();
 }
 
 function setupGotoLinks() {
