@@ -3,66 +3,269 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ecommerce Store</title>
+  <title>Ecommerce Store - Shop Amazing Products</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
   <header>
+    <div class="top-bar">
+      <div class="container">
+        <div class="top-bar-content">
+          <span><i class="fas fa-truck"></i> Free Shipping on Orders Above ₹999</span>
+          <div class="top-bar-links">
+            <a href="tel:+911234567890"><i class="fas fa-phone"></i> +91 1234567890</a>
+            <a href="mailto:support@store.com"><i class="fas fa-envelope"></i> support@store.com</a>
+          </div>
+        </div>
+      </div>
+    </div>
     <nav class="navbar">
       <div class="container">
-        <div class="logo">🛍️ Store</div>
-        <ul class="nav-links">
-          <li><a href="/">Home</a></li>
-          <li><a href="pages/products.html">Shop</a></li>
-          <li><a href="pages/cart.html">Cart <span id="cart-count" class="cart-badge">0</span></a></li>
-        </ul>
+        <div class="nav-wrapper">
+          <div class="logo">🛍️ Store</div>
+          <div class="nav-search">
+            <input type="text" placeholder="Search products..." id="search-input">
+            <button onclick="handleSearch()"><i class="fas fa-search"></i></button>
+          </div>
+          <ul class="nav-links">
+            <li><a href="/" class="active">Home</a></li>
+            <li><a href="pages/products.html">Shop</a></li>
+            <li><a href="pages/cart.html">Cart <span id="cart-count" class="cart-badge">0</span></a></li>
+            <li><a href="#" class="mobile-menu-toggle"><i class="fas fa-bars"></i></a></li>
+          </ul>
+        </div>
       </div>
     </nav>
   </header>
 
   <main>
-    <section class="hero">
-      <div class="container">
-        <h1>Welcome to Our Store</h1>
-        <p>Discover amazing products at great prices</p>
-        <a href="pages/products.html" class="btn-primary">Shop Now</a>
+    <section class="hero-slider" id="hero-slider">
+      <div class="slider-container">
+        <div class="slider-wrapper" id="slider-wrapper"></div>
+        <button class="slider-btn prev" onclick="slidePrev()"><i class="fas fa-chevron-left"></i></button>
+        <button class="slider-btn next" onclick="slideNext()"><i class="fas fa-chevron-right"></i></button>
+        <div class="slider-dots" id="slider-dots"></div>
       </div>
     </section>
 
-    <section class="featured-products">
+    <section class="categories-section">
       <div class="container">
-        <h2>Featured Products</h2>
+        <div class="section-header">
+          <h2>Shop by Category</h2>
+          <p>Explore our wide range of products</p>
+        </div>
+        <div class="categories-grid">
+          <div class="category-card" data-category="saree">
+            <div class="category-image"><img src="images/1.webp" alt="Sarees" loading="lazy"></div>
+            <div class="category-info"><h3>Sarees</h3><span>View Collection</span></div>
+          </div>
+          <div class="category-card" data-category="kurti">
+            <div class="category-image"><img src="images/2.webp" alt="Kurtis" loading="lazy"></div>
+            <div class="category-info"><h3>Kurtis</h3><span>View Collection</span></div>
+          </div>
+          <div class="category-card" data-category="dress">
+            <div class="category-image"><img src="images/3.webp" alt="Dresses" loading="lazy"></div>
+            <div class="category-info"><h3>Dresses</h3><span>View Collection</span></div>
+          </div>
+          <div class="category-card" data-category="jewellery">
+            <div class="category-image"><img src="images/4.webp" alt="Jewellery" loading="lazy"></div>
+            <div class="category-info"><h3>Jewellery</h3><span>View Collection</span></div>
+          </div>
+          <div class="category-card" data-category="footwear">
+            <div class="category-image"><img src="images/5.webp" alt="Footwear" loading="lazy"></div>
+            <div class="category-info"><h3>Footwear</h3><span>View Collection</span></div>
+          </div>
+          <div class="category-card" data-category="accessories">
+            <div class="category-image"><img src="images/6.webp" alt="Accessories" loading="lazy"></div>
+            <div class="category-info"><h3>Accessories</h3><span>View Collection</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="offer-banners">
+      <div class="container">
+        <div class="offers-grid">
+          <div class="offer-banner offer-large" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="offer-content">
+              <span class="offer-tag">Limited Time</span>
+              <h3>Flat 50% OFF</h3>
+              <p>On Selected Sarees</p>
+              <a href="pages/products.html?category=saree" class="btn-offer">Shop Now</a>
+            </div>
+            <div class="offer-image"><img src="images/7.webp" alt="Sale" loading="lazy"></div>
+          </div>
+          <div class="offer-banner offer-small" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <div class="offer-content">
+              <span class="offer-tag">New Arrival</span>
+              <h3>Buy 2 Get 1 FREE</h3>
+              <p>On All Kurtis</p>
+              <a href="pages/products.html?category=kurti" class="btn-offer">Explore</a>
+            </div>
+          </div>
+          <div class="offer-banner offer-small" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <div class="offer-content">
+              <span class="offer-tag">Best Seller</span>
+              <h3>Up to 70% OFF</h3>
+              <p>End Season Sale</p>
+              <a href="pages/products.html" class="btn-offer">Grab Deal</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="products-section featured-section">
+      <div class="container">
+        <div class="section-header">
+          <h2>Featured Products</h2>
+          <p>Handpicked just for you</p>
+          <a href="pages/products.html" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+        </div>
         <div id="featured" class="products-grid"></div>
       </div>
     </section>
 
-    <section class="trending-products">
+    <section class="products-section trending-section">
       <div class="container">
-        <h2>Trending Now</h2>
+        <div class="section-header">
+          <h2>Trending Now</h2>
+          <p>What everyone's buying</p>
+          <a href="pages/products.html?sort=trending" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+        </div>
         <div id="trending" class="products-grid"></div>
+      </div>
+    </section>
+
+    <section class="products-section new-arrivals-section">
+      <div class="container">
+        <div class="section-header">
+          <h2>New Arrivals</h2>
+          <p>Fresh styles every week</p>
+          <a href="pages/products.html?sort=newest" class="view-all-link">View All <i class="fas fa-arrow-right"></i></a>
+        </div>
+        <div id="new-arrivals" class="products-grid"></div>
+      </div>
+    </section>
+
+    <section class="features-section">
+      <div class="container">
+        <div class="features-grid">
+          <div class="feature-card"><div class="feature-icon"><i class="fas fa-shipping-fast"></i></div><h3>Free Shipping</h3><p>On orders above ₹999</p></div>
+          <div class="feature-card"><div class="feature-icon"><i class="fas fa-undo"></i></div><h3>Easy Returns</h3><p>30 days return policy</p></div>
+          <div class="feature-card"><div class="feature-icon"><i class="fas fa-lock"></i></div><h3>Secure Payment</h3><p>100% secure transactions</p></div>
+          <div class="feature-card"><div class="feature-icon"><i class="fas fa-headset"></i></div><h3>24/7 Support</h3><p>Dedicated customer support</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="newsletter-section">
+      <div class="container">
+        <div class="newsletter-content">
+          <div class="newsletter-text"><h2>Subscribe to Our Newsletter</h2><p>Get latest updates on new products and upcoming sales</p></div>
+          <form class="newsletter-form" onsubmit="handleNewsletter(event)">
+            <input type="email" placeholder="Enter your email address" required>
+            <button type="submit" class="btn-primary">Subscribe</button>
+          </form>
+        </div>
       </div>
     </section>
   </main>
 
   <footer>
-    <p>&copy; 2026 Ecommerce Store. All rights reserved.</p>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-column">
+          <h3>🛍️ Store</h3>
+          <p>Your one-stop destination for fashion and lifestyle products.</p>
+          <div class="social-links">
+            <a href="#"><i class="fab fa-facebook"></i></a>
+            <a href="#"><i class="fab fa-instagram"></i></a>
+            <a href="#"><i class="fab fa-twitter"></i></a>
+            <a href="#"><i class="fab fa-youtube"></i></a>
+          </div>
+        </div>
+        <div class="footer-column">
+          <h4>Quick Links</h4>
+          <ul><li><a href="/">Home</a></li><li><a href="pages/products.html">Shop</a></li><li><a href="pages/cart.html">Cart</a></li><li><a href="#">About Us</a></li><li><a href="#">Contact</a></li></ul>
+        </div>
+        <div class="footer-column">
+          <h4>Customer Service</h4>
+          <ul><li><a href="#">Track Order</a></li><li><a href="#">Returns</a></li><li><a href="#">Shipping Info</a></li><li><a href="#">FAQs</a></li><li><a href="#">Privacy Policy</a></li></ul>
+        </div>
+        <div class="footer-column">
+          <h4>Contact Us</h4>
+          <ul class="contact-info">
+            <li><i class="fas fa-map-marker-alt"></i> 123 Store Street, City, India</li>
+            <li><i class="fas fa-phone"></i> +91 1234567890</li>
+            <li><i class="fas fa-envelope"></i> support@store.com</li>
+            <li><i class="fas fa-clock"></i> Mon-Sat: 9AM - 8PM</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Ecommerce Store. All rights reserved.</p>
+        <div class="payment-methods"><i class="fab fa-cc-visa"></i><i class="fab fa-cc-mastercard"></i><i class="fab fa-cc-amex"></i><i class="fab fa-cc-paypal"></i><i class="fab fa-google-pay"></i></div>
+      </div>
+    </div>
   </footer>
 
   <script src="js/productRenderer.js"></script>
   <script src="js/cartManager.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      productRenderer.renderProducts('featured', { limit: 6, sort: 'newest' });
-      productRenderer.renderProducts('trending', { limit: 4, sort: 'newest' });
-      updateCartCount();
-    });
+    const sliderConfig = {
+      autoPlay: true,
+      autoPlayDelay: 5000,
+      slides: [
+        { image: 'images/10.webp', title: 'New Collection 2026', subtitle: 'Discover the latest trends in fashion', ctaText: 'Shop Now', ctaLink: 'pages/products.html?sort=newest', gradient: 'linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%)' },
+        { image: 'images/11.webp', title: 'Summer Sale', subtitle: 'Up to 70% off on selected items', ctaText: 'Grab Deals', ctaLink: 'pages/products.html', gradient: 'linear-gradient(135deg, rgba(240, 147, 251, 0.9) 0%, rgba(245, 87, 108, 0.9) 100%)' },
+        { image: 'images/12.webp', title: 'Traditional Elegance', subtitle: 'Beautiful sarees for every occasion', ctaText: 'Explore Sarees', ctaLink: 'pages/products.html?category=saree', gradient: 'linear-gradient(135deg, rgba(79, 172, 254, 0.9) 0%, rgba(0, 242, 254, 0.9) 100%)' }
+      ]
+    };
 
-    function updateCartCount() {
-      const cart = cartManager.getCart();
-      document.getElementById('cart-count').textContent = cart.length;
+    let currentSlide = 0, slideInterval;
+
+    function initSlider() {
+      const wrapper = document.getElementById('slider-wrapper');
+      const dotsContainer = document.getElementById('slider-dots');
+      wrapper.innerHTML = sliderConfig.slides.map((slide, i) => 
+        `<div class="slide ${i===0?'active':''}" style="background:${slide.gradient}"><div class="slide-content"><div class="container"><h1 class="slide-title">${slide.title}</h1><p class="slide-subtitle">${slide.subtitle}</p><a href="${slide.ctaLink}" class="btn-primary btn-slide">${slide.ctaText}</a></div></div><div class="slide-image"><img src="${slide.image}" alt="${slide.title}" loading="lazy"></div></div>`
+      ).join('');
+      dotsContainer.innerHTML = sliderConfig.slides.map((_, i) => `<button class="dot ${i===0?'active':''}" onclick="goToSlide(${i})"></button>`).join('');
+      if (sliderConfig.autoPlay) startAutoPlay();
     }
 
-    // Listen for cart updates
+    function showSlide(index) {
+      const slides = document.querySelectorAll('.slide'), dots = document.querySelectorAll('.dot');
+      slides.forEach(s => s.classList.remove('active'));
+      dots.forEach(d => d.classList.remove('active'));
+      currentSlide = (index + slides.length) % slides.length;
+      slides[currentSlide].classList.add('active');
+      dots[currentSlide].classList.add('active');
+    }
+
+    function slideNext() { showSlide(currentSlide + 1); resetAutoPlay(); }
+    function slidePrev() { showSlide(currentSlide - 1); resetAutoPlay(); }
+    function goToSlide(index) { showSlide(index); resetAutoPlay(); }
+    function startAutoPlay() { slideInterval = setInterval(() => showSlide(currentSlide + 1), sliderConfig.autoPlayDelay); }
+    function resetAutoPlay() { clearInterval(slideInterval); startAutoPlay(); }
+    function handleSearch() { const q = document.getElementById('search-input').value.trim(); if(q) window.location.href = `pages/products.html?search=${encodeURIComponent(q)}`; }
+    function handleNewsletter(e) { e.preventDefault(); alert('Thank you for subscribing!'); e.target.reset(); }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initSlider();
+      productRenderer.renderProducts('featured', { limit: 6, sort: 'newest' });
+      productRenderer.renderProducts('trending', { limit: 4, sort: 'trending' });
+      productRenderer.renderProducts('new-arrivals', { limit: 8, sort: 'newest' });
+      updateCartCount();
+      document.querySelectorAll('.category-card').forEach(card => {
+        card.addEventListener('click', () => window.location.href = `pages/products.html?category=${card.dataset.category}`);
+      });
+      document.getElementById('search-input').addEventListener('keypress', (e) => { if(e.key === 'Enter') handleSearch(); });
+    });
+
+    function updateCartCount() { document.getElementById('cart-count').textContent = cartManager.getCart().length; }
     window.addEventListener('cartUpdated', updateCartCount);
   </script>
 </body>
