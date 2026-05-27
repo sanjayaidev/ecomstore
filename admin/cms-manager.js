@@ -1,5 +1,6 @@
 // CMS Manager - Homepage Content Management System
-(function() {
+
+const CMS = (function() {
   const API_BASE = '/api/cms';
   
   // State
@@ -14,10 +15,29 @@
   };
 
   // Initialize
-  document.addEventListener('DOMContentLoaded', () => {
+  function init() {
     initTabs();
-    loadCMSData();
-  });
+    setupAddButtons();
+    setupForms();
+  }
+
+  // Expose loadCMSData globally
+  window.loadCMSData = loadCMSData;
+  
+  // Expose edit/delete functions globally
+  window.editSlider = editSlider;
+  window.editCategory = editCategory;
+  window.editBanner = editBanner;
+  window.editSection = editSection;
+  window.editTrustFeature = editTrustFeature;
+  window.deleteSlider = deleteSlider;
+  window.deleteCategory = deleteCategory;
+  window.deleteBanner = deleteBanner;
+  window.closeSliderModal = closeSliderModal;
+  window.closeCategoryModal = closeCategoryModal;
+  window.closeBannerModal = closeBannerModal;
+  window.closeSectionModal = closeSectionModal;
+  window.closeTrustModal = closeTrustModal;
 
   // Tab Navigation
   function initTabs() {
@@ -45,6 +65,11 @@
       if (result.success) {
         cmsData = result.data;
         renderCurrentTab();
+        // Hide all loading spinners
+        document.querySelectorAll('.loading-spinner').forEach(el => el.style.display = 'none');
+        // Show form container for newsletter
+        const nlContainer = document.getElementById('newsletter-form-container');
+        if (nlContainer) nlContainer.style.display = 'block';
       } else {
         showToast('Failed to load CMS data', 'error');
       }
@@ -233,7 +258,7 @@
     const slider = cmsData.sliders.find(s => s.id === id);
     if (!slider) return;
     
-    openModal('sliderModal', {
+    openModal('slider-modal', {
       edit_id: slider.id,
       title: slider.title || '',
       subtitle: slider.subtitle || '',
@@ -251,7 +276,7 @@
     const cat = cmsData.categories.find(c => c.id === id);
     if (!cat) return;
     
-    openModal('categoryModal', {
+    openModal('category-modal', {
       edit_id: cat.id,
       name: cat.name || '',
       slug: cat.slug || '',
@@ -267,7 +292,7 @@
     const banner = cmsData.banners.find(b => b.id === id);
     if (!banner) return;
     
-    openModal('bannerModal', {
+    openModal('banner-modal', {
       edit_id: banner.id,
       title: banner.title || '',
       subtitle: banner.subtitle || '',
@@ -286,7 +311,7 @@
     const section = cmsData.sections.find(s => s.id === id);
     if (!section) return;
     
-    openModal('sectionModal', {
+    openModal('section-modal', {
       edit_id: section.id,
       title: section.title || '',
       subtitle: section.subtitle || '',
@@ -300,7 +325,7 @@
     const feature = cmsData.trustFeatures.find(f => f.id === id);
     if (!feature) return;
     
-    openModal('trustModal', {
+    openModal('trust-modal', {
       edit_id: feature.id,
       icon_emoji: feature.icon_emoji || '✓',
       title: feature.title || '',
@@ -309,6 +334,13 @@
       is_active: feature.is_active !== false
     });
   };
+
+  // Close modal functions
+  window.closeSliderModal = function() { closeModal('slider-modal'); };
+  window.closeCategoryModal = function() { closeModal('category-modal'); };
+  window.closeBannerModal = function() { closeModal('banner-modal'); };
+  window.closeSectionModal = function() { closeModal('section-modal'); };
+  window.closeTrustModal = function() { closeModal('trust-modal'); };
 
   // Modal handling
   function openModal(modalId, data = {}) {
@@ -414,56 +446,62 @@
   }
 
   // Add button handlers
-  document.getElementById('addSliderBtn')?.addEventListener('click', () => {
-    openModal('sliderModal', {
-      background_color: '#ffffff',
-      text_color: '#000000',
-      is_active: true
-    });
-  });
-
-  document.getElementById('addCategoryBtn')?.addEventListener('click', () => {
-    openModal('categoryModal', {
-      icon_emoji: '📂',
-      is_active: true
-    });
-  });
-
-  document.getElementById('addBannerBtn')?.addEventListener('click', () => {
-    openModal('bannerModal', {
-      gradient_start: '#667eea',
-      gradient_end: '#764ba2',
-      is_active: true
-    });
-  });
-
-  // Newsletter form
-  document.getElementById('saveNewsletterBtn')?.addEventListener('click', async () => {
-    const form = document.getElementById('newsletterForm');
-    const data = {
-      title: form.nl_title.value,
-      subtitle: form.nl_subtitle.value,
-      is_active: form.nl_is_active.checked
-    };
-    
-    try {
-      const response = await fetch(`${API_BASE}/newsletter`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+  function setupAddButtons() {
+    document.getElementById('addSliderBtn')?.addEventListener('click', () => {
+      openModal('slider-modal', {
+        background_color: '#ffffff',
+        text_color: '#000000',
+        is_active: true
       });
+    });
+
+    document.getElementById('addCategoryBtn')?.addEventListener('click', () => {
+      openModal('category-modal', {
+        icon_emoji: '📂',
+        is_active: true
+      });
+    });
+
+    document.getElementById('addBannerBtn')?.addEventListener('click', () => {
+      openModal('banner-modal', {
+        gradient_start: '#667eea',
+        gradient_end: '#764ba2',
+        is_active: true
+      });
+    });
+  }
+
+  // Setup form submissions
+  function setupForms() {
+    // Newsletter form
+    document.getElementById('saveNewsletterBtn')?.addEventListener('click', async (e) => {
+      if (e) e.preventDefault();
+      const form = document.getElementById('newsletterForm');
+      const data = {
+        title: form.nl_title.value,
+        subtitle: form.nl_subtitle.value,
+        is_active: form.nl_is_active.checked
+      };
       
-      const result = await response.json();
-      if (result.success) {
-        showToast('Newsletter settings saved!', 'success');
-        loadCMSData();
-      } else {
-        showToast(result.error || 'Save failed', 'error');
+      try {
+        const response = await fetch(`${API_BASE}/newsletter`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          showToast('Newsletter settings saved!', 'success');
+          loadCMSData();
+        } else {
+          showToast(result.error || 'Save failed', 'error');
+        }
+      } catch (error) {
+        showToast('Network error', 'error');
       }
-    } catch (error) {
-      showToast('Network error', 'error');
-    }
-  });
+    });
+  }
 
   // Utility: Escape HTML
   function escapeHtml(text) {
@@ -497,7 +535,7 @@
     }, 3000);
   }
 
-  // Expose loadCMSData globally for admin.js to call
-  window.loadCMSData = loadCMSData;
+  // Initialize on DOM ready
+  document.addEventListener('DOMContentLoaded', init);
 
 })();
