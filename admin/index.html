@@ -324,7 +324,7 @@
 <body>
     <div class="admin-container">
         <!-- Sidebar -->
-        <aside class="admin-sidebar">
+        <aside class="admin-sidebar" id="adminSidebar">
             <h2>EcomStore Admin</h2>
             <ul class="admin-nav">
                 <li><a href="#" class="active" data-section="dashboard"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
@@ -339,65 +339,6 @@
 
         <!-- Main Content -->
         <main class="admin-content">
-            <header class="admin-header">
-                <h1 id="page-title">Dashboard</h1>
-                <div class="user-info">
-                    <span id="admin-name">Admin User</span>
-                    <i class="fas fa-user-circle" style="font-size: 1.5rem; margin-left: 10px; vertical-align: middle;"></i>
-                </div>
-            </header>
-
-  <div class="admin-layout">
-
-    <!-- Sidebar -->
-    <aside class="admin-sidebar" id="adminSidebar">
-      <div class="sidebar-store-badge">
-        <div class="store-dot"></div>
-        <span>EcomStore</span>
-        <span class="store-status">● Live</span>
-      </div>
-
-      <nav class="sidebar-nav">
-        <div class="nav-group-label">MAIN</div>
-        <button class="nav-item active" data-section="dashboard">
-          <span class="nav-icon">📊</span> Dashboard
-        </button>
-        <button class="nav-item" data-section="products">
-          <span class="nav-icon">📦</span> Products
-          <span class="nav-badge" id="navBadgeProducts">0</span>
-        </button>
-        <button class="nav-item" data-section="orders">
-          <span class="nav-icon">📋</span> Orders
-          <span class="nav-badge pending" id="navBadgeOrders">0</span>
-        </button>
-
-        <div class="nav-group-label">STORE</div>
-        <button class="nav-item" data-section="customers">
-          <span class="nav-icon">👥</span> Customers
-        </button>
-        <button class="nav-item" data-section="categories">
-          <span class="nav-icon">🏷️</span> Categories
-        </button>
-        <button class="nav-item" data-section="analytics">
-          <span class="nav-icon">📈</span> Analytics
-        </button>
-
-        <div class="nav-group-label">SYSTEM</div>
-        <button class="nav-item" data-section="settings">
-          <span class="nav-icon">⚙️</span> Settings
-        </button>
-      </nav>
-
-      <div class="sidebar-footer">
-        <a href="../" target="_blank" class="btn-store-link">🏪 View Store →</a>
-      </div>
-    </aside>
-
-    <!-- Sidebar Overlay (mobile) -->
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-    <!-- Main Content -->
-    <main class="admin-main">
 
       <!-- ── DASHBOARD ── -->
       <section id="dashboard" class="admin-section active">
@@ -687,10 +628,7 @@
                 </div>
             </form>
         </div>
-      </section>
-
-    </main>
-  </div>
+    </div>
 
     <!-- Banner Modal -->
     <div id="banner-modal" class="modal">
@@ -805,20 +743,19 @@
             </form>
         </div>
     </div>
-  </dialog>
 
-  <!-- ── DELETE CONFIRM MODAL ── -->
-  <dialog class="modal modal-sm modal-danger" id="deleteModal">
-    <div class="modal-content" style="padding:28px;text-align:center;">
-      <div style="font-size:2.5rem;margin-bottom:12px">🗑️</div>
-      <h3 style="margin-bottom:8px">Confirm Delete</h3>
-      <p class="text-muted">Are you sure you want to delete <strong id="deleteItemName">this item</strong>? This cannot be undone.</p>
-      <div class="modal-actions" style="justify-content:center;margin-top:20px;gap:12px">
-        <button class="btn-secondary" id="cancelDelete">Cancel</button>
-        <button class="btn-danger" id="confirmDelete">Yes, Delete</button>
+    <!-- ── DELETE CONFIRM MODAL ── -->
+    <div class="modal modal-sm modal-danger" id="deleteModal">
+      <div class="modal-content" style="padding:28px;text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:12px">🗑️</div>
+        <h3 style="margin-bottom:8px">Confirm Delete</h3>
+        <p class="text-muted">Are you sure you want to delete <strong id="deleteItemName">this item</strong>? This cannot be undone.</p>
+        <div class="modal-actions" style="justify-content:center;margin-top:20px;gap:12px">
+          <button class="btn-secondary" id="cancelDelete">Cancel</button>
+          <button class="btn-danger" id="confirmDelete">Yes, Delete</button>
+        </div>
       </div>
     </div>
-  </dialog>
 
   <!-- Toast Notifications -->
   <div id="toastContainer" class="toast-container"></div>
