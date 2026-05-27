@@ -1,330 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - EcomStore</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* Admin Specific Styles */
-        .admin-container {
-            display: flex;
-            min-height: 100vh;
-        }
-        .admin-sidebar {
-            width: 250px;
-            background: #1a1a2e;
-            color: white;
-            padding: 20px;
-            position: fixed;
-            height: 100%;
-            overflow-y: auto;
-        }
-        .admin-sidebar h2 {
-            margin-bottom: 30px;
-            text-align: center;
-            color: #00d9ff;
-        }
-        .admin-nav {
-            list-style: none;
-            padding: 0;
-        }
-        .admin-nav li {
-            margin-bottom: 10px;
-        }
-        .admin-nav a {
-            color: #ccc;
-            text-decoration: none;
-            display: block;
-            padding: 12px 15px;
-            border-radius: 5px;
-            transition: all 0.3s;
-        }
-        .admin-nav a:hover, .admin-nav a.active {
-            background: #00d9ff;
-            color: #1a1a2e;
-        }
-        .admin-nav i {
-            margin-right: 10px;
-            width: 20px;
-            text-align: center;
-        }
-        .admin-content {
-            flex: 1;
-            margin-left: 250px;
-            padding: 30px;
-            background: #f4f7fa;
-        }
-        .admin-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        .admin-card {
-            background: white;
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            margin-bottom: 25px;
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            text-align: center;
-        }
-        .stat-card h3 {
-            font-size: 2rem;
-            color: #00d9ff;
-            margin-bottom: 5px;
-        }
-        .stat-card p {
-            color: #666;
-        }
-        
-        /* CMS Specific Styles */
-        .cms-tabs {
-            display: flex;
-            border-bottom: 2px solid #eee;
-            margin-bottom: 20px;
-            overflow-x: auto;
-        }
-        .cms-tab {
-            padding: 12px 20px;
-            cursor: pointer;
-            border: none;
-            background: none;
-            font-weight: 600;
-            color: #666;
-            border-bottom: 3px solid transparent;
-            margin-bottom: -2px;
-            white-space: nowrap;
-        }
-        .cms-tab.active {
-            color: #00d9ff;
-            border-bottom-color: #00d9ff;
-        }
-        .cms-tab-content {
-            display: none;
-        }
-        .cms-tab-content.active {
-            display: block;
-        }
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-        .data-table th, .data-table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-        .data-table th {
-            background: #f8f9fa;
-            font-weight: 600;
-            color: #333;
-        }
-        .data-table tr:hover {
-            background: #f8f9fa;
-        }
-        .action-btn {
-            padding: 6px 12px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-right: 5px;
-            font-size: 0.9rem;
-        }
-        .edit-btn {
-            background: #00d9ff;
-            color: white;
-        }
-        .delete-btn {
-            background: #ff4757;
-            color: white;
-        }
-        .add-btn {
-            background: #2ed573;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 600;
-            margin-bottom: 20px;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-        .modal.active {
-            display: flex;
-        }
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-        }
-        .form-control {
-            width: 100%;
-            padding: 10px 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 25px;
-        }
-        .btn-cancel {
-            background: #f1f2f6;
-            color: #333;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .btn-save {
-            background: #00d9ff;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #2ed573;
-            color: white;
-            padding: 15px 25px;
-            border-radius: 5px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 0.3s;
-            z-index: 2000;
-        }
-        .toast.show {
-            transform: translateY(0);
-            opacity: 1;
-        }
-        .toast.error {
-            background: #ff4757;
-        }
-        .loading-spinner {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #00d9ff;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #999;
-        }
-        .preview-img {
-            width: 60px;
-            height: 40px;
-            object-fit: cover;
-            border-radius: 4px;
-        }
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        .status-active {
-            background: #d4edda;
-            color: #155724;
-        }
-        .status-inactive {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        @media (max-width: 768px) {
-            .admin-sidebar {
-                width: 70px;
-                padding: 10px;
-            }
-            .admin-sidebar h2, .admin-nav span {
-                display: none;
-            }
-            .admin-nav i {
-                margin-right: 0;
-                font-size: 1.2rem;
-            }
-            .admin-content {
-                margin-left: 70px;
-                padding: 15px;
-            }
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — EcomStore</title>
+  <link rel="stylesheet" href="/admin/admin.css">
+  <style>
+    /* ── CMS DATA ROWS ── */
+    .data-row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 12px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      margin-bottom: 8px;
+      background: var(--bg-white);
+      transition: var(--transition);
+    }
+    .data-row:hover { box-shadow: var(--shadow-sm); }
+    .data-row__preview {
+      width: 60px; height: 48px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-hover);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; flex-shrink: 0; overflow: hidden;
+    }
+    .data-row__preview img { width: 100%; height: 100%; object-fit: cover; }
+    .data-row__info { flex: 1; min-width: 0; }
+    .data-row__title { font-weight: 600; font-size: 0.9rem; }
+    .data-row__meta {
+      display: flex; gap: 10px; align-items: center;
+      margin-top: 4px; font-size: 0.78rem; color: var(--text-secondary);
+      flex-wrap: wrap;
+    }
+    .data-row__actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .status-badge.active { background: var(--success-light); color: #166534; }
+    .status-badge:not(.active) { background: var(--border-color); color: var(--text-secondary); }
+
+    /* ── CMS MODALS ── */
+    .cms-modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(17,24,39,0.5); backdrop-filter: blur(2px);
+      z-index: 500;
+      align-items: center; justify-content: center;
+    }
+    .cms-modal-overlay.open { display: flex; }
+    .cms-modal-box {
+      background: var(--bg-white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      width: 93vw; max-width: 580px;
+      max-height: 92vh; overflow-y: auto;
+      animation: dropIn 0.18s ease;
+    }
+    .cms-modal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky; top: 0; background: var(--bg-white); z-index: 1;
+    }
+    .cms-modal-header h3 { font-size: 1rem; font-weight: 700; }
+    .cms-modal-body { padding: 20px 24px; }
+    .cms-modal-actions {
+      display: flex; justify-content: flex-end; gap: 10px;
+      padding-top: 16px; border-top: 1px solid var(--border-color); margin-top: 8px;
+    }
+
+    /* loading spinner */
+    .cms-loading { text-align: center; padding: 32px; color: var(--text-muted); font-size: 0.875rem; }
+  </style>
 </head>
 <body>
     <div class="admin-container">
         <!-- Sidebar -->
-        <aside class="admin-sidebar" id="adminSidebar">
+        <aside class="admin-sidebar">
             <h2>EcomStore Admin</h2>
             <ul class="admin-nav">
                 <li><a href="#" class="active" data-section="dashboard"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
@@ -339,205 +88,414 @@
 
         <!-- Main Content -->
         <main class="admin-content">
-
-      <!-- ── DASHBOARD ── -->
-      <section id="dashboard" class="admin-section active">
-        <div class="section-header">
-          <div>
-            <h1>Dashboard</h1>
-            <p class="text-muted" id="dashboardDate">Today's overview</p>
-          </div>
-          <div class="header-actions">
-            <select class="filter-select" id="dashboardRange">
-              <option value="7">Last 7 days</option>
-              <option value="30" selected>Last 30 days</option>
-              <option value="90">Last 90 days</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- KPI Cards -->
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon" style="background:#eff6ff;color:#3b82f6">📦</div>
-            <div class="stat-body">
-              <div class="stat-value" id="stat-products">0</div>
-              <div class="stat-label">Total Products</div>
-              <div class="stat-change positive" id="stat-products-change">—</div>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background:#f0fdf4;color:#22c55e">📋</div>
-            <div class="stat-body">
-              <div class="stat-value" id="stat-orders">0</div>
-              <div class="stat-label">Total Orders</div>
-              <div class="stat-change" id="stat-orders-change">—</div>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background:#fefce8;color:#eab308">💰</div>
-            <div class="stat-body">
-              <div class="stat-value" id="stat-revenue">₹0</div>
-              <div class="stat-label">Revenue</div>
-              <div class="stat-change positive" id="stat-revenue-change">—</div>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background:#fff1f2;color:#f43f5e">⚠️</div>
-            <div class="stat-body">
-              <div class="stat-value" id="stat-stock">0</div>
-              <div class="stat-label">Low Stock Items</div>
-              <div class="stat-change negative" id="stat-stock-change">needs attention</div>
-            </div>
-          </div>
-        </div>
-
-                <div class="admin-card">
-                    <h2>Recent Orders</h2>
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Order ID</th>
-                                <th>Customer</th>
-                                <th>Date</th>
-                                <th>Status</th>
-                                <th>Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recent-orders-body">
-                            <tr>
-                                <td colspan="5" class="empty-state">Loading orders...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+            <header class="admin-header">
+                <h1 id="page-title">Dashboard</h1>
+                <div class="user-info">
+                    <span id="admin-name">Admin User</span>
+                    <i class="fas fa-user-circle" style="font-size: 1.5rem; margin-left: 10px; vertical-align: middle;"></i>
                 </div>
-            </section>
+            </header>
+
+  <div class="admin-layout">
+
+    <!-- Sidebar -->
+    <aside class="admin-sidebar" id="adminSidebar">
+      <div class="sidebar-store-badge">
+        <div class="store-dot"></div>
+        <span>EcomStore</span>
+        <span class="store-status">● Live</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-group-label">MAIN</div>
+        <button class="nav-item active" data-section="dashboard">
+          <span class="nav-icon">📊</span> Dashboard
+        </button>
+        <button class="nav-item" data-section="products">
+          <span class="nav-icon">📦</span> Products
+          <span class="nav-badge" id="navBadgeProducts">0</span>
+        </button>
+        <button class="nav-item" data-section="orders">
+          <span class="nav-icon">📋</span> Orders
+          <span class="nav-badge pending" id="navBadgeOrders">0</span>
+        </button>
+
+        <div class="nav-group-label">STORE</div>
+        <button class="nav-item" data-section="customers">
+          <span class="nav-icon">👥</span> Customers
+        </button>
+        <button class="nav-item" data-section="categories">
+          <span class="nav-icon">🏷️</span> Categories
+        </button>
+        <button class="nav-item" data-section="analytics">
+          <span class="nav-icon">📈</span> Analytics
+        </button>
+
+        <div class="nav-group-label">SYSTEM</div>
+        <button class="nav-item" data-section="settings">
+          <span class="nav-icon">⚙️</span> Settings
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="../" target="_blank" class="btn-store-link">🏪 View Store →</a>
+      </div>
+    </aside>
+
+    <!-- Sidebar Overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Main Content -->
+    <main class="admin-main">
+
+  <!-- ── DASHBOARD ── -->
+  <section id="dashboard" class="admin-section active">
+    <div class="section-header">
+      <div>
+        <h1>Dashboard</h1>
+        <p class="text-muted" id="dashboardDate">Loading…</p>
+      </div>
+      <div class="header-actions">
+        <select class="filter-select" id="dashboardRange">
+          <option value="7">Last 7 days</option>
+          <option value="30" selected>Last 30 days</option>
+          <option value="90">Last 90 days</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#eff6ff;color:#3b82f6">📦</div>
+        <div class="stat-body">
+          <div class="stat-value" id="stat-products">0</div>
+          <div class="stat-label">Total Products</div>
+          <div class="stat-change positive">—</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#f0fdf4;color:#22c55e">📋</div>
+        <div class="stat-body">
+          <div class="stat-value" id="stat-orders">0</div>
+          <div class="stat-label">Total Orders</div>
+          <div class="stat-change">—</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#fefce8;color:#eab308">💰</div>
+        <div class="stat-body">
+          <div class="stat-value" id="stat-revenue">₹0</div>
+          <div class="stat-label">Revenue</div>
+          <div class="stat-change positive">—</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#fff1f2;color:#f43f5e">⚠️</div>
+        <div class="stat-body">
+          <div class="stat-value" id="stat-stock">0</div>
+          <div class="stat-label">Low Stock Items</div>
+          <div class="stat-change negative">needs attention</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-header"><h3>Recent Orders</h3></div>
+        <table class="admin-table" style="min-width:0">
+          <thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
+          <tbody id="recentOrdersBody"><tr><td colspan="5" class="text-center text-muted">No orders yet</td></tr></tbody>
+        </table>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header"><h3>Top Products</h3></div>
+        <div class="top-products-list" id="topProductsList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PRODUCTS ── -->
+  <section id="products" class="admin-section">
+    <div class="section-header">
+      <div>
+        <h1>Products</h1>
+        <p class="text-muted" id="productsCount">Loading…</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-secondary btn-sm" id="exportProductsBtn">⬇ Export CSV</button>
+        <button class="btn-primary" id="addProductBtn">+ Add Product</button>
+      </div>
+    </div>
+
+    <div class="admin-toolbar">
+      <input class="search-input" type="text" placeholder="Search products…" id="productSearch">
+      <select class="filter-select" id="categoryFilter">
+        <option value="">All Categories</option>
+        <option value="saree">Saree</option>
+        <option value="kurti">Kurti</option>
+        <option value="dress">Dress</option>
+        <option value="top">Top</option>
+      </select>
+      <select class="filter-select" id="stockFilter">
+        <option value="">All Stock</option>
+        <option value="instock">In Stock</option>
+        <option value="lowstock">Low Stock</option>
+        <option value="outstock">Out of Stock</option>
+      </select>
+      <select class="filter-select" id="sortFilter">
+        <option value="">Sort</option>
+        <option value="price-asc">Price ↑</option>
+        <option value="price-desc">Price ↓</option>
+        <option value="title-asc">A–Z</option>
+        <option value="stock-asc">Stock ↑</option>
+      </select>
+      <button class="btn-danger btn-sm hidden" id="bulkDeleteBtn">Delete Selected</button>
+    </div>
+
+    <div class="table-container">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="selectAll"></th>
+            <th>Image</th><th>Title</th><th>Category</th>
+            <th>Price</th><th>Stock</th><th>Status</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="productsTableBody"><tr><td colspan="8" class="text-center">Loading…</td></tr></tbody>
+      </table>
+      <div class="pagination" id="productsPagination"></div>
+    </div>
+  </section>
+
+  <!-- ── CATEGORIES ── -->
+  <section id="categories" class="admin-section">
+    <div class="section-header">
+      <div><h1>Categories</h1><p class="text-muted">Manage product categories</p></div>
+      <div class="header-actions">
+        <button class="btn-primary" id="addCategoryBtn">+ Add Category</button>
+      </div>
+    </div>
+    <div class="table-container">
+      <table class="admin-table">
+        <thead><tr><th>Name</th><th>Slug</th><th>Products</th><th>Actions</th></tr></thead>
+        <tbody id="categoriesTableBody"><tr><td colspan="4" class="text-center">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
 
             <!-- Homepage CMS Section -->
-            <section id="cms" class="admin-section">
+            <section id="cms-section" class="admin-section" style="display: none;">
                 <div class="admin-card">
                     <h2>Homepage Content Manager</h2>
                     <p>Manage sliders, categories, banners, and sections for your homepage.</p>
                     
-                    <div class="cms-tabs" id="cmsTabs">
-                        <button class="cms-tab settings-tab active" data-tab="sliders" data-cmstab="sliders">Hero Sliders</button>
-                        <button class="cms-tab settings-tab" data-tab="categories" data-cmstab="categories">Categories</button>
-                        <button class="cms-tab settings-tab" data-tab="banners" data-cmstab="banners">Offer Banners</button>
-                        <button class="cms-tab settings-tab" data-tab="sections" data-cmstab="sections">Product Sections</button>
-                        <button class="cms-tab settings-tab" data-tab="trust" data-cmstab="trust">Trust Features</button>
-                        <button class="cms-tab settings-tab" data-tab="newsletter" data-cmstab="newsletter">Newsletter</button>
+                    <div class="cms-tabs">
+                        <button class="cms-tab active" data-tab="sliders">Hero Sliders</button>
+                        <button class="cms-tab" data-tab="categories">Categories</button>
+                        <button class="cms-tab" data-tab="banners">Offer Banners</button>
+                        <button class="cms-tab" data-tab="sections">Product Sections</button>
+                        <button class="cms-tab" data-tab="trust">Trust Features</button>
+                        <button class="cms-tab" data-tab="newsletter">Newsletter</button>
                     </div>
 
                     <!-- Sliders Tab -->
-                    <div id="cmstab-sliders" class="cms-tab-content settings-panel active">
-                        <button class="add-btn" id="addSliderBtn">+ Add New Slider</button>
+                    <div id="sliders-tab" class="cms-tab-content active">
+                        <button class="add-btn" onclick="openSliderModal()">+ Add New Slider</button>
                         <div id="sliders-loading" class="loading-spinner">
                             <div class="spinner"></div>
                             <p>Loading sliders...</p>
                         </div>
-                        <div id="slidersList" class="cms-list">
-                            <!-- Dynamic content -->
+                        <table class="data-table" id="sliders-table" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Image</th>
+                                    <th>Title</th>
+                                    <th>Subtitle</th>
+                                    <th>CTA Text</th>
+                                    <th>Order</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sliders-table-body">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                        <div id="sliders-empty" class="empty-state" style="display: none;">
+                            <p>No sliders found. Click "Add New Slider" to create one.</p>
                         </div>
                     </div>
 
                     <!-- Categories Tab -->
-                    <div id="cmstab-categories" class="cms-tab-content settings-panel">
-                        <button class="add-btn" id="addCategoryBtn">+ Add New Category</button>
+                    <div id="categories-tab" class="cms-tab-content">
+                        <button class="add-btn" onclick="openCategoryModal()">+ Add New Category</button>
                         <div id="categories-loading" class="loading-spinner">
                             <div class="spinner"></div>
                             <p>Loading categories...</p>
                         </div>
-                        <div id="categoriesList" class="cms-list">
-                            <!-- Dynamic content -->
+                        <table class="data-table" id="categories-table" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Icon</th>
+                                    <th>Name</th>
+                                    <th>Slug</th>
+                                    <th>Order</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="categories-table-body">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                        <div id="categories-empty" class="empty-state" style="display: none;">
+                            <p>No categories found. Click "Add New Category" to create one.</p>
                         </div>
                     </div>
 
                     <!-- Banners Tab -->
-                    <div id="cmstab-banners" class="cms-tab-content settings-panel">
-                        <button class="add-btn" id="addBannerBtn">+ Add New Banner</button>
+                    <div id="banners-tab" class="cms-tab-content">
+                        <button class="add-btn" onclick="openBannerModal()">+ Add New Banner</button>
                         <div id="banners-loading" class="loading-spinner">
                             <div class="spinner"></div>
                             <p>Loading banners...</p>
                         </div>
-                        <div id="bannersList" class="cms-list">
-                            <!-- Dynamic content -->
+                        <table class="data-table" id="banners-table" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Subtitle</th>
+                                    <th>CTA Text</th>
+                                    <th>Bg Color</th>
+                                    <th>Order</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="banners-table-body">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                        <div id="banners-empty" class="empty-state" style="display: none;">
+                            <p>No banners found. Click "Add New Banner" to create one.</p>
                         </div>
                     </div>
 
                     <!-- Sections Tab -->
-                    <div id="cmstab-sections" class="cms-tab-content settings-panel">
-                        <button class="add-btn" id="addSectionBtn">+ Add New Section</button>
+                    <div id="sections-tab" class="cms-tab-content">
+                        <button class="add-btn" onclick="openSectionModal()">+ Add New Section</button>
                         <div id="sections-loading" class="loading-spinner">
                             <div class="spinner"></div>
                             <p>Loading sections...</p>
                         </div>
-                        <div id="sectionsList" class="cms-list">
-                            <!-- Dynamic content -->
+                        <table class="data-table" id="sections-table" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Subtitle</th>
+                                    <th>Type</th>
+                                    <th>API Endpoint</th>
+                                    <th>Order</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sections-table-body">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                        <div id="sections-empty" class="empty-state" style="display: none;">
+                            <p>No sections found. Click "Add New Section" to create one.</p>
                         </div>
                     </div>
 
                     <!-- Trust Features Tab -->
-                    <div id="cmstab-trust" class="cms-tab-content settings-panel">
-                        <button class="add-btn" id="addTrustBtn">+ Add New Feature</button>
+                    <div id="trust-tab" class="cms-tab-content">
+                        <button class="add-btn" onclick="openTrustModal()">+ Add New Feature</button>
                         <div id="trust-loading" class="loading-spinner">
                             <div class="spinner"></div>
                             <p>Loading trust features...</p>
                         </div>
-                        <div id="trustList" class="cms-list">
-                            <!-- Dynamic content -->
+                        <table class="data-table" id="trust-table" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Icon</th>
+                                    <th>Title</th>
+                                    <th>Description</th>
+                                    <th>Order</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="trust-table-body">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                        <div id="trust-empty" class="empty-state" style="display: none;">
+                            <p>No trust features found. Click "Add New Feature" to create one.</p>
                         </div>
                     </div>
 
                     <!-- Newsletter Tab -->
-                    <div id="cmstab-newsletter" class="cms-tab-content settings-panel">
+                    <div id="newsletter-tab" class="cms-tab-content">
                         <div id="newsletter-loading" class="loading-spinner">
                             <div class="spinner"></div>
                             <p>Loading newsletter settings...</p>
                         </div>
                         <div id="newsletter-form-container" style="display: none;">
-                            <form id="newsletterForm" class="modal-form">
+                            <form id="newsletter-settings-form">
+                                <input type="hidden" id="newsletter-id">
                                 <div class="form-group">
-                                    <label for="nl_title">Section Title</label>
-                                    <input type="text" name="nl_title" id="nl_title" class="form-control" required>
+                                    <label for="newsletter-title">Section Title</label>
+                                    <input type="text" id="newsletter-title" class="form-control" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="nl_subtitle">Section Subtitle</label>
-                                    <input type="text" name="nl_subtitle" id="nl_subtitle" class="form-control" required>
+                                    <label for="newsletter-subtitle">Section Subtitle</label>
+                                    <input type="text" id="newsletter-subtitle" class="form-control" required>
                                 </div>
                                 <div class="form-group">
-                                    <label>
-                                        <input type="checkbox" name="nl_is_active" id="nl_is_active"> Enable Newsletter
-                                    </label>
+                                    <label for="newsletter-placeholder">Input Placeholder</label>
+                                    <input type="text" id="newsletter-placeholder" class="form-control" required>
                                 </div>
-                                <button type="submit" class="btn-save" id="saveNewsletterBtn">Save Settings</button>
+                                <div class="form-group">
+                                    <label for="newsletter-button-text">Button Text</label>
+                                    <input type="text" id="newsletter-button-text" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="newsletter-success-message">Success Message</label>
+                                    <input type="text" id="newsletter-success-message" class="form-control" required>
+                                </div>
+                                <button type="submit" class="btn-save">Save Settings</button>
                             </form>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <section id="products" class="admin-section">
+            <!-- Other sections (Products, Orders, etc.) would go here -->
+            <section id="products-section" class="admin-section" style="display: none;">
                 <div class="admin-card">
                     <h2>Products Management</h2>
                     <p>Product management interface coming soon...</p>
                 </div>
             </section>
             
-            <section id="orders" class="admin-section">
+            <section id="orders-section" class="admin-section" style="display: none;">
                 <div class="admin-card">
                     <h2>Orders Management</h2>
                     <p>Orders management interface coming soon...</p>
                 </div>
             </section>
             
-            <section id="customers" class="admin-section">
+            <section id="customers-section" class="admin-section" style="display: none;">
                 <div class="admin-card">
                     <h2>Customers Management</h2>
                     <p>Customers management interface coming soon...</p>
                 </div>
             </section>
             
-            <section id="settings" class="admin-section">
+            <section id="settings-section" class="admin-section" style="display: none;">
                 <div class="admin-card">
                     <h2>Site Settings</h2>
                     <p>Global site settings coming soon...</p>
@@ -546,172 +504,266 @@
         </main>
     </div>
 
-    <!-- Modals -->
-    
-    <!-- Slider Modal -->
-    <div id="slider-modal" class="modal">
-        <div class="modal-content">
-            <h2 id="slider-modal-title">Add New Slider</h2>
-            <form id="slider-form">
-                <input type="hidden" id="slider-id">
-                <div class="form-group">
-                    <label for="slider-image">Image URL</label>
-                    <input type="url" id="slider-image" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="slider-title">Title</label>
-                    <input type="text" id="slider-title" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="slider-subtitle">Subtitle</label>
-                    <input type="text" id="slider-subtitle" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label for="slider-cta-text">CTA Button Text</label>
-                    <input type="text" id="slider-cta-text" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label for="slider-cta-link">CTA Link</label>
-                    <input type="url" id="slider-cta-link" class="form-control">
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="slider-order">Display Order</label>
-                        <input type="number" id="slider-order" class="form-control" value="1" min="1">
-                    </div>
-                    <div class="form-group">
-                        <label for="slider-active">Active</label>
-                        <select id="slider-active" class="form-control">
-                            <option value="true">Yes</option>
-                            <option value="false">No</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="closeSliderModal()">Cancel</button>
-                    <button type="submit" class="btn-save">Save Slider</button>
-                </div>
-            </form>
+    <div id="stab-notifications" class="settings-panel">
+      <div class="settings-card">
+        <h3>Notification Preferences</h3>
+        <div class="toggle-list">
+          <div class="toggle-item"><div><strong>New Orders</strong><p class="text-muted">Alert when a new order comes in</p></div><label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-item"><div><strong>Low Stock</strong><p class="text-muted">Alert when stock falls below 5 units</p></div><label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
         </div>
+      </div>
     </div>
+  </section>
 
-    <!-- Category Modal -->
-    <div id="category-modal" class="modal">
-        <div class="modal-content">
-            <h2 id="category-modal-title">Add New Category</h2>
-            <form id="category-form">
-                <input type="hidden" id="category-id">
-                <div class="form-group">
-                    <label for="category-name">Name</label>
-                    <input type="text" id="category-name" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="category-slug">Slug</label>
-                    <input type="text" id="category-slug" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="category-icon">Icon Class (FontAwesome)</label>
-                    <input type="text" id="category-icon" class="form-control" placeholder="fas fa-tshirt" value="fas fa-tag">
-                </div>
-                <div class="form-group">
-                    <label for="category-image">Image URL (Optional)</label>
-                    <input type="url" id="category-image" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label for="category-order">Display Order</label>
-                    <input type="number" id="category-order" class="form-control" value="1" min="1">
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="closeCategoryModal()">Cancel</button>
-                    <button type="submit" class="btn-save">Save Category</button>
-                </div>
-            </form>
-        </div>
-    </div>
+</main>
+</div><!-- /admin-layout -->
 
-    <!-- Banner Modal -->
-    <div id="banner-modal" class="modal">
-        <div class="modal-content">
-            <h2 id="banner-modal-title">Add New Banner</h2>
-            <form id="banner-form">
-                <input type="hidden" id="banner-id">
-                <div class="form-group">
-                    <label for="banner-title">Title</label>
-                    <input type="text" id="banner-title" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="banner-subtitle">Subtitle</label>
-                    <input type="text" id="banner-subtitle" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label for="banner-cta-text">CTA Button Text</label>
-                    <input type="text" id="banner-cta-text" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label for="banner-cta-link">CTA Link</label>
-                    <input type="url" id="banner-cta-link" class="form-control">
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="banner-bg-color">Background Color</label>
-                        <input type="color" id="banner-bg-color" class="form-control" value="#00d9ff" style="height: 40px;">
-                    </div>
-                    <div class="form-group">
-                        <label for="banner-text-color">Text Color</label>
-                        <input type="color" id="banner-text-color" class="form-control" value="#ffffff" style="height: 40px;">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="banner-order">Display Order</label>
-                    <input type="number" id="banner-order" class="form-control" value="1" min="1">
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="closeBannerModal()">Cancel</button>
-                    <button type="submit" class="btn-save">Save Banner</button>
-                </div>
-            </form>
-        </div>
-    </div>
+<!-- ══════════ MODALS ══════════ -->
 
-    <!-- Section Modal -->
-    <div id="section-modal" class="modal">
-        <div class="modal-content">
-            <h2 id="section-modal-title">Add New Section</h2>
-            <form id="section-form">
-                <input type="hidden" id="section-id">
-                <div class="form-group">
-                    <label for="section-title">Title</label>
-                    <input type="text" id="section-title" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="section-subtitle">Subtitle</label>
-                    <input type="text" id="section-subtitle" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label for="section-type">Section Type</label>
-                    <select id="section-type" class="form-control" required>
-                        <option value="featured">Featured Products</option>
-                        <option value="trending">Trending Now</option>
-                        <option value="new-arrivals">New Arrivals</option>
-                        <option value="best-sellers">Best Sellers</option>
-                        <option value="custom">Custom API</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="section-api-endpoint">API Endpoint (for Custom Type)</label>
-                    <input type="text" id="section-api-endpoint" class="form-control" placeholder="/api/products?category=electronics">
-                </div>
-                <div class="form-group">
-                    <label for="section-order">Display Order</label>
-                    <input type="number" id="section-order" class="form-control" value="1" min="1">
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="closeSectionModal()">Cancel</button>
-                    <button type="submit" class="btn-save">Save Section</button>
-                </div>
-            </form>
+<!-- Product Modal -->
+<dialog class="modal modal-lg" id="productModal">
+  <div class="modal-header">
+    <h3 id="modalTitle">Add Product</h3>
+    <button class="modal-close" id="closeProductModal">×</button>
+  </div>
+  <div class="modal-form">
+    <form id="productForm">
+      <input type="hidden" id="productId">
+      <div class="form-tabs">
+        <button type="button" class="form-tab active" data-ftab="basic">Basic Info</button>
+        <button type="button" class="form-tab" data-ftab="images">Images</button>
+        <button type="button" class="form-tab" data-ftab="inventory">Inventory</button>
+        <button type="button" class="form-tab" data-ftab="seo">SEO</button>
+      </div>
+      <!-- Basic -->
+      <div class="form-tab-panel active" id="ftab-basic">
+        <div class="form-group"><label>Product Title *</label><input type="text" id="productTitle" required placeholder="e.g. Silk Banarasi Saree"></div>
+        <div class="form-row">
+          <div class="form-group"><label>Category *</label><select id="productCategory" required><option value="">Select…</option><option value="saree">Saree</option><option value="kurti">Kurti</option><option value="dress">Dress</option><option value="top">Top</option></select></div>
+          <div class="form-group"><label>Price (₹) *</label><div class="input-prefix"><span>₹</span><input type="number" id="productPrice" required min="0" step="0.01" placeholder="999"></div></div>
         </div>
+        <div class="form-group"><label>Discount Price (₹)</label><div class="input-prefix"><span>₹</span><input type="number" id="productDiscount" min="0" step="0.01" placeholder="Leave blank if no discount"></div></div>
+        <div class="form-group"><label>Description</label><textarea id="productDescription" rows="4" placeholder="Describe the product…"></textarea></div>
+      </div>
+      <!-- Images -->
+      <div class="form-tab-panel" id="ftab-images">
+        <div class="form-group">
+          <label>Product Images (URLs)</label>
+          <div class="image-inputs">
+            <div class="image-input-row"><span class="img-num">1</span><input type="text" id="image1" placeholder="https://…/image1.jpg"><span class="img-badge primary-badge">Primary</span></div>
+            <div class="image-input-row"><span class="img-num">2</span><input type="text" id="image2" placeholder="https://…/image2.jpg"></div>
+            <div class="image-input-row"><span class="img-num">3</span><input type="text" id="image3" placeholder="https://…/image3.jpg"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Preview</label>
+          <div class="image-preview-grid" id="imagePreview"><span class="preview-empty">Images will appear here</span></div>
+        </div>
+      </div>
+      <!-- Inventory -->
+      <div class="form-tab-panel" id="ftab-inventory">
+        <div class="form-group">
+          <label>Sizes & Stock</label>
+          <div id="sizesContainer"></div>
+          <button type="button" class="btn-secondary btn-sm" id="addSizeRow" style="margin-top:8px">+ Add Size</button>
+          <div class="stock-summary">Total stock: <strong id="totalStockCount">0</strong> units</div>
+        </div>
+      </div>
+      <!-- SEO -->
+      <div class="form-tab-panel" id="ftab-seo">
+        <div class="form-group"><label>Keywords <code>comma-separated</code></label><input type="text" id="productKeywords" placeholder="silk, saree, banarasi"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="cancelProductModal">Cancel</button>
+        <button type="submit" class="btn-primary" id="saveProductBtn"><span id="saveBtnText">Save Product</span></button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
+<!-- Category Modal (product categories) -->
+<dialog class="modal modal-sm" id="categoryModal">
+  <div class="modal-header">
+    <h3 id="categoryModalTitle">Add Category</h3>
+    <button class="modal-close" id="closeCategoryModal">×</button>
+  </div>
+  <div class="modal-form">
+    <form id="categoryForm">
+      <input type="hidden" id="categoryId">
+      <div class="form-group"><label>Name *</label><input type="text" id="categoryName" required placeholder="e.g. Saree"></div>
+      <div class="form-group"><label>Slug *</label><input type="text" id="categorySlug" required placeholder="e.g. saree"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="cancelCategoryModal">Cancel</button>
+        <button type="submit" class="btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
+<!-- Order Modal -->
+<dialog class="modal" id="orderModal">
+  <div class="modal-header">
+    <h3 id="orderModalTitle">Order Details</h3>
+    <button class="modal-close" id="closeOrderModal">×</button>
+  </div>
+  <div class="modal-form" id="orderModalBody"></div>
+</dialog>
+
+<!-- Delete Confirm Modal -->
+<dialog class="modal modal-sm" id="deleteModal">
+  <div class="modal-form" style="text-align:center;padding:28px">
+    <div style="font-size:2.5rem;margin-bottom:12px">🗑️</div>
+    <h3 style="margin-bottom:8px">Confirm Delete</h3>
+    <p class="text-muted">Delete <strong id="deleteItemName">this item</strong>? This cannot be undone.</p>
+    <div class="modal-actions" style="justify-content:center;margin-top:20px">
+      <button class="btn-secondary" id="cancelDelete">Cancel</button>
+      <button class="btn-danger" id="confirmDelete">Yes, Delete</button>
     </div>
+  </div>
+</dialog>
+
+<!-- ══════════ CMS MODALS ══════════ -->
+
+<!-- Slider Modal -->
+<div class="cms-modal-overlay" id="cmsSliderModal">
+  <div class="cms-modal-box">
+    <div class="cms-modal-header">
+      <h3 id="cmsSliderModalTitle">Add Slider</h3>
+      <button class="modal-close" onclick="CMS.closeModal('cmsSliderModal')">×</button>
+    </div>
+    <div class="cms-modal-body">
+      <form id="cmsSliderForm">
+        <input type="hidden" name="edit_id">
+        <div class="form-group"><label>Title *</label><input type="text" name="title" required placeholder="Summer Collection 2024"></div>
+        <div class="form-group"><label>Subtitle</label><input type="text" name="subtitle" placeholder="Discover the latest trends"></div>
+        <div class="form-group"><label>Image URL</label><input type="url" name="image_url" placeholder="https://…/banner.jpg"></div>
+        <div class="form-row">
+          <div class="form-group"><label>CTA Text</label><input type="text" name="cta_text" placeholder="Shop Now"></div>
+          <div class="form-group"><label>CTA Link</label><input type="text" name="cta_link" placeholder="/products"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Background Color</label><input type="color" name="background_color" value="#f0f9ff"></div>
+          <div class="form-group"><label>Text Color</label><input type="color" name="text_color" value="#1e3a8a"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Display Order</label><input type="number" name="display_order" value="0" min="0"></div>
+          <div class="form-group" style="display:flex;align-items:center;gap:10px;margin-top:24px">
+            <label class="toggle-switch"><input type="checkbox" name="is_active" checked><span class="toggle-slider"></span></label>
+            <span>Active</span>
+          </div>
+        </div>
+        <div class="cms-modal-actions">
+          <button type="button" class="btn-secondary" onclick="CMS.closeModal('cmsSliderModal')">Cancel</button>
+          <button type="submit" class="btn-primary">Save Slider</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- CMS Category Modal -->
+<div class="cms-modal-overlay" id="cmsCategoryModal">
+  <div class="cms-modal-box">
+    <div class="cms-modal-header">
+      <h3 id="cmsCategoryModalTitle">Add Category</h3>
+      <button class="modal-close" onclick="CMS.closeModal('cmsCategoryModal')">×</button>
+    </div>
+    <div class="cms-modal-body">
+      <form id="cmsCategoryForm">
+        <input type="hidden" name="edit_id">
+        <div class="form-group"><label>Name *</label><input type="text" name="name" required placeholder="Sarees"></div>
+        <div class="form-group"><label>Slug *</label><input type="text" name="slug" required placeholder="saree"></div>
+        <div class="form-row">
+          <div class="form-group"><label>Icon Emoji</label><input type="text" name="icon_emoji" value="📂" maxlength="5"></div>
+          <div class="form-group"><label>Display Order</label><input type="number" name="display_order" value="0" min="0"></div>
+        </div>
+        <div class="form-group"><label>Image URL</label><input type="url" name="image_url" placeholder="https://…"></div>
+        <div class="form-group"><label>Description</label><textarea name="description" rows="2" placeholder="Short description…"></textarea></div>
+        <div class="form-group" style="display:flex;align-items:center;gap:10px">
+          <label class="toggle-switch"><input type="checkbox" name="is_active" checked><span class="toggle-slider"></span></label>
+          <span>Active</span>
+        </div>
+        <div class="cms-modal-actions">
+          <button type="button" class="btn-secondary" onclick="CMS.closeModal('cmsCategoryModal')">Cancel</button>
+          <button type="submit" class="btn-primary">Save Category</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+<!-- Banner Modal -->
+<div class="cms-modal-overlay" id="cmsBannerModal">
+  <div class="cms-modal-box">
+    <div class="cms-modal-header">
+      <h3 id="cmsBannerModalTitle">Add Banner</h3>
+      <button class="modal-close" onclick="CMS.closeModal('cmsBannerModal')">×</button>
+    </div>
+    <div class="cms-modal-body">
+      <form id="cmsBannerForm">
+        <input type="hidden" name="edit_id">
+        <div class="form-group"><label>Title *</label><input type="text" name="title" required placeholder="Flash Sale"></div>
+        <div class="form-group"><label>Subtitle</label><input type="text" name="subtitle" placeholder="Limited time offer"></div>
+        <div class="form-group"><label>Offer Text</label><input type="text" name="offer_text" placeholder="50% OFF"></div>
+        <div class="form-row">
+          <div class="form-group"><label>Gradient Start</label><input type="color" name="gradient_start" value="#667eea"></div>
+          <div class="form-group"><label>Gradient End</label><input type="color" name="gradient_end" value="#764ba2"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>CTA Text</label><input type="text" name="cta_text" placeholder="Grab Deal"></div>
+          <div class="form-group"><label>CTA Link</label><input type="text" name="cta_link" placeholder="/flash-sale"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Display Order</label><input type="number" name="display_order" value="0" min="0"></div>
+          <div class="form-group" style="display:flex;align-items:center;gap:10px;margin-top:24px">
+            <label class="toggle-switch"><input type="checkbox" name="is_active" checked><span class="toggle-slider"></span></label>
+            <span>Active</span>
+          </div>
+        </div>
+        <div class="cms-modal-actions">
+          <button type="button" class="btn-secondary" onclick="CMS.closeModal('cmsBannerModal')">Cancel</button>
+          <button type="submit" class="btn-primary">Save Banner</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Section Modal -->
+<div class="cms-modal-overlay" id="cmsSectionModal">
+  <div class="cms-modal-box">
+    <div class="cms-modal-header">
+      <h3 id="cmsSectionModalTitle">Edit Section</h3>
+      <button class="modal-close" onclick="CMS.closeModal('cmsSectionModal')">×</button>
+    </div>
+    <div class="cms-modal-body">
+      <form id="cmsSectionForm">
+        <input type="hidden" name="edit_id">
+        <div class="form-group"><label>Title *</label><input type="text" name="title" required placeholder="Featured Products"></div>
+        <div class="form-group"><label>Subtitle</label><input type="text" name="subtitle" placeholder="Handpicked for you"></div>
+        <div class="form-group"><label>Section Type</label>
+          <select name="section_type">
+            <option value="featured">Featured Products</option>
+            <option value="trending">Trending Now</option>
+            <option value="new_arrivals">New Arrivals</option>
+            <option value="best_sellers">Best Sellers</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Display Order</label><input type="number" name="display_order" value="0" min="0"></div>
+          <div class="form-group" style="display:flex;align-items:center;gap:10px;margin-top:24px">
+            <label class="toggle-switch"><input type="checkbox" name="is_active" checked><span class="toggle-slider"></span></label>
+            <span>Active</span>
+          </div>
+        </div>
+        <div class="cms-modal-actions">
+          <button type="button" class="btn-secondary" onclick="CMS.closeModal('cmsSectionModal')">Cancel</button>
+          <button type="submit" class="btn-primary">Save Section</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
     <!-- Trust Feature Modal -->
     <div id="trust-modal" class="modal">
@@ -742,24 +794,24 @@
             </form>
         </div>
     </div>
+  </dialog>
 
-    <!-- ── DELETE CONFIRM MODAL ── -->
-    <div class="modal modal-sm modal-danger" id="deleteModal">
-      <div class="modal-content" style="padding:28px;text-align:center;">
-        <div style="font-size:2.5rem;margin-bottom:12px">🗑️</div>
-        <h3 style="margin-bottom:8px">Confirm Delete</h3>
-        <p class="text-muted">Are you sure you want to delete <strong id="deleteItemName">this item</strong>? This cannot be undone.</p>
-        <div class="modal-actions" style="justify-content:center;margin-top:20px;gap:12px">
-          <button class="btn-secondary" id="cancelDelete">Cancel</button>
-          <button class="btn-danger" id="confirmDelete">Yes, Delete</button>
-        </div>
+  <!-- ── DELETE CONFIRM MODAL ── -->
+  <dialog class="modal modal-sm modal-danger" id="deleteModal">
+    <div class="modal-content" style="padding:28px;text-align:center;">
+      <div style="font-size:2.5rem;margin-bottom:12px">🗑️</div>
+      <h3 style="margin-bottom:8px">Confirm Delete</h3>
+      <p class="text-muted">Are you sure you want to delete <strong id="deleteItemName">this item</strong>? This cannot be undone.</p>
+      <div class="modal-actions" style="justify-content:center;margin-top:20px;gap:12px">
+        <button class="btn-secondary" id="cancelDelete">Cancel</button>
+        <button class="btn-danger" id="confirmDelete">Yes, Delete</button>
       </div>
     </div>
+  </dialog>
 
-  <!-- Toast Notifications -->
-  <div id="toastContainer" class="toast-container"></div>
+<!-- Toast -->
+<div id="toastContainer" class="toast-container"></div>
 
   <script src="/admin/admin.js"></script>
-  <script src="/admin/cms-manager.js"></script>
 </body>
 </html>

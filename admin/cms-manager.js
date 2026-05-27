@@ -1,11 +1,10 @@
 // CMS Manager - Homepage Content Management System
-
-const CMS = (function() {
+(function() {
   const API_BASE = '/api/cms';
-  
-  // State
+
+  // ── State ──
   let currentTab = 'sliders';
-  let cmsData = {
+  let data = {
     sliders: [],
     categories: [],
     banners: [],
@@ -15,233 +14,236 @@ const CMS = (function() {
   };
 
   // Initialize
-  function init() {
+  document.addEventListener('DOMContentLoaded', () => {
     initTabs();
-    setupAddButtons();
-    setupForms();
-  }
+    loadCMSData();
+  });
 
-  // Expose loadCMSData globally
-  window.loadCMSData = loadCMSData;
-  
-  // Expose edit/delete functions globally
-  window.editSlider = editSlider;
-  window.editCategory = editCategory;
-  window.editBanner = editBanner;
-  window.editSection = editSection;
-  window.editTrustFeature = editTrustFeature;
-  window.deleteSlider = deleteSlider;
-  window.deleteCategory = deleteCategory;
-  window.deleteBanner = deleteBanner;
-  window.closeSliderModal = closeSliderModal;
-  window.closeCategoryModal = closeCategoryModal;
-  window.closeBannerModal = closeBannerModal;
-  window.closeSectionModal = closeSectionModal;
-  window.closeTrustModal = closeTrustModal;
-
-  // Tab Navigation
+  // ── Tab wiring (runs on DOMContentLoaded) ──
   function initTabs() {
-    const tabs = document.querySelectorAll('#cmsTabs .settings-tab');
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        tabs.forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        currentTab = tab.dataset.cmstab;
-        
-        document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
-        document.getElementById(`cmstab-${currentTab}`).classList.add('active');
-        
-        renderCurrentTab();
+    const tabBar = document.getElementById('cmsTabs');
+    if (!tabBar) return;
+    tabBar.querySelectorAll('.settings-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabBar.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        currentTab = btn.dataset.cmstab;
+        document.querySelectorAll('#cms .settings-panel').forEach(p => p.classList.remove('active'));
+        const panel = document.getElementById(`cmstab-${currentTab}`);
+        if (panel) panel.classList.add('active');
+        renderTab(currentTab);
       });
     });
   }
 
-  // Load all CMS data
-  async function loadCMSData() {
+  // ── "Add" button wiring ──
+  function initAddButtons() {
+    const map = {
+      addSliderBtn:      () => openModal('cmsSliderModal', {}),
+      addCmsCategoryBtn: () => openModal('cmsCategoryModal', {}),
+      addBannerBtn:      () => openModal('cmsBannerModal', {}),
+      addSectionBtn:     () => openModal('cmsSectionModal', {}),
+      addTrustBtn:       () => openModal('cmsTrustModal', {})
+    };
+    Object.entries(map).forEach(([id, fn]) => {
+      document.getElementById(id)?.addEventListener('click', fn);
+    });
+  }
+
+  // ── Form submit wiring ──
+  function initForms() {
+    const formMap = [
+      { formId: 'cmsSliderForm',   endpoint: `${API_BASE}/sliders`,        modalId: 'cmsSliderModal'   },
+      { formId: 'cmsCategoryForm', endpoint: `${API_BASE}/categories`,     modalId: 'cmsCategoryModal' },
+      { formId: 'cmsBannerForm',   endpoint: `${API_BASE}/banners`,        modalId: 'cmsBannerModal'   },
+      { formId: 'cmsSectionForm',  endpoint: `${API_BASE}/sections`,       modalId: 'cmsSectionModal'  },
+      { formId: 'cmsTrustForm',    endpoint: `${API_BASE}/trust-features`, modalId: 'cmsTrustModal'    }
+    ];
+
+    formMap.forEach(({ formId, endpoint, modalId }) => {
+      const form = document.getElementById(formId);
+      if (!form) return;
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const raw = Object.fromEntries(new FormData(form).entries());
+        const payload = normalizePayload(raw);
+        const editId = payload.edit_id;
+        delete payload.edit_id;
+
+        const method = editId ? 'PUT' : 'POST';
+        const url    = editId ? `${endpoint}/${editId}` : endpoint;
+
+        try {
+          const res    = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          const result = await res.json();
+          if (result.success) {
+            showToast('✅ Saved successfully', 'success');
+            closeModal(modalId);
+            fetchAll();
+          } else {
+            showToast('❌ ' + (result.error || 'Save failed'), 'error');
+          }
+        } catch {
+          showToast('❌ Network error', 'error');
+        }
+      });
+    });
+
+    // Newsletter
+    document.getElementById('saveNewsletterBtn')?.addEventListener('click', async () => {
+      const payload = {
+        title:     document.getElementById('nl_title')?.value || '',
+        subtitle:  document.getElementById('nl_subtitle')?.value || '',
+        is_active: document.getElementById('nl_is_active')?.checked ?? true
+      };
+      try {
+        const res    = await fetch(`${API_BASE}/newsletter`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const result = await res.json();
+        result.success ? showToast('✅ Newsletter saved', 'success') : showToast('❌ ' + (result.error || 'Failed'), 'error');
+      } catch {
+        showToast('❌ Network error', 'error');
+      }
+    });
+  }
+
+  // ── Fetch all CMS data from API ──
+  async function fetchAll() {
     try {
-      const response = await fetch(`${API_BASE}/content`);
-      const result = await response.json();
-      
+      const res    = await fetch(`${API_BASE}/content`);
+      const result = await res.json();
       if (result.success) {
         cmsData = result.data;
         renderCurrentTab();
-        // Hide all loading spinners
-        document.querySelectorAll('.loading-spinner').forEach(el => el.style.display = 'none');
-        // Show form container for newsletter
-        const nlContainer = document.getElementById('newsletter-form-container');
-        if (nlContainer) nlContainer.style.display = 'block';
       } else {
-        showToast('Failed to load CMS data', 'error');
+        showToast('❌ Failed to load CMS data', 'error');
       }
-    } catch (error) {
-      console.error('Error loading CMS data:', error);
-      showToast('Error connecting to server', 'error');
+    } catch (err) {
+      console.error('CMS fetch error:', err);
+      showToast('❌ Could not connect to CMS API', 'error');
     }
   }
 
-  // Render current tab content
-  function renderCurrentTab() {
-    switch(currentTab) {
-      case 'sliders': renderSliders(); break;
-      case 'categories': renderCategories(); break;
-      case 'banners': renderBanners(); break;
-      case 'sections': renderSections(); break;
-      case 'trust': renderTrustFeatures(); break;
-      case 'newsletter': renderNewsletter(); break;
+  // ── Render dispatcher ──
+  function renderTab(tab) {
+    switch (tab) {
+      case 'sliders':    renderSliders();       break;
+      case 'categories': renderCmsCategories(); break;
+      case 'banners':    renderBanners();       break;
+      case 'sections':   renderSections();      break;
+      case 'trust':      renderTrust();         break;
+      case 'newsletter': renderNewsletter();    break;
     }
   }
 
-  // Render Hero Sliders
+  // ── Renderers ──
   function renderSliders() {
-    const container = document.getElementById('slidersList');
-    if (!container) return;
-    
-    if (cmsData.sliders.length === 0) {
-      container.innerHTML = '<p class="text-muted text-center" style="padding:2rem">No sliders yet. Click "Add Slider" to create one.</p>';
-      return;
-    }
-    
-    container.innerHTML = cmsData.sliders.map(slider => `
-      <div class="data-row" data-id="${slider.id}">
-        <div class="data-row__preview" style="background:${slider.background_color || '#f3f4f6'}">
-          ${slider.image_url ? `<img src="${slider.image_url}" alt="${slider.title}" onerror="this.style.display='none'">` : ''}
-          <span>${slider.icon_emoji || '🎠'}</span>
+    const el = document.getElementById('slidersList');
+    if (!el) return;
+    if (!data.sliders.length) { el.innerHTML = emptyState('No sliders yet. Click "+ Add Slider" to create one.'); return; }
+    el.innerHTML = data.sliders.map(s => `
+      <div class="data-row">
+        <div class="data-row__preview" style="background:${esc(s.background_color || '#f3f4f6')}">
+          ${s.image_url ? `<img src="${esc(s.image_url)}" alt="">` : `<span>${esc(s.icon_emoji || '🎠')}</span>`}
         </div>
         <div class="data-row__info">
-          <div class="data-row__title">${escapeHtml(slider.title)}</div>
+          <div class="data-row__title">${esc(s.title)}</div>
           <div class="data-row__meta">
-            <span>${slider.subtitle || 'No subtitle'}</span>
-            ${slider.is_active ? '<span class="status-badge active">Active</span>' : '<span class="status-badge">Inactive</span>'}
-            <span>Order: ${slider.display_order}</span>
+            <span>${esc(s.subtitle || 'No subtitle')}</span>
+            <span class="status-badge ${s.is_active ? 'active' : ''}">${s.is_active ? 'Active' : 'Inactive'}</span>
+            <span>Order: ${s.display_order}</span>
           </div>
         </div>
         <div class="data-row__actions">
-          <button class="btn-icon" onclick="editSlider(${slider.id})" title="Edit">✏️</button>
-          <button class="btn-icon danger" onclick="deleteSlider(${slider.id})" title="Delete">🗑️</button>
+          <button class="btn-icon" onclick="CMS.editSlider(${s.id})" title="Edit">✏️</button>
+          <button class="btn-icon danger" onclick="CMS.deleteSlider(${s.id})" title="Delete">🗑️</button>
         </div>
-      </div>
-    `).join('');
+      </div>`).join('');
   }
 
-  // Render Categories
-  function renderCategories() {
-    const container = document.getElementById('categoriesList');
-    if (!container) return;
-    
-    if (cmsData.categories.length === 0) {
-      container.innerHTML = '<p class="text-muted text-center" style="padding:2rem">No categories yet.</p>';
-      return;
-    }
-    
-    container.innerHTML = cmsData.categories.map(cat => `
-      <div class="data-row" data-id="${cat.id}">
-        <div class="data-row__preview">
-          <span style="font-size:2rem">${cat.icon_emoji || '📂'}</span>
-        </div>
+  function renderCmsCategories() {
+    const el = document.getElementById('cmsCategoriesList');
+    if (!el) return;
+    if (!data.categories.length) { el.innerHTML = emptyState('No categories yet.'); return; }
+    el.innerHTML = data.categories.map(c => `
+      <div class="data-row">
+        <div class="data-row__preview"><span style="font-size:2rem">${esc(c.icon_emoji || '📂')}</span></div>
         <div class="data-row__info">
-          <div class="data-row__title">${escapeHtml(cat.name)}</div>
+          <div class="data-row__title">${esc(c.name)}</div>
           <div class="data-row__meta">
-            <span>/${cat.slug}</span>
-            ${cat.is_active ? '<span class="status-badge active">Active</span>' : '<span class="status-badge">Inactive</span>'}
+            <span>/${esc(c.slug)}</span>
+            <span class="status-badge ${c.is_active ? 'active' : ''}">${c.is_active ? 'Active' : 'Inactive'}</span>
           </div>
         </div>
         <div class="data-row__actions">
-          <button class="btn-icon" onclick="editCategory(${cat.id})" title="Edit">✏️</button>
-          <button class="btn-icon danger" onclick="deleteCategory(${cat.id})" title="Delete">🗑️</button>
+          <button class="btn-icon" onclick="CMS.editCategory(${c.id})" title="Edit">✏️</button>
+          <button class="btn-icon danger" onclick="CMS.deleteCategory(${c.id})" title="Delete">🗑️</button>
         </div>
-      </div>
-    `).join('');
+      </div>`).join('');
   }
 
-  // Render Offer Banners
   function renderBanners() {
-    const container = document.getElementById('bannersList');
-    if (!container) return;
-    
-    if (cmsData.banners.length === 0) {
-      container.innerHTML = '<p class="text-muted text-center" style="padding:2rem">No offer banners yet.</p>';
-      return;
-    }
-    
-    container.innerHTML = cmsData.banners.map(banner => `
-      <div class="data-row" data-id="${banner.id}">
-        <div class="data-row__preview" style="background:linear-gradient(135deg,${banner.gradient_start || '#667eea'},${banner.gradient_end || '#764ba2'})">
-          <span style="color:white;font-weight:bold">${banner.offer_text || 'OFFER'}</span>
+    const el = document.getElementById('bannersList');
+    if (!el) return;
+    if (!data.banners.length) { el.innerHTML = emptyState('No offer banners yet.'); return; }
+    el.innerHTML = data.banners.map(b => `
+      <div class="data-row">
+        <div class="data-row__preview" style="background:linear-gradient(135deg,${esc(b.gradient_start||'#667eea')},${esc(b.gradient_end||'#764ba2')})">
+          <span style="color:white;font-weight:bold;font-size:.75rem">${esc(b.offer_text || 'OFFER')}</span>
         </div>
         <div class="data-row__info">
-          <div class="data-row__title">${escapeHtml(banner.title)}</div>
+          <div class="data-row__title">${esc(b.title)}</div>
           <div class="data-row__meta">
-            <span>${banner.subtitle || ''}</span>
-            ${banner.is_active ? '<span class="status-badge active">Active</span>' : '<span class="status-badge">Inactive</span>'}
+            <span>${esc(b.subtitle || '')}</span>
+            <span class="status-badge ${b.is_active ? 'active' : ''}">${b.is_active ? 'Active' : 'Inactive'}</span>
           </div>
         </div>
         <div class="data-row__actions">
-          <button class="btn-icon" onclick="editBanner(${banner.id})" title="Edit">✏️</button>
-          <button class="btn-icon danger" onclick="deleteBanner(${banner.id})" title="Delete">🗑️</button>
+          <button class="btn-icon" onclick="CMS.editBanner(${b.id})" title="Edit">✏️</button>
+          <button class="btn-icon danger" onclick="CMS.deleteBanner(${b.id})" title="Delete">🗑️</button>
         </div>
-      </div>
-    `).join('');
+      </div>`).join('');
   }
 
-  // Render Product Sections
   function renderSections() {
-    const container = document.getElementById('sectionsList');
-    if (!container) return;
-    
-    if (cmsData.sections.length === 0) {
-      container.innerHTML = '<p class="text-muted text-center" style="padding:2rem">No product sections yet.</p>';
-      return;
-    }
-    
-    container.innerHTML = cmsData.sections.map(section => `
-      <div class="data-row" data-id="${section.id}">
-        <div class="data-row__preview">
-          <span style="font-size:2rem">📦</span>
-        </div>
+    const el = document.getElementById('sectionsList');
+    if (!el) return;
+    if (!data.sections.length) { el.innerHTML = emptyState('No product sections yet.'); return; }
+    el.innerHTML = data.sections.map(s => `
+      <div class="data-row">
+        <div class="data-row__preview"><span style="font-size:2rem">📦</span></div>
         <div class="data-row__info">
-          <div class="data-row__title">${escapeHtml(section.title)}</div>
+          <div class="data-row__title">${esc(s.title)}</div>
           <div class="data-row__meta">
-            <span>${section.section_type || 'custom'}</span>
-            ${section.is_active ? '<span class="status-badge active">Active</span>' : '<span class="status-badge">Inactive</span>'}
+            <span>${esc(s.section_type || 'custom')}</span>
+            <span class="status-badge ${s.is_active ? 'active' : ''}">${s.is_active ? 'Active' : 'Inactive'}</span>
           </div>
         </div>
         <div class="data-row__actions">
-          <button class="btn-icon" onclick="editSection(${section.id})" title="Edit">✏️</button>
+          <button class="btn-icon" onclick="CMS.editSection(${s.id})" title="Edit">✏️</button>
         </div>
-      </div>
-    `).join('');
+      </div>`).join('');
   }
 
-  // Render Trust Features
-  function renderTrustFeatures() {
-    const container = document.getElementById('trustList');
-    if (!container) return;
-    
-    if (cmsData.trustFeatures.length === 0) {
-      container.innerHTML = '<p class="text-muted text-center" style="padding:2rem">No trust features yet.</p>';
-      return;
-    }
-    
-    container.innerHTML = cmsData.trustFeatures.map(feature => `
-      <div class="data-row" data-id="${feature.id}">
-        <div class="data-row__preview">
-          <span style="font-size:2rem">${feature.icon_emoji || '✓'}</span>
-        </div>
+  function renderTrust() {
+    const el = document.getElementById('trustList');
+    if (!el) return;
+    if (!data.trustFeatures.length) { el.innerHTML = emptyState('No trust features yet.'); return; }
+    el.innerHTML = data.trustFeatures.map(f => `
+      <div class="data-row">
+        <div class="data-row__preview"><span style="font-size:2rem">${esc(f.icon_emoji || '✓')}</span></div>
         <div class="data-row__info">
-          <div class="data-row__title">${escapeHtml(feature.title)}</div>
+          <div class="data-row__title">${esc(f.title)}</div>
           <div class="data-row__meta">
-            <span>${feature.description || ''}</span>
-            ${feature.is_active ? '<span class="status-badge active">Active</span>' : '<span class="status-badge">Inactive</span>'}
+            <span>${esc(f.description || '')}</span>
+            <span class="status-badge ${f.is_active ? 'active' : ''}">${f.is_active ? 'Active' : 'Inactive'}</span>
           </div>
         </div>
         <div class="data-row__actions">
-          <button class="btn-icon" onclick="editTrustFeature(${feature.id})" title="Edit">✏️</button>
+          <button class="btn-icon" onclick="CMS.editTrust(${f.id})" title="Edit">✏️</button>
         </div>
-      </div>
-    `).join('');
+      </div>`).join('');
   }
 
-  // Render Newsletter Settings
   function renderNewsletter() {
     const form = document.getElementById('newsletterForm');
     if (!form) return;
@@ -258,7 +260,7 @@ const CMS = (function() {
     const slider = cmsData.sliders.find(s => s.id === id);
     if (!slider) return;
     
-    openModal('slider-modal', {
+    openModal('sliderModal', {
       edit_id: slider.id,
       title: slider.title || '',
       subtitle: slider.subtitle || '',
@@ -276,7 +278,7 @@ const CMS = (function() {
     const cat = cmsData.categories.find(c => c.id === id);
     if (!cat) return;
     
-    openModal('category-modal', {
+    openModal('categoryModal', {
       edit_id: cat.id,
       name: cat.name || '',
       slug: cat.slug || '',
@@ -292,7 +294,7 @@ const CMS = (function() {
     const banner = cmsData.banners.find(b => b.id === id);
     if (!banner) return;
     
-    openModal('banner-modal', {
+    openModal('bannerModal', {
       edit_id: banner.id,
       title: banner.title || '',
       subtitle: banner.subtitle || '',
@@ -311,7 +313,7 @@ const CMS = (function() {
     const section = cmsData.sections.find(s => s.id === id);
     if (!section) return;
     
-    openModal('section-modal', {
+    openModal('sectionModal', {
       edit_id: section.id,
       title: section.title || '',
       subtitle: section.subtitle || '',
@@ -325,7 +327,7 @@ const CMS = (function() {
     const feature = cmsData.trustFeatures.find(f => f.id === id);
     if (!feature) return;
     
-    openModal('trust-modal', {
+    openModal('trustModal', {
       edit_id: feature.id,
       icon_emoji: feature.icon_emoji || '✓',
       title: feature.title || '',
@@ -357,180 +359,81 @@ const CMS = (function() {
   window.closeSectionModal = function() { closeModal('section-modal'); };
   window.closeTrustModal = function() { closeModal('trust-modal'); };
 
-  // Modal handling
-  function openModal(modalId, data = {}) {
-    const modal = document.getElementById(modalId);
-    if (!modal) return;
-    
-    // Populate form fields
-    Object.keys(data).forEach(key => {
-      const field = modal.querySelector(`[name="${key}"]`);
-      if (field) {
-        if (field.type === 'checkbox') {
-          field.checked = data[key];
-        } else {
-          field.value = data[key];
-        }
-      }
-    });
-    
-    modal.style.display = 'flex';
-  }
-
-  function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) modal.style.display = 'none';
-  }
-
-  // Form submissions
-  document.querySelectorAll('.modal-form').forEach(form => {
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const formData = new FormData(form);
-      const data = Object.fromEntries(formData.entries());
-      
-      // Convert checkbox values
-      Object.keys(data).forEach(key => {
-        if (data[key] === 'on') data[key] = true;
-        if (data[key] === 'off') data[key] = false;
-      });
-      
-      // Convert numbers
-      if (data.display_order) data.display_order = parseInt(data.display_order);
-      
-      const action = form.dataset.action;
-      const endpoint = form.dataset.endpoint;
-      
-      try {
-        const method = data.edit_id ? 'PUT' : 'POST';
-        const url = data.edit_id ? `${endpoint}/${data.edit_id}` : endpoint;
-        delete data.edit_id;
-        
-        const response = await fetch(url, {
-          method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          showToast('Saved successfully!', 'success');
-          closeModal(form.closest('.modal').id);
-          loadCMSData();
-        } else {
-          showToast(result.error || 'Save failed', 'error');
-        }
-      } catch (error) {
-        console.error('Save error:', error);
-        showToast('Network error', 'error');
-      }
-    });
-  });
-
-  // Delete functions
-  window.deleteSlider = async function(id) {
+  // ── Delete helpers ──
+  CMS.deleteSlider = async function(id) {
     if (!confirm('Delete this slider?')) return;
-    await deleteItem(`${API_BASE}/sliders/${id}`, 'Slider deleted');
+    await doDelete(`${API_BASE}/sliders/${id}`, 'Slider deleted');
   };
-
-  window.deleteCategory = async function(id) {
+  CMS.deleteCategory = async function(id) {
     if (!confirm('Delete this category?')) return;
-    await deleteItem(`${API_BASE}/categories/${id}`, 'Category deleted');
+    await doDelete(`${API_BASE}/categories/${id}`, 'Category deleted');
   };
-
-  window.deleteBanner = async function(id) {
+  CMS.deleteBanner = async function(id) {
     if (!confirm('Delete this banner?')) return;
-    await deleteItem(`${API_BASE}/banners/${id}`, 'Banner deleted');
+    await doDelete(`${API_BASE}/banners/${id}`, 'Banner deleted');
   };
 
-  async function deleteItem(url, successMsg) {
+  async function doDelete(url, msg) {
     try {
-      const response = await fetch(url, { method: 'DELETE' });
-      const result = await response.json();
-      
-      if (result.success) {
-        showToast(successMsg, 'success');
-        loadCMSData();
-      } else {
-        showToast(result.error || 'Delete failed', 'error');
-      }
-    } catch (error) {
-      showToast('Network error', 'error');
+      const res    = await fetch(url, { method: 'DELETE' });
+      const result = await res.json();
+      result.success ? (showToast('✅ ' + msg, 'success'), fetchAll()) : showToast('❌ ' + (result.error || 'Delete failed'), 'error');
+    } catch {
+      showToast('❌ Network error', 'error');
     }
   }
 
   // Add button handlers
-  function setupAddButtons() {
-    document.getElementById('addSliderBtn')?.addEventListener('click', () => {
-      openModal('slider-modal', {
-        background_color: '#ffffff',
-        text_color: '#000000',
-        is_active: true
-      });
+  document.getElementById('addSliderBtn')?.addEventListener('click', () => {
+    openModal('sliderModal', {
+      background_color: '#ffffff',
+      text_color: '#000000',
+      is_active: true
     });
+  });
 
-    document.getElementById('addCategoryBtn')?.addEventListener('click', () => {
-      openModal('category-modal', {
-        icon_emoji: '📂',
-        is_active: true
-      });
+  document.getElementById('addCategoryBtn')?.addEventListener('click', () => {
+    openModal('categoryModal', {
+      icon_emoji: '📂',
+      is_active: true
     });
+  });
 
-    document.getElementById('addBannerBtn')?.addEventListener('click', () => {
-      openModal('banner-modal', {
-        gradient_start: '#667eea',
-        gradient_end: '#764ba2',
-        is_active: true
-      });
+  document.getElementById('addBannerBtn')?.addEventListener('click', () => {
+    openModal('bannerModal', {
+      gradient_start: '#667eea',
+      gradient_end: '#764ba2',
+      is_active: true
     });
+  });
 
-    document.getElementById('addSectionBtn')?.addEventListener('click', () => {
-      openModal('section-modal', {
-        section_type: 'featured',
-        is_active: true
+  // Newsletter form
+  document.getElementById('saveNewsletterBtn')?.addEventListener('click', async () => {
+    const form = document.getElementById('newsletterForm');
+    const data = {
+      title: form.nl_title.value,
+      subtitle: form.nl_subtitle.value,
+      is_active: form.nl_is_active.checked
+    };
+    
+    try {
+      const response = await fetch(`${API_BASE}/newsletter`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
       });
-    });
-
-    document.getElementById('addTrustBtn')?.addEventListener('click', () => {
-      openModal('trust-modal', {
-        icon_emoji: '✓',
-        is_active: true
-      });
-    });
-  }
-
-  // Setup form submissions
-  function setupForms() {
-    // Newsletter form
-    document.getElementById('saveNewsletterBtn')?.addEventListener('click', async (e) => {
-      if (e) e.preventDefault();
-      const form = document.getElementById('newsletterForm');
-      const data = {
-        title: form.nl_title.value,
-        subtitle: form.nl_subtitle.value,
-        is_active: form.nl_is_active.checked
-      };
       
-      try {
-        const response = await fetch(`${API_BASE}/newsletter`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        
-        const result = await response.json();
-        if (result.success) {
-          showToast('Newsletter settings saved!', 'success');
-          loadCMSData();
-        } else {
-          showToast(result.error || 'Save failed', 'error');
-        }
-      } catch (error) {
-        showToast('Network error', 'error');
+      const result = await response.json();
+      if (result.success) {
+        showToast('Newsletter settings saved!', 'success');
+        loadCMSData();
+      } else {
+        showToast(result.error || 'Save failed', 'error');
       }
-    });
-  }
+    } catch (error) {
+      showToast('Network error', 'error');
+    }
+  });
 
   // Utility: Escape HTML
   function escapeHtml(text) {
@@ -563,8 +466,5 @@ const CMS = (function() {
       setTimeout(() => toast.remove(), 300);
     }, 3000);
   }
-
-  // Initialize on DOM ready
-  document.addEventListener('DOMContentLoaded', init);
 
 })();
