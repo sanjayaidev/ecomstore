@@ -487,6 +487,14 @@ async function handleCMS(req, res, sql, pathParts, params) {
       const rows = await sql`SELECT * FROM cms_product_sections ORDER BY display_order ASC`;
       return json(res, 200, { success: true, data: rows });
     }
+    if (req.method === 'POST') {
+      const b = await parseBody(req);
+      const row = await sql`
+        INSERT INTO cms_product_sections (title, subtitle, section_type, display_order, is_active, created_at, updated_at)
+        VALUES (${b.title || ''}, ${b.subtitle || ''}, ${b.section_type || 'featured'}, ${b.display_order || 0}, ${b.is_active !== false ? true : false}, NOW(), NOW())
+        RETURNING *`;
+      return json(res, 201, { success: true, data: row[0] });
+    }
     if (req.method === 'PUT') {
       const id = urlId || (await parseBody(req))?.id;
       if (!id) return json(res, 400, { success: false, error: 'ID required' });
