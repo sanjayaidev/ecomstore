@@ -1,5 +1,6 @@
 // api/index.js - Unified API Router (Single Serverless Function)
 import { neon } from '@neondatabase/serverless';
+import crypto from 'crypto';
 
 export const config = { runtime: 'nodejs' };
 
@@ -19,23 +20,13 @@ function json(res, status, data) {
   return res.status(status).json(data);
 }
 
-// CORS headers
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
-
 // ============ PRODUCTS HANDLERS ============
 async function handleProducts(req, res, sql, params) {
   const method = req.method;
-  
   if (method === 'OPTIONS') return res.status(200).end();
-  
+
   if (method === 'GET') {
-    let query = sql`SELECT * FROM products WHERE 1=1`;
     const conditions = [];
-    
     if (params.get('id')) {
       const id = Number(params.get('id'));
       if (!Number.isNaN(id)) conditions.push(sql`id = ${id}`);
@@ -48,104 +39,91 @@ async function handleProducts(req, res, sql, params) {
       const kw = `%${params.get('keywords')}%`;
       conditions.push(sql`(title ILIKE ${kw} OR description ILIKE ${kw})`);
     }
-    
-    if (conditions.length > 0) query = sql`SELECT * FROM products WHERE ${sql.join(conditions, sql` AND `)}`;
-    
+
+    let query = conditions.length > 0
+      ? sql`SELECT * FROM products WHERE ${sql.join(conditions, sql` AND `)}`
+      : sql`SELECT * FROM products`;
+
     const sort = params.get('sort');
-    if (sort === 'newest') query = sql`${query} ORDER BY created_at DESC`;
-    else if (sort === 'price_low') query = sql`${query} ORDER BY price ASC`;
+    if (sort === 'newest')     query = sql`${query} ORDER BY created_at DESC`;
+    else if (sort === 'price_low')  query = sql`${query} ORDER BY price ASC`;
     else if (sort === 'price_high') query = sql`${query} ORDER BY price DESC`;
-    
+
     const limit = parseInt(params.get('limit')) || 20;
     query = sql`${query} LIMIT ${limit}`;
-    
-    const products = await query;
-    return json(res, 200, products);
+    return json(res, 200, await query);
   }
-  
+
   if (method === 'POST') {
     const body = await parseBody(req);
     const { title, description, price, category, image_1, image_2, sizes, discount_price } = body;
     if (!title || !price || !category) return json(res, 400, { error: 'Missing required fields' });
-    
     const result = await sql`
       INSERT INTO products (title, description, price, category, image_1, image_2, sizes, discount_price, created_at, updated_at)
       VALUES (${title}, ${description || ''}, ${price}, ${category}, ${image_1 || ''}, ${image_2 || ''}, ${JSON.stringify(sizes || [])}, ${discount_price || null}, NOW(), NOW())
-      RETURNING *
-    `;
+      RETURNING *`;
     return json(res, 201, result[0]);
   }
-  
+
   return json(res, 405, { error: 'Method not allowed' });
 }
 
 // ============ ORDERS HANDLERS ============
 async function handleOrders(req, res, sql, params) {
   if (req.method === 'OPTIONS') return res.status(200).end();
-  
   const body = await parseBody(req);
-  
+
   if (req.method === 'GET') {
     const orderId = params.get('id');
     if (orderId) {
       const orders = await sql`
-        SELECT o.*, 
+        SELECT o.*,
           (SELECT json_agg(json_build_object('product_id', oi.product_id, 'title', p.title, 'price', oi.price, 'quantity', oi.quantity, 'size', oi.size))
            FROM order_items oi LEFT JOIN products p ON oi.product_id = p.id WHERE oi.order_id = o.id) as items_detail
-        FROM orders o WHERE o.id = ${orderId}
-      `;
+        FROM orders o WHERE o.id = ${orderId}`;
       if (!orders.length) return json(res, 404, { error: 'Order not found' });
       return json(res, 200, orders[0]);
     }
-    
     const orders = await sql`
-      SELECT o.*, 
+      SELECT o.*,
         (SELECT json_agg(json_build_object('product_id', oi.product_id, 'title', p.title, 'price', oi.price, 'quantity', oi.quantity, 'size', oi.size))
          FROM order_items oi LEFT JOIN products p ON oi.product_id = p.id WHERE oi.order_id = o.id) as items_detail
-      FROM orders o ORDER BY o.created_at DESC
-    `;
+      FROM orders o ORDER BY o.created_at DESC`;
     return json(res, 200, orders || []);
   }
-  
+
   if (req.method === 'POST') {
     const { customer_name, customer_email, customer_phone, customer_address, items, total, payment_method, notes } = body;
     if (!customer_email || !items?.length || !total) return json(res, 400, { error: 'Missing: customer_email, items, or total' });
-    
     const orderResult = await sql`
       INSERT INTO orders (customer_name, customer_email, customer_phone, customer_address, total, payment_method, notes, status, created_at, updated_at)
       VALUES (${customer_name || null}, ${customer_email}, ${customer_phone || null}, ${customer_address || null}, ${total}, ${payment_method || 'cod'}, ${notes || null}, 'pending', NOW(), NOW())
-      RETURNING id
-    `;
+      RETURNING id`;
     const orderId = orderResult[0].id;
-    
     for (const item of items) {
       await sql`INSERT INTO order_items (order_id, product_id, size, quantity, price) VALUES (${orderId}, ${item.product_id}, ${item.size || null}, ${item.quantity}, ${item.price})`;
     }
-    
     const fullOrder = await sql`
-      SELECT o.*, 
+      SELECT o.*,
         (SELECT json_agg(json_build_object('product_id', oi.product_id, 'title', p.title, 'price', oi.price, 'quantity', oi.quantity, 'size', oi.size))
          FROM order_items oi LEFT JOIN products p ON oi.product_id = p.id WHERE oi.order_id = o.id) as items_detail
-      FROM orders o WHERE o.id = ${orderId}
-    `;
+      FROM orders o WHERE o.id = ${orderId}`;
     return json(res, 201, fullOrder[0]);
   }
-  
+
   if (req.method === 'PUT') {
     const { id, status, tracking_number, notes } = body;
     if (!id) return json(res, 400, { error: 'Order ID required' });
-    
     const updates = [];
-    if (status) updates.push(sql`status = ${status}`);
+    if (status)          updates.push(sql`status = ${status}`);
     if (tracking_number) updates.push(sql`tracking_number = ${tracking_number}`);
-    if (notes) updates.push(sql`notes = ${notes}`);
+    if (notes)           updates.push(sql`notes = ${notes}`);
     updates.push(sql`updated_at = NOW()`);
-    
     const result = await sql`UPDATE orders SET ${sql.join(updates, sql`, `)} WHERE id = ${id} RETURNING *`;
     if (!result?.length) return json(res, 404, { error: 'Order not found' });
     return json(res, 200, result[0]);
   }
-  
+
   if (req.method === 'DELETE') {
     const { id } = body;
     if (!id) return json(res, 400, { error: 'Order ID required' });
@@ -153,200 +131,291 @@ async function handleOrders(req, res, sql, params) {
     if (!result?.length) return json(res, 404, { error: 'Order not found' });
     return json(res, 200, { success: true });
   }
-  
+
   return json(res, 405, { error: 'Method not allowed' });
 }
 
-// ============ PAYMENT HANDLERS ============
+// ============ RAZORPAY PAYMENT HANDLERS ============
+
+function razorpayAuth() {
+  const id  = process.env.RAZORPAY_KEY_ID;
+  const sec = process.env.RAZORPAY_KEY_SECRET;
+  if (!id || !sec) throw new Error('Razorpay credentials not configured');
+  return 'Basic ' + Buffer.from(`${id}:${sec}`).toString('base64');
+}
+
+async function razorpayRequest(path, method = 'GET', body = null) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json', Authorization: razorpayAuth() }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(`https://api.razorpay.com/v1${path}`, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.description || `Razorpay error ${res.status}`);
+  return data;
+}
+
+async function calculateServerTotal(sql, items) {
+  let subtotal = 0;
+  for (const item of items) {
+    const rows = await sql`SELECT price, discount_price FROM products WHERE id = ${item.product_id}`;
+    if (!rows.length) throw new Error(`Product ${item.product_id} not found`);
+    const unit = Number(rows[0].discount_price || rows[0].price);
+    subtotal += unit * item.quantity;
+  }
+  const shipping = subtotal >= 999 ? 0 : 100;
+  const tax      = Math.round(subtotal * 0.10);
+  const total    = Math.round(subtotal + tax + shipping);
+  return { subtotal: Math.round(subtotal), tax, shipping, total };
+}
+
+function verifyRazorpaySignature(orderId, paymentId, signature) {
+  const expected = crypto
+    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+    .update(`${orderId}|${paymentId}`)
+    .digest('hex');
+  try {
+    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+  } catch { return false; }
+}
+
+function verifyWebhookSignature(rawBody, signature) {
+  const expected = crypto
+    .createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET)
+    .update(rawBody)
+    .digest('hex');
+  try {
+    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+  } catch { return false; }
+}
+
 async function handlePayment(req, res, sql, params) {
   if (req.method === 'OPTIONS') return res.status(200).end();
-  
-  const amount = params.get('amount');
-  
-  if (req.method === 'GET') {
-    if (!amount) return json(res, 400, { error: 'Amount required' });
-    
-    const html = `
-      <!DOCTYPE html>
-      <html><head><title>Payment Processing</title>
-      <style>
-        .payment-container { max-width: 500px; margin: 100px auto; padding: 40px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .payment-form { display: flex; flex-direction: column; gap: 20px; }
-        .form-group { display: flex; flex-direction: column; gap: 8px; }
-        .form-group label { font-weight: 600; }
-        .form-group input { padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
-        .btn-pay { background: #ff6b6b; color: white; padding: 14px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
-        .btn-pay:hover { background: #ee5a5a; }
-        .amount-display { font-size: 1.5rem; font-weight: bold; color: #ff6b6b; text-align: center; margin: 20px 0; }
-      </style></head>
-      <body>
-        <div class="payment-container">
-          <h1>💳 Payment Processing</h1>
-          <div class="amount-display">₹${(amount / 100).toFixed(2)}</div>
-          <form class="payment-form" id="paymentForm">
-            <div class="form-group"><label>Card Holder Name</label><input type="text" name="cardholder" required /></div>
-            <div class="form-group"><label>Card Number</label><input type="text" name="cardnumber" placeholder="1234 5678 9012 3456" required /></div>
-            <div class="form-group"><label>Expiry Date (MM/YY)</label><input type="text" name="expiry" placeholder="12/25" required /></div>
-            <div class="form-group"><label>CVV</label><input type="text" name="cvv" placeholder="123" maxlength="3" required /></div>
-            <button type="submit" class="btn-pay">Pay Now</button>
-          </form>
-        </div>
-        <script>
-          document.getElementById('paymentForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const checkoutData = JSON.parse(sessionStorage.getItem('checkoutData') || '{}');
-            try {
-              const res = await fetch('/api/payment', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: ${amount}, status: 'success', transactionId: 'txn_' + Date.now(), ...checkoutData })
-              });
-              const result = await res.json();
-              if (res.ok && result.order_id) {
-                sessionStorage.removeItem('checkoutData');
-                window.location.href = '/pages/order-success.html?id=' + result.order_id + '&total=${(amount / 100).toFixed(2)}';
-              } else {
-                alert('Payment processing failed: ' + (result.error || 'Unknown error'));
-              }
-            } catch (err) { alert('Error: ' + err.message); }
-          });
-        </script>
-      </body></html>
-    `;
-    return res.status(200).send(html);
+
+  const pathname = (req.url || '').split('?')[0];
+  const subRoute = pathname.replace(/^.*\/payment/, '') || '/';
+
+  // ── GET /api/payment/config ── returns public key
+  if (req.method === 'GET' && subRoute === '/config') {
+    const key = process.env.RAZORPAY_KEY_ID;
+    if (!key) return json(res, 500, { error: 'Razorpay not configured' });
+    return json(res, 200, { key });
   }
-  
-  if (req.method === 'POST') {
+
+  // ── POST /api/payment/create ── create Razorpay order
+  if (req.method === 'POST' && (subRoute === '/create' || subRoute === '/')) {
     const body = await parseBody(req);
-    const { amount: bodyAmount, status, transactionId, customer_name, customer_email, customer_phone, customer_address, items, subtotal, tax, shipping, total } = body;
-    
-    if (!bodyAmount || !status) return json(res, 400, { error: 'Missing amount or status' });
-    if (status !== 'success') return json(res, 400, { error: 'Payment failed or cancelled' });
-    if (!customer_email || !items?.length) return json(res, 400, { error: 'Missing customer or items data' });
-    
-    const orderResult = await sql`
-      INSERT INTO orders (customer_name, customer_email, customer_phone, customer_address, total, payment_method, status, created_at, updated_at)
-      VALUES (${customer_name || null}, ${customer_email}, ${customer_phone || null}, ${customer_address || null}, ${total}, 'online', 'pending', NOW(), NOW())
-      RETURNING id
-    `;
-    if (!orderResult || orderResult.length === 0) return json(res, 500, { error: 'Failed to create order' });
-    
-    const orderId = orderResult[0].id;
+    const {
+      customer_name, customer_email, customer_phone,
+      customer_address, items
+    } = body || {};
+
+    if (!customer_email || !customer_email.includes('@'))
+      return json(res, 400, { error: 'Valid email required' });
+    if (!customer_phone)
+      return json(res, 400, { error: 'Phone number required' });
+    if (!Array.isArray(items) || !items.length)
+      return json(res, 400, { error: 'Cart is empty' });
+
     for (const item of items) {
-      await sql`INSERT INTO order_items (order_id, product_id, size, quantity, price) VALUES (${orderId}, ${item.product_id}, ${item.size || null}, ${item.quantity}, ${item.price})`;
+      if (!item.product_id || !item.quantity || item.quantity < 1)
+        return json(res, 400, { error: 'Invalid cart item' });
     }
-    
-    return json(res, 201, { success: true, order_id: orderId, transaction_id: transactionId, amount: bodyAmount, message: 'Payment successful and order created' });
+
+    try {
+      const { subtotal, tax, shipping, total } = await calculateServerTotal(sql, items);
+
+      // Create DB order first (status: 'created' = awaiting payment)
+      const [dbOrder] = await sql`
+        INSERT INTO orders (customer_name, customer_email, customer_phone, customer_address, total, payment_method, status, created_at, updated_at)
+        VALUES (${customer_name || null}, ${customer_email}, ${customer_phone}, ${customer_address || null}, ${total}, 'online', 'created', NOW(), NOW())
+        RETURNING id`;
+
+      for (const item of items) {
+        const [prod] = await sql`SELECT price, discount_price FROM products WHERE id = ${item.product_id}`;
+        const unit = Number(prod.discount_price || prod.price);
+        await sql`INSERT INTO order_items (order_id, product_id, size, quantity, price) VALUES (${dbOrder.id}, ${item.product_id}, ${item.size || null}, ${item.quantity}, ${unit})`;
+      }
+
+      // Create Razorpay order
+      const rzOrder = await razorpayRequest('/orders', 'POST', {
+        amount:   total * 100,
+        currency: 'INR',
+        receipt:  String(dbOrder.id),
+        notes: {
+          db_order_id:    String(dbOrder.id),
+          customer_email: customer_email,
+          customer_name:  customer_name || ''
+        }
+      });
+
+      // Save Razorpay order ID for webhook lookup
+      await sql`UPDATE orders SET payment_reference = ${rzOrder.id}, updated_at = NOW() WHERE id = ${dbOrder.id}`;
+
+      return json(res, 200, {
+        razorpay_order_id: rzOrder.id,
+        amount:            total * 100,
+        currency:          'INR',
+        key:               process.env.RAZORPAY_KEY_ID,
+        db_order_id:       dbOrder.id,
+        breakdown:         { subtotal, tax, shipping, total }
+      });
+    } catch (err) {
+      console.error('[payment/create]', err.message);
+      return json(res, 500, { error: err.message || 'Failed to create payment order' });
+    }
   }
-  
-  return json(res, 405, { error: 'Method not allowed' });
+
+  // ── POST /api/payment/verify ── verify HMAC after frontend success
+  if (req.method === 'POST' && subRoute === '/verify') {
+    const body = await parseBody(req);
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, db_order_id } = body || {};
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !db_order_id)
+      return json(res, 400, { error: 'Missing verification fields' });
+
+    try {
+      const valid = verifyRazorpaySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
+      if (!valid) {
+        await sql`UPDATE orders SET status = 'payment_failed', updated_at = NOW() WHERE id = ${db_order_id}`;
+        return json(res, 400, { error: 'Payment signature invalid — possible tampered request' });
+      }
+
+      await sql`
+        UPDATE orders
+        SET status = 'pending', payment_reference = ${razorpay_payment_id}, updated_at = NOW()
+        WHERE id = ${db_order_id}`;
+
+      return json(res, 200, { success: true, order_id: db_order_id });
+    } catch (err) {
+      console.error('[payment/verify]', err.message);
+      return json(res, 500, { error: 'Verification error' });
+    }
+  }
+
+  // ── POST /api/payment/webhook ── Razorpay server → server (backup confirmation)
+  // Register this URL in Razorpay Dashboard → Settings → Webhooks
+  if (req.method === 'POST' && subRoute === '/webhook') {
+    const rawBody = JSON.stringify(await parseBody(req));
+    const sig     = req.headers['x-razorpay-signature'];
+
+    if (!sig || !process.env.RAZORPAY_WEBHOOK_SECRET)
+      return json(res, 400, { error: 'Missing signature' });
+
+    if (!verifyWebhookSignature(rawBody, sig)) {
+      console.warn('[webhook] Invalid signature');
+      return json(res, 400, { error: 'Invalid signature' });
+    }
+
+    let event;
+    try { event = JSON.parse(rawBody); } catch { return json(res, 400, { error: 'Bad JSON' }); }
+
+    const eventType = event.event;
+    const payment   = event.payload?.payment?.entity;
+    const rzOrderId = payment?.order_id;
+
+    try {
+      if ((eventType === 'payment.captured' || eventType === 'order.paid') && rzOrderId) {
+        await sql`
+          UPDATE orders SET status = 'pending', updated_at = NOW()
+          WHERE payment_reference = ${rzOrderId} AND status IN ('created', 'payment_failed')`;
+      }
+      if (eventType === 'payment.failed' && rzOrderId) {
+        await sql`
+          UPDATE orders SET status = 'payment_failed', updated_at = NOW()
+          WHERE payment_reference = ${rzOrderId} AND status = 'created'`;
+      }
+      // Always 200 so Razorpay stops retrying
+      return json(res, 200, { received: true });
+    } catch (err) {
+      console.error('[webhook]', err.message);
+      return json(res, 200, { received: true });
+    }
+  }
+
+  return json(res, 404, { error: 'Payment endpoint not found' });
 }
 
 // ============ AUTH HANDLERS ============
 async function handleAuth(req, res, pathParts) {
   if (req.method === 'OPTIONS') return res.status(200).end();
-  
-  // /auth/login
   if (pathParts[2] === 'login') {
     if (req.method !== 'POST') return json(res, 405, { error: 'Method Not Allowed' });
-    
     const body = await parseBody(req);
     const { email, password } = body;
-    
-    if (email === 'sanjay@mystore.com' && password === 'sanjay@123') {
+    if (email === 'sanjay@mystore.com' && password === 'sanjay@123')
       return json(res, 200, { success: true, token: 'test-' + Date.now(), user: { email, role: 'admin' } });
-    }
     return json(res, 401, { error: 'Invalid credentials' });
   }
-  
   return json(res, 404, { error: 'Auth endpoint not found' });
 }
 
 // ============ ADMIN HANDLERS ============
 async function handleAdmin(req, res, sql, pathParts) {
   if (req.method === 'OPTIONS') return res.status(200).end();
-  
-  // /admin/products
+
   if (pathParts[2] === 'products') {
     if (req.method === 'GET') {
       const products = await sql`SELECT * FROM products ORDER BY created_at DESC`;
-      const formatted = products.map(p => {
+      return json(res, 200, products.map(p => {
         let sizes = p.sizes, keywords = p.keywords;
         if (typeof sizes === 'string') { try { sizes = JSON.parse(sizes); } catch { sizes = []; } }
         if (typeof keywords === 'string') { try { keywords = JSON.parse(keywords); } catch { keywords = []; } }
         if (!Array.isArray(sizes)) sizes = [];
         if (!Array.isArray(keywords)) keywords = [];
         return { ...p, sizes, keywords };
-      });
-      return json(res, 200, formatted);
+      }));
     }
-    
     if (req.method === 'POST') {
       const body = await parseBody(req);
       if (!body.title || !body.price || !body.category) return json(res, 400, { error: 'Missing required fields' });
       const sizes = Array.isArray(body.sizes) ? body.sizes : [];
       const keywords = Array.isArray(body.keywords) ? body.keywords : [];
-      
       const result = await sql`
         INSERT INTO products (title, description, price, discount_price, category, image_1, image_2, image_3, sizes, keywords, created_at, updated_at)
         VALUES (${body.title}, ${body.description || ''}, ${body.price}, ${body.discount_price || null}, ${body.category}, ${body.image_1 || ''}, ${body.image_2 || ''}, ${body.image_3 || ''}, ${JSON.stringify(sizes)}, ${JSON.stringify(keywords)}, NOW(), NOW())
-        RETURNING *
-      `;
+        RETURNING *`;
       return json(res, 201, result[0]);
     }
-    
     if (req.method === 'PUT') {
       const body = await parseBody(req);
       if (!body.id) return json(res, 400, { error: 'Product ID required' });
       const sizes = Array.isArray(body.sizes) ? body.sizes : [];
       const keywords = Array.isArray(body.keywords) ? body.keywords : [];
-      
       const result = await sql`
         UPDATE products SET
-          title = COALESCE(${body.title}, title),
-          description = COALESCE(${body.description}, description),
-          price = COALESCE(${body.price}, price),
-          discount_price = COALESCE(${body.discount_price}, discount_price),
-          category = COALESCE(${body.category}, category),
-          image_1 = COALESCE(${body.image_1}, image_1),
-          image_2 = COALESCE(${body.image_2}, image_2),
-          image_3 = COALESCE(${body.image_3}, image_3),
-          sizes = COALESCE(${JSON.stringify(sizes)}, sizes),
-          keywords = COALESCE(${JSON.stringify(keywords)}, keywords),
+          title = COALESCE(${body.title}, title), description = COALESCE(${body.description}, description),
+          price = COALESCE(${body.price}, price), discount_price = COALESCE(${body.discount_price}, discount_price),
+          category = COALESCE(${body.category}, category), image_1 = COALESCE(${body.image_1}, image_1),
+          image_2 = COALESCE(${body.image_2}, image_2), image_3 = COALESCE(${body.image_3}, image_3),
+          sizes = COALESCE(${JSON.stringify(sizes)}, sizes), keywords = COALESCE(${JSON.stringify(keywords)}, keywords),
           updated_at = NOW()
-        WHERE id = ${body.id}
-        RETURNING *
-      `;
-      if (result.length === 0) return json(res, 404, { error: 'Product not found' });
+        WHERE id = ${body.id} RETURNING *`;
+      if (!result.length) return json(res, 404, { error: 'Product not found' });
       return json(res, 200, result[0]);
     }
-    
     if (req.method === 'DELETE') {
       const body = await parseBody(req);
-      const { id } = body;
-      if (!id) return json(res, 400, { error: 'Product ID required' });
-      const result = await sql`DELETE FROM products WHERE id = ${id} RETURNING id`;
-      if (result.length === 0) return json(res, 404, { error: 'Product not found' });
+      if (!body.id) return json(res, 400, { error: 'Product ID required' });
+      const result = await sql`DELETE FROM products WHERE id = ${body.id} RETURNING id`;
+      if (!result.length) return json(res, 404, { error: 'Product not found' });
       return json(res, 200, { success: true });
     }
-    
     return json(res, 405, { error: 'Method not allowed' });
   }
-  
   return json(res, 404, { error: 'Admin endpoint not found' });
 }
 
 // ============ CMS HANDLERS ============
 async function handleCMS(req, res, sql, pathParts, params) {
   if (req.method === 'OPTIONS') return res.status(200).end();
-  
+
   const extractId = () => {
-    const url = req.url || '';
-    const match = url.match(/\/(\d+)(?:\?.*)?$/);
+    const match = (req.url || '').match(/\/(\d+)(?:\?.*)?$/);
     return match ? parseInt(match[1]) : null;
   };
-  
-  // /cms/content - Get all homepage content
+
   if (pathParts[2] === 'content' && req.method === 'GET') {
     const [sliders, categories, banners, sections, trustFeatures, newsletter] = await Promise.all([
       sql`SELECT * FROM cms_hero_sliders ORDER BY display_order ASC`,
@@ -358,197 +427,125 @@ async function handleCMS(req, res, sql, pathParts, params) {
     ]);
     return json(res, 200, { success: true, data: { sliders, categories, banners, sections, trustFeatures, newsletter: newsletter[0] || null } });
   }
-  
-  // /cms/sliders
+
   if (pathParts[2] === 'sliders') {
     const urlId = extractId();
-    
-    if (req.method === 'GET') {
-      const rows = await sql`SELECT * FROM cms_hero_sliders ORDER BY display_order ASC`;
-      return json(res, 200, { success: true, data: rows });
-    }
+    if (req.method === 'GET') return json(res, 200, { success: true, data: await sql`SELECT * FROM cms_hero_sliders ORDER BY display_order ASC` });
     if (req.method === 'POST') {
       const b = await parseBody(req);
-      if (!b.title) return json(res, 400, { success: false, error: 'Title is required' });
-      const row = await sql`
-        INSERT INTO cms_hero_sliders (title, subtitle, image_url, cta_text, cta_link, background_color, text_color, display_order, is_active)
-        VALUES (${b.title}, ${b.subtitle||null}, ${b.image_url||null}, ${b.cta_text||null}, ${b.cta_link||null}, ${b.background_color||'#f8f9fa'}, ${b.text_color||'#000000'}, ${b.display_order||0}, ${b.is_active !== false})
-        RETURNING *`;
+      if (!b.title) return json(res, 400, { success: false, error: 'Title required' });
+      const row = await sql`INSERT INTO cms_hero_sliders (title, subtitle, image_url, cta_text, cta_link, background_color, text_color, display_order, is_active) VALUES (${b.title}, ${b.subtitle||null}, ${b.image_url||null}, ${b.cta_text||null}, ${b.cta_link||null}, ${b.background_color||'#f8f9fa'}, ${b.text_color||'#000000'}, ${b.display_order||0}, ${b.is_active !== false}) RETURNING *`;
       return json(res, 201, { success: true, data: row[0] });
     }
     if (req.method === 'PUT') {
       const id = urlId || (await parseBody(req))?.id;
       if (!id) return json(res, 400, { success: false, error: 'ID required' });
       const b = await parseBody(req);
-      const row = await sql`
-        UPDATE cms_hero_sliders SET
-          title = COALESCE(${b.title}, title), subtitle = COALESCE(${b.subtitle}, subtitle),
-          image_url = COALESCE(${b.image_url}, image_url), cta_text = COALESCE(${b.cta_text}, cta_text),
-          cta_link = COALESCE(${b.cta_link}, cta_link), background_color = COALESCE(${b.background_color}, background_color),
-          text_color = COALESCE(${b.text_color}, text_color), display_order = COALESCE(${b.display_order}, display_order),
-          is_active = COALESCE(${b.is_active}, is_active), updated_at = NOW()
-        WHERE id = ${id} RETURNING *`;
+      const row = await sql`UPDATE cms_hero_sliders SET title=COALESCE(${b.title},title), subtitle=COALESCE(${b.subtitle},subtitle), image_url=COALESCE(${b.image_url},image_url), cta_text=COALESCE(${b.cta_text},cta_text), cta_link=COALESCE(${b.cta_link},cta_link), background_color=COALESCE(${b.background_color},background_color), text_color=COALESCE(${b.text_color},text_color), display_order=COALESCE(${b.display_order},display_order), is_active=COALESCE(${b.is_active},is_active), updated_at=NOW() WHERE id=${id} RETURNING *`;
       if (!row.length) return json(res, 404, { success: false, error: 'Not found' });
       return json(res, 200, { success: true, data: row[0] });
     }
     if (req.method === 'DELETE') {
       const id = urlId || (await parseBody(req))?.id;
       if (!id) return json(res, 400, { success: false, error: 'ID required' });
-      await sql`DELETE FROM cms_hero_sliders WHERE id = ${id}`;
-      return json(res, 200, { success: true, message: 'Slider deleted' });
+      await sql`DELETE FROM cms_hero_sliders WHERE id=${id}`;
+      return json(res, 200, { success: true });
     }
   }
-  
-  // /cms/categories
+
   if (pathParts[2] === 'categories') {
     const urlId = extractId();
-    
-    if (req.method === 'GET') {
-      const rows = await sql`SELECT * FROM cms_categories ORDER BY display_order ASC`;
-      return json(res, 200, { success: true, data: rows });
-    }
+    if (req.method === 'GET') return json(res, 200, { success: true, data: await sql`SELECT * FROM cms_categories ORDER BY display_order ASC` });
     if (req.method === 'POST') {
       const b = await parseBody(req);
       if (!b.name || !b.slug) return json(res, 400, { success: false, error: 'Name and slug required' });
-      const row = await sql`
-        INSERT INTO cms_categories (name, slug, icon_emoji, image_url, description, display_order, is_active)
-        VALUES (${b.name}, ${b.slug}, ${b.icon_emoji||'📂'}, ${b.image_url||null}, ${b.description||null}, ${b.display_order||0}, ${b.is_active !== false})
-        RETURNING *`;
+      const row = await sql`INSERT INTO cms_categories (name, slug, icon_emoji, image_url, description, display_order, is_active) VALUES (${b.name}, ${b.slug}, ${b.icon_emoji||'📂'}, ${b.image_url||null}, ${b.description||null}, ${b.display_order||0}, ${b.is_active !== false}) RETURNING *`;
       return json(res, 201, { success: true, data: row[0] });
     }
     if (req.method === 'PUT') {
       const id = urlId || (await parseBody(req))?.id;
       if (!id) return json(res, 400, { success: false, error: 'ID required' });
       const b = await parseBody(req);
-      const row = await sql`
-        UPDATE cms_categories SET
-          name = COALESCE(${b.name}, name), slug = COALESCE(${b.slug}, slug),
-          icon_emoji = COALESCE(${b.icon_emoji}, icon_emoji), image_url = COALESCE(${b.image_url}, image_url),
-          description = COALESCE(${b.description}, description), display_order = COALESCE(${b.display_order}, display_order),
-          is_active = COALESCE(${b.is_active}, is_active)
-        WHERE id = ${id} RETURNING *`;
+      const row = await sql`UPDATE cms_categories SET name=COALESCE(${b.name},name), slug=COALESCE(${b.slug},slug), icon_emoji=COALESCE(${b.icon_emoji},icon_emoji), image_url=COALESCE(${b.image_url},image_url), description=COALESCE(${b.description},description), display_order=COALESCE(${b.display_order},display_order), is_active=COALESCE(${b.is_active},is_active) WHERE id=${id} RETURNING *`;
       if (!row.length) return json(res, 404, { success: false, error: 'Not found' });
       return json(res, 200, { success: true, data: row[0] });
     }
     if (req.method === 'DELETE') {
       const id = urlId || (await parseBody(req))?.id;
       if (!id) return json(res, 400, { success: false, error: 'ID required' });
-      await sql`DELETE FROM cms_categories WHERE id = ${id}`;
-      return json(res, 200, { success: true, message: 'Category deleted' });
+      await sql`DELETE FROM cms_categories WHERE id=${id}`;
+      return json(res, 200, { success: true });
     }
   }
-  
-  // /cms/banners
+
   if (pathParts[2] === 'banners') {
     const urlId = extractId();
-    
-    if (req.method === 'GET') {
-      const rows = await sql`SELECT * FROM cms_offer_banners ORDER BY display_order ASC`;
-      return json(res, 200, { success: true, data: rows });
-    }
+    if (req.method === 'GET') return json(res, 200, { success: true, data: await sql`SELECT * FROM cms_offer_banners ORDER BY display_order ASC` });
     if (req.method === 'POST') {
       const b = await parseBody(req);
       if (!b.title) return json(res, 400, { success: false, error: 'Title required' });
-      const row = await sql`
-        INSERT INTO cms_offer_banners (title, subtitle, offer_text, image_url, gradient_start, gradient_end, cta_text, cta_link, display_order, is_active)
-        VALUES (${b.title}, ${b.subtitle||null}, ${b.offer_text||null}, ${b.image_url||null}, ${b.gradient_start||'#667eea'}, ${b.gradient_end||'#764ba2'}, ${b.cta_text||null}, ${b.cta_link||null}, ${b.display_order||0}, ${b.is_active !== false})
-        RETURNING *`;
+      const row = await sql`INSERT INTO cms_offer_banners (title, subtitle, offer_text, image_url, gradient_start, gradient_end, cta_text, cta_link, display_order, is_active) VALUES (${b.title}, ${b.subtitle||null}, ${b.offer_text||null}, ${b.image_url||null}, ${b.gradient_start||'#667eea'}, ${b.gradient_end||'#764ba2'}, ${b.cta_text||null}, ${b.cta_link||null}, ${b.display_order||0}, ${b.is_active !== false}) RETURNING *`;
       return json(res, 201, { success: true, data: row[0] });
     }
     if (req.method === 'PUT') {
       const id = urlId || (await parseBody(req))?.id;
       if (!id) return json(res, 400, { success: false, error: 'ID required' });
       const b = await parseBody(req);
-      const row = await sql`
-        UPDATE cms_offer_banners SET
-          title = COALESCE(${b.title}, title), subtitle = COALESCE(${b.subtitle}, subtitle),
-          offer_text = COALESCE(${b.offer_text}, offer_text), image_url = COALESCE(${b.image_url}, image_url),
-          gradient_start = COALESCE(${b.gradient_start}, gradient_start), gradient_end = COALESCE(${b.gradient_end}, gradient_end),
-          cta_text = COALESCE(${b.cta_text}, cta_text), cta_link = COALESCE(${b.cta_link}, cta_link),
-          display_order = COALESCE(${b.display_order}, display_order), is_active = COALESCE(${b.is_active}, is_active),
-          updated_at = NOW()
-        WHERE id = ${id} RETURNING *`;
+      const row = await sql`UPDATE cms_offer_banners SET title=COALESCE(${b.title},title), subtitle=COALESCE(${b.subtitle},subtitle), offer_text=COALESCE(${b.offer_text},offer_text), image_url=COALESCE(${b.image_url},image_url), gradient_start=COALESCE(${b.gradient_start},gradient_start), gradient_end=COALESCE(${b.gradient_end},gradient_end), cta_text=COALESCE(${b.cta_text},cta_text), cta_link=COALESCE(${b.cta_link},cta_link), display_order=COALESCE(${b.display_order},display_order), is_active=COALESCE(${b.is_active},is_active), updated_at=NOW() WHERE id=${id} RETURNING *`;
       if (!row.length) return json(res, 404, { success: false, error: 'Not found' });
       return json(res, 200, { success: true, data: row[0] });
     }
     if (req.method === 'DELETE') {
       const id = urlId || (await parseBody(req))?.id;
       if (!id) return json(res, 400, { success: false, error: 'ID required' });
-      await sql`DELETE FROM cms_offer_banners WHERE id = ${id}`;
-      return json(res, 200, { success: true, message: 'Banner deleted' });
+      await sql`DELETE FROM cms_offer_banners WHERE id=${id}`;
+      return json(res, 200, { success: true });
     }
   }
-  
-  // /cms/sections
+
   if (pathParts[2] === 'sections') {
     const urlId = extractId();
-    
-    if (req.method === 'GET') {
-      const rows = await sql`SELECT * FROM cms_product_sections ORDER BY display_order ASC`;
-      return json(res, 200, { success: true, data: rows });
-    }
+    if (req.method === 'GET') return json(res, 200, { success: true, data: await sql`SELECT * FROM cms_product_sections ORDER BY display_order ASC` });
     if (req.method === 'POST') {
       const b = await parseBody(req);
-      const row = await sql`
-        INSERT INTO cms_product_sections (title, subtitle, section_type, display_order, is_active, created_at, updated_at)
-        VALUES (${b.title || ''}, ${b.subtitle || ''}, ${b.section_type || 'featured'}, ${b.display_order || 0}, ${b.is_active !== false ? true : false}, NOW(), NOW())
-        RETURNING *`;
+      const row = await sql`INSERT INTO cms_product_sections (title, subtitle, section_type, display_order, is_active, created_at, updated_at) VALUES (${b.title||''}, ${b.subtitle||''}, ${b.section_type||'featured'}, ${b.display_order||0}, ${b.is_active !== false}, NOW(), NOW()) RETURNING *`;
       return json(res, 201, { success: true, data: row[0] });
     }
     if (req.method === 'PUT') {
       const id = urlId || (await parseBody(req))?.id;
       if (!id) return json(res, 400, { success: false, error: 'ID required' });
       const b = await parseBody(req);
-      const row = await sql`
-        UPDATE cms_product_sections SET
-          title = COALESCE(${b.title}, title), subtitle = COALESCE(${b.subtitle}, subtitle),
-          section_type = COALESCE(${b.section_type}, section_type), display_order = COALESCE(${b.display_order}, display_order),
-          is_active = COALESCE(${b.is_active}, is_active), updated_at = NOW()
-        WHERE id = ${id} RETURNING *`;
+      const row = await sql`UPDATE cms_product_sections SET title=COALESCE(${b.title},title), subtitle=COALESCE(${b.subtitle},subtitle), section_type=COALESCE(${b.section_type},section_type), display_order=COALESCE(${b.display_order},display_order), is_active=COALESCE(${b.is_active},is_active), updated_at=NOW() WHERE id=${id} RETURNING *`;
       if (!row.length) return json(res, 404, { success: false, error: 'Not found' });
       return json(res, 200, { success: true, data: row[0] });
     }
   }
-  
-  // /cms/trust-features
+
   if (pathParts[2] === 'trust-features') {
     const urlId = extractId();
-    
-    if (req.method === 'GET') {
-      const rows = await sql`SELECT * FROM cms_trust_features ORDER BY display_order ASC`;
-      return json(res, 200, { success: true, data: rows });
-    }
+    if (req.method === 'GET') return json(res, 200, { success: true, data: await sql`SELECT * FROM cms_trust_features ORDER BY display_order ASC` });
     if (req.method === 'POST') {
       const b = await parseBody(req);
       if (!b.title) return json(res, 400, { success: false, error: 'Title required' });
-      const row = await sql`
-        INSERT INTO cms_trust_features (icon_emoji, title, description, display_order, is_active)
-        VALUES (${b.icon_emoji||'✓'}, ${b.title}, ${b.description||null}, ${b.display_order||0}, ${b.is_active !== false})
-        RETURNING *`;
+      const row = await sql`INSERT INTO cms_trust_features (icon_emoji, title, description, display_order, is_active) VALUES (${b.icon_emoji||'✓'}, ${b.title}, ${b.description||null}, ${b.display_order||0}, ${b.is_active !== false}) RETURNING *`;
       return json(res, 201, { success: true, data: row[0] });
     }
     if (req.method === 'PUT') {
       const id = urlId || (await parseBody(req))?.id;
       if (!id) return json(res, 400, { success: false, error: 'ID required' });
       const b = await parseBody(req);
-      const row = await sql`
-        UPDATE cms_trust_features SET
-          icon_emoji = COALESCE(${b.icon_emoji}, icon_emoji), title = COALESCE(${b.title}, title),
-          description = COALESCE(${b.description}, description), display_order = COALESCE(${b.display_order}, display_order),
-          is_active = COALESCE(${b.is_active}, is_active)
-        WHERE id = ${id} RETURNING *`;
+      const row = await sql`UPDATE cms_trust_features SET icon_emoji=COALESCE(${b.icon_emoji},icon_emoji), title=COALESCE(${b.title},title), description=COALESCE(${b.description},description), display_order=COALESCE(${b.display_order},display_order), is_active=COALESCE(${b.is_active},is_active) WHERE id=${id} RETURNING *`;
       if (!row.length) return json(res, 404, { success: false, error: 'Not found' });
       return json(res, 200, { success: true, data: row[0] });
     }
     if (req.method === 'DELETE') {
       const id = urlId || (await parseBody(req))?.id;
       if (!id) return json(res, 400, { success: false, error: 'ID required' });
-      await sql`DELETE FROM cms_trust_features WHERE id = ${id}`;
-      return json(res, 200, { success: true, message: 'Feature deleted' });
+      await sql`DELETE FROM cms_trust_features WHERE id=${id}`;
+      return json(res, 200, { success: true });
     }
   }
-  
-  // /cms/newsletter
+
   if (pathParts[2] === 'newsletter') {
     if (req.method === 'GET') {
       const rows = await sql`SELECT * FROM cms_newsletter_settings LIMIT 1`;
@@ -557,66 +554,47 @@ async function handleCMS(req, res, sql, pathParts, params) {
     if (req.method === 'PUT') {
       const b = await parseBody(req);
       const existing = await sql`SELECT id FROM cms_newsletter_settings LIMIT 1`;
-      let row;
-      if (existing.length) {
-        row = await sql`
-          UPDATE cms_newsletter_settings SET
-            title = COALESCE(${b.title}, title), subtitle = COALESCE(${b.subtitle}, subtitle),
-            is_active = COALESCE(${b.is_active}, is_active), updated_at = NOW()
-          WHERE id = ${existing[0].id} RETURNING *`;
-      } else {
-        row = await sql`
-          INSERT INTO cms_newsletter_settings (title, subtitle, is_active)
-          VALUES (${b.title || 'Subscribe'}, ${b.subtitle || ''}, ${b.is_active !== false})
-          RETURNING *`;
-      }
+      const row = existing.length
+        ? await sql`UPDATE cms_newsletter_settings SET title=COALESCE(${b.title},title), subtitle=COALESCE(${b.subtitle},subtitle), is_active=COALESCE(${b.is_active},is_active), updated_at=NOW() WHERE id=${existing[0].id} RETURNING *`
+        : await sql`INSERT INTO cms_newsletter_settings (title, subtitle, is_active) VALUES (${b.title||'Subscribe'}, ${b.subtitle||''}, ${b.is_active !== false}) RETURNING *`;
       return json(res, 200, { success: true, data: row[0] });
     }
   }
-  
+
   return json(res, 404, { success: false, error: 'CMS endpoint not found' });
 }
 
 // ============ MAIN ROUTER ============
 export default async function handler(req, res) {
-  // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
+
   if (req.method === 'OPTIONS') return res.status(200).end();
-  
-  if (!process.env.DATABASE_URL) {
-    return json(res, 500, { error: 'Database not configured' });
-  }
-  
-  const sql = neon(process.env.DATABASE_URL);
-  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  if (!process.env.DATABASE_URL) return json(res, 500, { error: 'Database not configured' });
+
+  const sql      = neon(process.env.DATABASE_URL);
+  const url      = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const pathname = url.pathname;
-  const params = url.searchParams;
-  const pathParts = pathname.split('/').filter(Boolean); // ['api', 'products']
-  
+  const params   = url.searchParams;
+  const pathParts = pathname.split('/').filter(Boolean);
+
   try {
-    // Route matching
     if (pathParts[0] === 'api') {
       if (pathParts[1] === 'products') return handleProducts(req, res, sql, params);
-      if (pathParts[1] === 'orders') return handleOrders(req, res, sql, params);
-      if (pathParts[1] === 'payment') return handlePayment(req, res, sql, params);
-      if (pathParts[1] === 'auth') return handleAuth(req, res, pathParts);
-      if (pathParts[1] === 'admin') return handleAdmin(req, res, sql, pathParts);
-      if (pathParts[1] === 'cms') return handleCMS(req, res, sql, pathParts, params);
+      if (pathParts[1] === 'orders')   return handleOrders(req, res, sql, params);
+      if (pathParts[1] === 'payment')  return handlePayment(req, res, sql, params);
+      if (pathParts[1] === 'auth')     return handleAuth(req, res, pathParts);
+      if (pathParts[1] === 'admin')    return handleAdmin(req, res, sql, pathParts);
+      if (pathParts[1] === 'cms')      return handleCMS(req, res, sql, pathParts, params);
       if (pathParts[1] === 'login') {
-        // Legacy /api/login endpoint
         if (req.method !== 'POST') return json(res, 405, { error: 'Method Not Allowed' });
         const body = await parseBody(req);
-        const { email, password } = body;
-        if (email === 'sanjay@mystore.com' && password === 'sanjay@123') {
-          return json(res, 200, { success: true, token: 'test-' + Date.now(), user: { email, role: 'admin' } });
-        }
+        if (body.email === 'sanjay@mystore.com' && body.password === 'sanjay@123')
+          return json(res, 200, { success: true, token: 'test-' + Date.now(), user: { email: body.email, role: 'admin' } });
         return json(res, 401, { error: 'Invalid credentials' });
       }
     }
-    
     return json(res, 404, { error: 'Not found' });
   } catch (error) {
     console.error('API Error:', error);
