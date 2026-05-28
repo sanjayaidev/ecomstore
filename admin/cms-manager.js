@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════
 // admin/cms-manager.js — Homepage CMS Manager
-// Runs AFTER admin.js; no conflicts with product/category admin logic
+// Fixed: tab conflict, CMS object hoisting, modal issues
 // ═══════════════════════════════════════════
 
 'use strict';
@@ -19,9 +19,17 @@ const CMS = (() => {
     newsletter: null
   };
 
+  // ── Edit / Delete stubs (filled below, declared here so they exist on CMS before return) ──
+  const editSlider   = (id) => _editSlider(id);
+  const editCategory = (id) => _editCategory(id);
+  const editBanner   = (id) => _editBanner(id);
+  const editSection  = (id) => _editSection(id);
+  const editTrust    = (id) => _editTrust(id);
+  const deleteSlider   = (id) => _deleteSlider(id);
+  const deleteCategory = (id) => _deleteCategory(id);
+  const deleteBanner   = (id) => _deleteBanner(id);
+
   // ── Bootstrap ──
-  // Called by admin.js navigateTo() when user clicks "cms" nav item.
-  // Also exposed as window.loadCMSData for compatibility.
   function loadCMSData() {
     fetchAll();
   }
@@ -31,33 +39,26 @@ const CMS = (() => {
   function initTabs() {
     const tabBar = document.getElementById('cmsTabs');
     if (!tabBar) return;
-    
-    // Set default active tab (sliders) and render initial data
-    const defaultTab = 'sliders';
-    const defaultBtn = tabBar.querySelector(`.settings-tab[data-cmstab="${defaultTab}"]`);
-    if (defaultBtn && !defaultBtn.classList.contains('active')) {
-      defaultBtn.classList.add('active');
-    }
-    const defaultPanel = document.getElementById(`cmstab-${defaultTab}`);
-    if (defaultPanel && !defaultPanel.classList.contains('active')) {
-      defaultPanel.classList.add('active');
-    }
-    currentTab = defaultTab;
-    
-    tabBar.querySelectorAll('.settings-tab').forEach(btn => {
-      btn.addEventListener('click', () => {
-        tabBar.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+
+    // Activate default tab visually
+    const defaultBtn = tabBar.querySelector('.cms-tab[data-cmstab="sliders"]');
+    if (defaultBtn) defaultBtn.classList.add('active');
+    const defaultPanel = document.getElementById('cmstab-sliders');
+    if (defaultPanel) defaultPanel.classList.add('active');
+    currentTab = 'sliders';
+
+    tabBar.querySelectorAll('.cms-tab').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        tabBar.querySelectorAll('.cms-tab').forEach(t => t.classList.remove('active'));
         btn.classList.add('active');
         currentTab = btn.dataset.cmstab;
-        document.querySelectorAll('#cms .settings-panel').forEach(p => p.classList.remove('active'));
-        const panel = document.getElementById(`cmstab-${currentTab}`);
+        document.querySelectorAll('#cms .cms-panel').forEach(p => p.classList.remove('active'));
+        const panel = document.getElementById('cmstab-' + currentTab);
         if (panel) panel.classList.add('active');
         renderTab(currentTab);
       });
     });
-    
-    // Render initial tab content after setting up handlers
-    renderTab(currentTab);
   }
 
   // ── "Add" button wiring ──
@@ -143,7 +144,7 @@ const CMS = (() => {
         data.trustFeatures = result.data.trustFeatures || [];
         data.newsletter    = result.data.newsletter    || null;
         renderTab(currentTab);
-        renderNewsletter(); // always pre-populate newsletter form
+        renderNewsletter();
       } else {
         showToast('❌ Failed to load CMS data', 'error');
       }
@@ -173,13 +174,14 @@ const CMS = (() => {
     el.innerHTML = data.sliders.map(s => `
       <div class="data-row">
         <div class="data-row__preview" style="background:${esc(s.background_color || '#f3f4f6')}">
-          ${s.image_url ? `<img src="${esc(s.image_url)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}<span style="display:${s.image_url ? 'none' : 'flex'};font-size:2rem">${esc(s.icon_emoji || '🎠')}</span>
+          ${s.image_url ? `<img src="${esc(s.image_url)}" alt="" onerror="this.style.display='none'">` : ''}
+          <span style="font-size:2rem">${esc(s.icon_emoji || '🎠')}</span>
         </div>
         <div class="data-row__info">
           <div class="data-row__title">${esc(s.title)}</div>
           <div class="data-row__meta">
             <span>${esc(s.subtitle || 'No subtitle')}</span>
-            <span class="status-badge ${s.is_active ? 'active' : ''}">${s.is_active ? 'Active' : 'Inactive'}</span>
+            <span class="cms-badge ${s.is_active ? 'cms-badge--active' : 'cms-badge--inactive'}">${s.is_active ? 'Active' : 'Inactive'}</span>
             <span>Order: ${s.display_order}</span>
           </div>
         </div>
@@ -201,7 +203,7 @@ const CMS = (() => {
           <div class="data-row__title">${esc(c.name)}</div>
           <div class="data-row__meta">
             <span>/${esc(c.slug)}</span>
-            <span class="status-badge ${c.is_active ? 'active' : ''}">${c.is_active ? 'Active' : 'Inactive'}</span>
+            <span class="cms-badge ${c.is_active ? 'cms-badge--active' : 'cms-badge--inactive'}">${c.is_active ? 'Active' : 'Inactive'}</span>
           </div>
         </div>
         <div class="data-row__actions">
@@ -224,7 +226,7 @@ const CMS = (() => {
           <div class="data-row__title">${esc(b.title)}</div>
           <div class="data-row__meta">
             <span>${esc(b.subtitle || '')}</span>
-            <span class="status-badge ${b.is_active ? 'active' : ''}">${b.is_active ? 'Active' : 'Inactive'}</span>
+            <span class="cms-badge ${b.is_active ? 'cms-badge--active' : 'cms-badge--inactive'}">${b.is_active ? 'Active' : 'Inactive'}</span>
           </div>
         </div>
         <div class="data-row__actions">
@@ -245,7 +247,7 @@ const CMS = (() => {
           <div class="data-row__title">${esc(s.title)}</div>
           <div class="data-row__meta">
             <span>${esc(s.section_type || 'custom')}</span>
-            <span class="status-badge ${s.is_active ? 'active' : ''}">${s.is_active ? 'Active' : 'Inactive'}</span>
+            <span class="cms-badge ${s.is_active ? 'cms-badge--active' : 'cms-badge--inactive'}">${s.is_active ? 'Active' : 'Inactive'}</span>
           </div>
         </div>
         <div class="data-row__actions">
@@ -265,7 +267,7 @@ const CMS = (() => {
           <div class="data-row__title">${esc(f.title)}</div>
           <div class="data-row__meta">
             <span>${esc(f.description || '')}</span>
-            <span class="status-badge ${f.is_active ? 'active' : ''}">${f.is_active ? 'Active' : 'Inactive'}</span>
+            <span class="cms-badge ${f.is_active ? 'cms-badge--active' : 'cms-badge--inactive'}">${f.is_active ? 'Active' : 'Inactive'}</span>
           </div>
         </div>
         <div class="data-row__actions">
@@ -295,13 +297,11 @@ const CMS = (() => {
   function openModal(modalId, fieldData) {
     const overlay = document.getElementById(modalId);
     if (!overlay) return;
-    // Reset all inputs
     overlay.querySelectorAll('input:not([type=submit]), textarea, select').forEach(el => {
       if (el.type === 'checkbox') el.checked = el.defaultChecked;
       else if (el.type === 'color') el.value = el.defaultValue || '#ffffff';
       else el.value = el.defaultValue || '';
     });
-    // Populate with data
     Object.entries(fieldData).forEach(([key, val]) => {
       const field = overlay.querySelector(`[name="${key}"]`);
       if (!field) return;
@@ -314,8 +314,6 @@ const CMS = (() => {
   function closeModal(modalId) {
     document.getElementById(modalId)?.classList.remove('open');
   }
-  // Expose for inline onclick
-  CMS.closeModal = closeModal;
 
   // Close on backdrop click
   document.addEventListener('click', e => {
@@ -324,8 +322,8 @@ const CMS = (() => {
     }
   });
 
-  // ── Edit helpers ──
-  CMS.editSlider = function(id) {
+  // ── Edit implementations ──
+  function _editSlider(id) {
     const s = data.sliders.find(x => x.id === id);
     if (!s) return;
     document.getElementById('cmsSliderModalTitle').textContent = 'Edit Slider';
@@ -335,9 +333,9 @@ const CMS = (() => {
       background_color: s.background_color || '#f0f9ff', text_color: s.text_color || '#1e3a8a',
       display_order: s.display_order, is_active: s.is_active !== false
     });
-  };
+  }
 
-  CMS.editCategory = function(id) {
+  function _editCategory(id) {
     const c = data.categories.find(x => x.id === id);
     if (!c) return;
     document.getElementById('cmsCategoryModalTitle').textContent = 'Edit Category';
@@ -346,9 +344,9 @@ const CMS = (() => {
       image_url: c.image_url || '', description: c.description || '',
       display_order: c.display_order, is_active: c.is_active !== false
     });
-  };
+  }
 
-  CMS.editBanner = function(id) {
+  function _editBanner(id) {
     const b = data.banners.find(x => x.id === id);
     if (!b) return;
     document.getElementById('cmsBannerModalTitle').textContent = 'Edit Banner';
@@ -358,9 +356,9 @@ const CMS = (() => {
       gradient_end: b.gradient_end || '#764ba2', cta_text: b.cta_text || '',
       cta_link: b.cta_link || '', display_order: b.display_order, is_active: b.is_active !== false
     });
-  };
+  }
 
-  CMS.editSection = function(id) {
+  function _editSection(id) {
     const s = data.sections.find(x => x.id === id);
     if (!s) return;
     document.getElementById('cmsSectionModalTitle').textContent = 'Edit Section';
@@ -369,9 +367,9 @@ const CMS = (() => {
       section_type: s.section_type || 'featured', display_order: s.display_order,
       is_active: s.is_active !== false
     });
-  };
+  }
 
-  CMS.editTrust = function(id) {
+  function _editTrust(id) {
     const f = data.trustFeatures.find(x => x.id === id);
     if (!f) return;
     document.getElementById('cmsTrustModalTitle').textContent = 'Edit Trust Feature';
@@ -380,27 +378,31 @@ const CMS = (() => {
       description: f.description || '', display_order: f.display_order,
       is_active: f.is_active !== false
     });
-  };
+  }
 
-  // ── Delete helpers ──
-  CMS.deleteSlider = async function(id) {
+  // ── Delete implementations ──
+  async function _deleteSlider(id) {
     if (!confirm('Delete this slider?')) return;
     await doDelete(`${API_BASE}/sliders/${id}`, 'Slider deleted');
-  };
-  CMS.deleteCategory = async function(id) {
+  }
+
+  async function _deleteCategory(id) {
     if (!confirm('Delete this category?')) return;
     await doDelete(`${API_BASE}/categories/${id}`, 'Category deleted');
-  };
-  CMS.deleteBanner = async function(id) {
+  }
+
+  async function _deleteBanner(id) {
     if (!confirm('Delete this banner?')) return;
     await doDelete(`${API_BASE}/banners/${id}`, 'Banner deleted');
-  };
+  }
 
   async function doDelete(url, msg) {
     try {
       const res    = await fetch(url, { method: 'DELETE' });
       const result = await res.json();
-      result.success ? (showToast('✅ ' + msg, 'success'), fetchAll()) : showToast('❌ ' + (result.error || 'Delete failed'), 'error');
+      result.success
+        ? (showToast('✅ ' + msg, 'success'), fetchAll())
+        : showToast('❌ ' + (result.error || 'Delete failed'), 'error');
     } catch {
       showToast('❌ Network error', 'error');
     }
@@ -412,11 +414,8 @@ const CMS = (() => {
     Object.entries(raw).forEach(([k, v]) => {
       if (v === '') { out[k] = null; return; }
       if (k === 'display_order') { out[k] = parseInt(v) || 0; return; }
-      // checkboxes come through as 'on' from FormData only when checked;
-      // unchecked checkboxes are simply absent — handle below
       out[k] = v;
     });
-    // Ensure boolean fields that may be absent (unchecked checkbox = false)
     ['is_active'].forEach(boolKey => {
       if (!(boolKey in out)) out[boolKey] = false;
       else if (out[boolKey] === 'on') out[boolKey] = true;
@@ -436,11 +435,6 @@ const CMS = (() => {
   }
 
   function showToast(message, type = 'success') {
-    // Prefer admin.js showToast if available, otherwise fall back
-    if (typeof window.adminShowToast === 'function') {
-      window.adminShowToast(message, type);
-      return;
-    }
     const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
     const container = document.getElementById('toastContainer');
     if (!container) return;
@@ -462,13 +456,13 @@ const CMS = (() => {
   return {
     loadCMSData,
     closeModal,
-    editSlider:   CMS.editSlider,
-    editCategory: CMS.editCategory,
-    editBanner:   CMS.editBanner,
-    editSection:  CMS.editSection,
-    editTrust:    CMS.editTrust,
-    deleteSlider:   CMS.deleteSlider,
-    deleteCategory: CMS.deleteCategory,
-    deleteBanner:   CMS.deleteBanner
+    editSlider,
+    editCategory,
+    editBanner,
+    editSection,
+    editTrust,
+    deleteSlider,
+    deleteCategory,
+    deleteBanner
   };
 })();

@@ -732,19 +732,6 @@ function updateNavBadge(id, count) { const el = $(id); if (el) el.textContent = 
 // SETTINGS
 // ═══════════════════════════════════
 function setupSettingsTabs() {
-  // Set default active tab for Settings (General)
-  const settingsContainer = document.getElementById('settings');
-  if (settingsContainer) {
-    const generalTab = settingsContainer.querySelector('.settings-tab[data-stab="general"]');
-    if (generalTab && !generalTab.classList.contains('active')) {
-      generalTab.classList.add('active');
-    }
-    const generalPanel = settingsContainer.querySelector('#stab-general');
-    if (generalPanel && !generalPanel.classList.contains('active')) {
-      generalPanel.classList.add('active');
-    }
-  }
-
   document.querySelectorAll('.settings-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       // Only handle settings tabs (not CMS tabs)
@@ -756,13 +743,7 @@ function setupSettingsTabs() {
       document.getElementById(panelId)?.classList.add('active');
     });
   });
-  
-  // Prevent settings tab handler from interfering with CMS tabs
-  document.querySelectorAll('#cmsTabs .settings-tab').forEach(tab => {
-    tab.addEventListener('click', (e) => {
-      e.stopPropagation();
-    }, true);
-  });
+ 
   $('saveSettingsBtn')?.addEventListener('click', () => { showToast('✅ Settings saved', 'success'); });
   $('changePasswordBtn')?.addEventListener('click', () => {
     const np = $('newPassword')?.value, cp = $('confirmPassword')?.value;

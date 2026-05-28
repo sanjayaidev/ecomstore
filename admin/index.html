@@ -7,6 +7,30 @@
   <link rel="stylesheet" href="/admin/admin.css">
   <style>
     /* ── CMS DATA ROWS ── */
+    /* ── CMS TAB SYSTEM (isolated from settings tabs) ── */
+.cms-tab {
+  padding: 9px 16px;
+  border: none; background: none; font-family: inherit;
+  font-size: 0.875rem; font-weight: 500;
+  color: var(--text-secondary); cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px; transition: var(--transition);
+}
+.cms-tab:hover { color: var(--text-primary); }
+.cms-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+
+.cms-panel { display: none; }
+.cms-panel.active { display: block; }
+
+/* ── CMS Status badges (isolated from global .status-badge) ── */
+.cms-badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 99px;
+  font-size: 0.72rem; font-weight: 600;
+  white-space: nowrap;
+}
+.cms-badge--active   { background: var(--success-light); color: #166534; }
+.cms-badge--inactive { background: var(--border-color);  color: var(--text-secondary); }
     .data-row {
       display: flex; align-items: center; gap: 14px;
       padding: 12px 16px;
@@ -336,23 +360,26 @@
     </div>
   </section>
 
+  <!-- REPLACE the entire <!-- ── CMS ── --> section in admin/index.html with this -->
+
   <!-- ── CMS ── -->
   <section id="cms" class="admin-section">
     <div class="section-header">
       <div><h1>Homepage CMS</h1><p class="text-muted">Manage homepage content</p></div>
     </div>
 
+    <!-- Use cms-tab / cms-panel classes — NOT settings-tab/settings-panel -->
     <div class="settings-tabs" id="cmsTabs">
-      <button class="settings-tab active" data-cmstab="sliders">Hero Sliders</button>
-      <button class="settings-tab" data-cmstab="categories">Categories</button>
-      <button class="settings-tab" data-cmstab="banners">Offer Banners</button>
-      <button class="settings-tab" data-cmstab="sections">Product Sections</button>
-      <button class="settings-tab" data-cmstab="trust">Trust Features</button>
-      <button class="settings-tab" data-cmstab="newsletter">Newsletter</button>
+      <button class="cms-tab active" data-cmstab="sliders">Hero Sliders</button>
+      <button class="cms-tab" data-cmstab="categories">Categories</button>
+      <button class="cms-tab" data-cmstab="banners">Offer Banners</button>
+      <button class="cms-tab" data-cmstab="sections">Product Sections</button>
+      <button class="cms-tab" data-cmstab="trust">Trust Features</button>
+      <button class="cms-tab" data-cmstab="newsletter">Newsletter</button>
     </div>
 
     <!-- Sliders -->
-    <div id="cmstab-sliders" class="settings-panel active">
+    <div id="cmstab-sliders" class="cms-panel active">
       <div class="settings-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
           <h3>Hero Sliders</h3>
@@ -363,7 +390,7 @@
     </div>
 
     <!-- CMS Categories -->
-    <div id="cmstab-categories" class="settings-panel">
+    <div id="cmstab-categories" class="cms-panel">
       <div class="settings-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
           <h3>Homepage Categories</h3>
@@ -374,7 +401,7 @@
     </div>
 
     <!-- Banners -->
-    <div id="cmstab-banners" class="settings-panel">
+    <div id="cmstab-banners" class="cms-panel">
       <div class="settings-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
           <h3>Offer Banners</h3>
@@ -385,7 +412,7 @@
     </div>
 
     <!-- Sections -->
-    <div id="cmstab-sections" class="settings-panel">
+    <div id="cmstab-sections" class="cms-panel">
       <div class="settings-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
           <h3>Product Sections</h3>
@@ -396,7 +423,7 @@
     </div>
 
     <!-- Trust -->
-    <div id="cmstab-trust" class="settings-panel">
+    <div id="cmstab-trust" class="cms-panel">
       <div class="settings-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
           <h3>Trust Features</h3>
@@ -407,13 +434,13 @@
     </div>
 
     <!-- Newsletter -->
-    <div id="cmstab-newsletter" class="settings-panel">
+    <div id="cmstab-newsletter" class="cms-panel">
       <div class="settings-card">
         <h3>Newsletter Settings</h3>
         <div id="newsletterFormWrap" style="display:none">
           <div class="form-group">
             <label>Section Title</label>
-            <input type="text" id="nl_title" class="form-group input">
+            <input type="text" id="nl_title">
           </div>
           <div class="form-group">
             <label>Section Subtitle</label>
