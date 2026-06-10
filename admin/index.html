@@ -140,6 +140,9 @@
       <span class="nav-icon">📦</span> Products
       <span class="nav-badge" id="navBadgeProducts">0</span>
     </a>
+    <a class="nav-item" data-section="collections">
+      <span class="nav-icon">📚</span> Collections
+    </a>
     <a class="nav-item" data-section="categories">
       <span class="nav-icon">🗂️</span> Categories
     </a>
@@ -149,6 +152,13 @@
       <span class="nav-icon">🛒</span> Orders
       <span class="nav-badge pending" id="navBadgeOrders">0</span>
     </a>
+    <a class="nav-item" data-section="abandoned-carts">
+      <span class="nav-icon">🛑</span> Abandoned Carts
+      <span class="nav-badge pending" id="navBadgeAbandoned">0</span>
+    </a>
+    <a class="nav-item" data-section="coupons">
+      <span class="nav-icon">🏷️</span> Discounts & Coupons
+    </a>
     <a class="nav-item" data-section="customers">
       <span class="nav-icon">👥</span> Customers
     </a>
@@ -157,6 +167,9 @@
     <a class="nav-item" data-section="cms">
       <span class="nav-icon">🎨</span> Homepage CMS
     </a>
+    <a class="nav-item" data-section="layout-editor">
+      <span class="nav-icon">🖼️</span> Visual Layout Editor
+    </a>
 
     <span class="nav-group-label">Insights</span>
     <a class="nav-item" data-section="analytics">
@@ -164,6 +177,9 @@
     </a>
 
     <span class="nav-group-label">System</span>
+    <a class="nav-item" data-section="integrations">
+      <span class="nav-icon">🔌</span> Integrations & Webhooks
+    </a>
     <a class="nav-item" data-section="settings">
       <span class="nav-icon">⚙️</span> Settings
     </a>
@@ -476,6 +492,120 @@
         <h3>Revenue Overview</h3>
         <div id="revenueChart"></div>
       </div>
+    </div>
+  </section>
+
+  <!-- ── COLLECTIONS ── -->
+  <section id="collections" class="admin-section">
+    <div class="section-header">
+      <div><h1>Collections</h1><p class="text-muted">Group products into curated collections</p></div>
+      <div class="header-actions">
+        <button class="btn-primary" id="addCollectionBtn">+ Add Collection</button>
+      </div>
+    </div>
+    <div class="table-container">
+      <table class="admin-table">
+        <thead><tr><th>Name</th><th>Slug</th><th>Products</th><th>Visibility</th><th>Actions</th></tr></thead>
+        <tbody id="collectionsTableBody"><tr><td colspan="5" class="text-center">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── ABANDONED CARTS ── -->
+  <section id="abandoned-carts" class="admin-section">
+    <div class="section-header">
+      <div><h1>Abandoned Carts</h1><p class="text-muted">Recover lost sales from abandoned carts</p></div>
+      <div class="header-actions">
+        <button class="btn-secondary btn-sm" id="sendBulkRecoveryBtn">📧 Send Bulk Recovery</button>
+      </div>
+    </div>
+    <div class="stats-grid" style="margin-bottom:20px">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#fef3c7;color:#f59e0b">🛒</div>
+        <div class="stat-body">
+          <div class="stat-value" id="stat-abandoned-count">0</div>
+          <div class="stat-label">Abandoned Carts</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#dbeafe;color:#3b82f6">💰</div>
+        <div class="stat-body">
+          <div class="stat-value" id="stat-recoverable-revenue">₹0</div>
+          <div class="stat-label">Recoverable Revenue</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#d1fae5;color:#10b981">✅</div>
+        <div class="stat-body">
+          <div class="stat-value" id="stat-recovered-count">0</div>
+          <div class="stat-label">Recovered</div>
+        </div>
+      </div>
+    </div>
+    <div class="table-container">
+      <table class="admin-table">
+        <thead><tr><th>Cart ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Abandoned</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="abandonedCartsTableBody"><tr><td colspan="7" class="text-center">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── COUPONS & DISCOUNTS ── -->
+  <section id="coupons" class="admin-section">
+    <div class="section-header">
+      <div><h1>Discounts & Coupons</h1><p class="text-muted">Create and manage discount codes</p></div>
+      <div class="header-actions">
+        <button class="btn-primary" id="addCouponBtn">+ Add Coupon</button>
+      </div>
+    </div>
+    <div class="table-container">
+      <table class="admin-table">
+        <thead><tr><th>Code</th><th>Type</th><th>Value</th><th>Min Purchase</th><th>Usage</th><th>Valid Until</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="couponsTableBody"><tr><td colspan="8" class="text-center">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── LAYOUT EDITOR (iframe wrapper) ── -->
+  <section id="layout-editor" class="admin-section">
+    <div class="section-header">
+      <div><h1>Visual Layout Editor</h1><p class="text-muted">Drag-and-drop editor for homepage layout</p></div>
+    </div>
+    <div class="settings-card" style="padding:0;overflow:hidden">
+      <iframe src="/admin/layout-editor.html" style="width:100%;height:calc(100vh - 250px);border:none"></iframe>
+    </div>
+  </section>
+
+  <!-- ── INTEGRATIONS & WEBHOOKS ── -->
+  <section id="integrations" class="admin-section">
+    <div class="section-header">
+      <div><h1>Integrations & Webhooks</h1><p class="text-muted">Connect your store to external services</p></div>
+      <div class="header-actions">
+        <button class="btn-primary" id="addWebhookBtn">+ Add Webhook</button>
+      </div>
+    </div>
+    <div class="settings-card">
+      <h3>Active Webhooks</h3>
+      <p class="text-muted" style="margin-bottom:16px">Send real-time events to external URLs (Zapier, Slack, etc.)</p>
+      <div class="table-container">
+        <table class="admin-table">
+          <thead><tr><th>Name</th><th>URL</th><th>Events</th><th>Status</th><th>Last Triggered</th><th>Actions</th></tr></thead>
+          <tbody id="webhooksTableBody"><tr><td colspan="6" class="text-center">No webhooks configured</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="settings-card" style="margin-top:20px">
+      <h3>CSV Import</h3>
+      <p class="text-muted" style="margin-bottom:16px">Bulk upload products via CSV file</p>
+      <form id="csvImportForm" enctype="multipart/form-data">
+        <div class="form-group">
+          <label>Upload CSV File</label>
+          <input type="file" name="csv_file" accept=".csv" required>
+          <small class="text-muted">Format: title,description,price,category,stock,image_url</small>
+        </div>
+        <button type="submit" class="btn-primary">Import Products</button>
+      </form>
+      <div id="csvImportResult" style="margin-top:16px"></div>
     </div>
   </section>
 
@@ -805,7 +935,111 @@
 <!-- Toast -->
 <div id="toastContainer" class="toast-container"></div>
 
+<!-- Collection Modal -->
+<div class="modal-overlay" id="collectionModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="collectionModalTitle">Add Collection</h3>
+      <button class="modal-close" onclick="Admin.closeModal('collectionModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="collectionForm">
+        <input type="hidden" name="edit_id">
+        <div class="form-group"><label>Name *</label><input type="text" name="name" required placeholder="Summer Collection"></div>
+        <div class="form-group"><label>Slug</label><input type="text" name="slug" placeholder="summer-collection"></div>
+        <div class="form-group"><label>Description</label><textarea name="description" rows="3" placeholder="Curated summer products"></textarea></div>
+        <div class="form-group"><label>Image URL</label><input type="text" name="image_url" placeholder="/images/collections/summer.jpg"></div>
+        <div class="form-group" style="display:flex;align-items:center;gap:10px">
+          <label class="toggle-switch"><input type="checkbox" name="is_visible" checked><span class="toggle-slider"></span></label>
+          <span>Visible</span>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="Admin.closeModal('collectionModal')">Cancel</button>
+          <button type="submit" class="btn-primary">Save Collection</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Coupon Modal -->
+<div class="modal-overlay" id="couponModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="couponModalTitle">Add Coupon</h3>
+      <button class="modal-close" onclick="Admin.closeModal('couponModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="couponForm">
+        <input type="hidden" name="edit_id">
+        <div class="form-row">
+          <div class="form-group"><label>Code *</label><input type="text" name="code" required placeholder="SUMMER20" style="text-transform:uppercase"></div>
+          <div class="form-group"><label>Type *</label>
+            <select name="type" required>
+              <option value="percentage">Percentage (%)</option>
+              <option value="fixed">Fixed Amount (₹)</option>
+              <option value="buy_x_get_y">Buy X Get Y</option>
+              <option value="bundle">Bundle Deal</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group"><label>Description</label><input type="text" name="description" placeholder="Summer Sale Discount"></div>
+        <div class="form-group"><label>Value *</label><input type="number" name="value" required placeholder="20" step="0.01"></div>
+        <div class="form-row">
+          <div class="form-group"><label>Min Purchase</label><input type="number" name="min_purchase_amount" value="0" step="0.01"></div>
+          <div class="form-group"><label>Max Discount</label><input type="number" name="max_discount_amount" placeholder="Optional" step="0.01"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Usage Limit</label><input type="number" name="usage_limit" placeholder="Unlimited"></div>
+          <div class="form-group"><label>Per Customer Limit</label><input type="number" name="per_customer_limit" value="1"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Valid From</label><input type="datetime-local" name="valid_from"></div>
+          <div class="form-group"><label>Valid Until</label><input type="datetime-local" name="valid_until"></div>
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:10px">
+          <label class="toggle-switch"><input type="checkbox" name="is_active" checked><span class="toggle-slider"></span></label>
+          <span>Active</span>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="Admin.closeModal('couponModal')">Cancel</button>
+          <button type="submit" class="btn-primary">Save Coupon</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Webhook Modal -->
+<div class="modal-overlay" id="webhookModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="webhookModalTitle">Add Webhook</h3>
+      <button class="modal-close" onclick="Admin.closeModal('webhookModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="webhookForm">
+        <input type="hidden" name="edit_id">
+        <div class="form-group"><label>Name *</label><input type="text" name="name" required placeholder="Order Notification to Slack"></div>
+        <div class="form-group"><label>Webhook URL *</label><input type="url" name="url" required placeholder="https://hooks.slack.com/services/..."></div>
+        <div class="form-group"><label>Events (comma-separated)</label><input type="text" name="events" placeholder="order.created,order.updated,product.created"></div>
+        <small class="text-muted" style="display:block;margin-bottom:16px">Available: order.created, order.updated, order.completed, product.created, product.updated, customer.created</small>
+        <div class="form-group"><label>Secret Key (for HMAC signature)</label><input type="text" name="secret_key" placeholder="your-secret-key"></div>
+        <div class="form-group" style="display:flex;align-items:center;gap:10px">
+          <label class="toggle-switch"><input type="checkbox" name="is_active" checked><span class="toggle-slider"></span></label>
+          <span>Active</span>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="Admin.closeModal('webhookModal')">Cancel</button>
+          <button type="submit" class="btn-primary">Save Webhook</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script src="/admin/admin.js"></script>
 <script src="/admin/cms-manager.js"></script>
+<script src="/admin/features-manager.js"></script>
 </body>
 </html>
