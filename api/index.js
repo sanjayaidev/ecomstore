@@ -601,3 +601,20 @@ export default async function handler(req, res) {
     return json(res, 500, { error: error.message || 'Internal server error' });
   }
 }
+// ============ ENHANCED FEATURES IMPORTS ============
+import {
+  handleCoupons,
+  validateCoupon,
+  handleAbandonedCarts,
+  sendRecoveryEmail,
+  handleCollections,
+  handleCollectionProducts,
+  handleLayoutSections,
+  reorderLayoutSections,
+  handleWebhooks,
+  triggerWebhook,
+  handleCSVImport
+} from './enhanced-features.js';
+
+// Add crypto import at top if not already present
+import crypto from 'crypto';
