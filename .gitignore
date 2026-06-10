@@ -12,8 +12,6 @@ target/
 .venv/
 venv/
 node_modules/
-.julia/
-zig*/
 .mypy_cache/
 .pytest_cache/
 .gradle/

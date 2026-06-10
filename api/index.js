@@ -1,6 +1,19 @@
 // api/index.js - Unified API Router (Single Serverless Function)
 import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
+import {
+  handleCoupons,
+  validateCoupon,
+  handleAbandonedCarts,
+  sendRecoveryEmail,
+  handleCollections,
+  handleCollectionProducts,
+  handleLayoutSections,
+  reorderLayoutSections,
+  handleWebhooks,
+  triggerWebhook,
+  handleCSVImport
+} from './enhanced-features.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -587,6 +600,25 @@ export default async function handler(req, res) {
       if (pathParts[1] === 'auth')     return handleAuth(req, res, pathParts);
       if (pathParts[1] === 'admin')    return handleAdmin(req, res, sql, pathParts);
       if (pathParts[1] === 'cms')      return handleCMS(req, res, sql, pathParts, params);
+      // Enhanced Features Routes
+      if (pathParts[1] === 'coupons') {
+        if (pathParts[2] === 'validate') return validateCoupon(req, res, sql);
+        return handleCoupons(req, res, sql, params);
+      }
+      if (pathParts[1] === 'abandoned-carts') {
+        if (pathParts[2] === 'send-recovery') return sendRecoveryEmail(req, res, sql);
+        return handleAbandonedCarts(req, res, sql, params);
+      }
+      if (pathParts[1] === 'collections') {
+        if (pathParts[2] === 'products') return handleCollectionProducts(req, res, sql);
+        return handleCollections(req, res, sql, params);
+      }
+      if (pathParts[1] === 'layout-sections') {
+        if (pathParts[2] === 'reorder') return reorderLayoutSections(req, res, sql);
+        return handleLayoutSections(req, res, sql, params);
+      }
+      if (pathParts[1] === 'webhooks') return handleWebhooks(req, res, sql, params);
+      if (pathParts[1] === 'csv-import') return handleCSVImport(req, res, sql);
       if (pathParts[1] === 'login') {
         if (req.method !== 'POST') return json(res, 405, { error: 'Method Not Allowed' });
         const body = await parseBody(req);
@@ -601,20 +633,3 @@ export default async function handler(req, res) {
     return json(res, 500, { error: error.message || 'Internal server error' });
   }
 }
-// ============ ENHANCED FEATURES IMPORTS ============
-import {
-  handleCoupons,
-  validateCoupon,
-  handleAbandonedCarts,
-  sendRecoveryEmail,
-  handleCollections,
-  handleCollectionProducts,
-  handleLayoutSections,
-  reorderLayoutSections,
-  handleWebhooks,
-  triggerWebhook,
-  handleCSVImport
-} from './enhanced-features.js';
-
-// Add crypto import at top if not already present
-import crypto from 'crypto';
