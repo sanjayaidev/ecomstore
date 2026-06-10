@@ -142,3 +142,85 @@ CREATE INDEX IF NOT EXISTS idx_collection_products_product ON collection_product
 CREATE INDEX IF NOT EXISTS idx_layout_sections_active ON layout_sections(is_active, page_location, display_order);
 CREATE INDEX IF NOT EXISTS idx_webhooks_active ON webhooks(is_active);
 CREATE INDEX IF NOT EXISTS idx_webhook_logs_created ON webhook_logs(created_at);
+
+-- CMS TABLES (for homepage/content management)
+CREATE TABLE IF NOT EXISTS cms_hero_sliders (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  subtitle TEXT,
+  image_url VARCHAR(500),
+  cta_text VARCHAR(100),
+  cta_link VARCHAR(500),
+  background_color VARCHAR(20) DEFAULT '#f8f9fa',
+  text_color VARCHAR(20) DEFAULT '#000000',
+  display_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS cms_categories (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  slug VARCHAR(100) UNIQUE NOT NULL,
+  icon_emoji VARCHAR(10) DEFAULT '📂',
+  image_url VARCHAR(500),
+  description TEXT,
+  display_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS cms_offer_banners (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  subtitle TEXT,
+  offer_text VARCHAR(255),
+  image_url VARCHAR(500),
+  gradient_start VARCHAR(20) DEFAULT '#667eea',
+  gradient_end VARCHAR(20) DEFAULT '#764ba2',
+  cta_text VARCHAR(100),
+  cta_link VARCHAR(500),
+  display_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS cms_product_sections (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) DEFAULT '',
+  subtitle TEXT,
+  section_type VARCHAR(50) DEFAULT 'featured',
+  display_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS cms_trust_features (
+  id SERIAL PRIMARY KEY,
+  icon_emoji VARCHAR(10) DEFAULT '✓',
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  display_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS cms_newsletter_settings (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) DEFAULT 'Subscribe',
+  subtitle TEXT,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- CMS INDEXES
+CREATE INDEX IF NOT EXISTS idx_cms_hero_sliders_active ON cms_hero_sliders(is_active, display_order);
+CREATE INDEX IF NOT EXISTS idx_cms_categories_active ON cms_categories(is_active, display_order);
+CREATE INDEX IF NOT EXISTS idx_cms_banners_active ON cms_offer_banners(is_active, display_order);
+CREATE INDEX IF NOT EXISTS idx_cms_sections_active ON cms_product_sections(is_active, display_order);
