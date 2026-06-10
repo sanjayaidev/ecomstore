@@ -1,226 +1,171 @@
--- Enhanced E-commerce Database Schema
+-- E-commerce Enhanced Features Schema
 
--- Existing tables (products, orders, order_items, customers) assumed to exist
-
--- COUPONS & DISCOUNTS
-CREATE TABLE IF NOT EXISTS coupons (
-  id SERIAL PRIMARY KEY,
-  code VARCHAR(50) UNIQUE NOT NULL,
-  description TEXT,
-  discount_type VARCHAR(20) NOT NULL, -- 'percentage', 'fixed', 'buy_x_get_y', 'bundle'
-  discount_value DECIMAL(10,2),
-  min_order_amount DECIMAL(10,2) DEFAULT 0,
-  max_discount_amount DECIMAL(10,2),
-  usage_limit INTEGER DEFAULT NULL,
-  usage_count INTEGER DEFAULT 0,
-  valid_from TIMESTAMP DEFAULT NOW(),
-  valid_until TIMESTAMP,
-  applicable_categories TEXT[], -- NULL means all categories
-  applicable_products INTEGER[], -- NULL means all products
-  buy_quantity INTEGER DEFAULT 0, -- for buy X get Y
-  get_quantity INTEGER DEFAULT 0,
-  bundle_products JSONB, -- for bundle deals [{product_id, quantity}]
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
--- ABANDONED CARTS
+-- 1. Abandoned Carts
 CREATE TABLE IF NOT EXISTS abandoned_carts (
-  id SERIAL PRIMARY KEY,
-  session_id VARCHAR(100) NOT NULL,
-  customer_email VARCHAR(255),
-  customer_name VARCHAR(255),
-  customer_phone VARCHAR(20),
-  cart_items JSONB NOT NULL, -- [{product_id, quantity, size, price}]
-  subtotal DECIMAL(10,2),
-  recovery_email_sent BOOLEAN DEFAULT false,
-  recovery_email_count INTEGER DEFAULT 0,
-  last_reminder_sent TIMESTAMP,
-  converted_to_order_id INTEGER,
-  status VARCHAR(20) DEFAULT 'active', -- active, recovered, expired
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-  expires_at TIMESTAMP DEFAULT (NOW() + INTERVAL '30 days')
+    id SERIAL PRIMARY KEY,
+    cart_id VARCHAR(100) UNIQUE NOT NULL,
+    user_email VARCHAR(255),
+    user_id INT,
+    items JSONB NOT NULL,
+    total_amount DECIMAL(10,2),
+    currency VARCHAR(3) DEFAULT 'USD',
+    recovered BOOLEAN DEFAULT FALSE,
+    recovery_email_sent BOOLEAN DEFAULT FALSE,
+    recovery_email_sent_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- COLLECTIONS (Product Groups)
-CREATE TABLE IF NOT EXISTS collections (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  slug VARCHAR(100) UNIQUE NOT NULL,
-  description TEXT,
-  image_url VARCHAR(500),
-  is_featured BOOLEAN DEFAULT false,
-  display_order INTEGER DEFAULT 0,
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+-- 2. Coupons & Discounts
+CREATE TABLE IF NOT EXISTS coupons (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT,
+    type VARCHAR(20) NOT NULL CHECK (type IN ('percentage', 'fixed', 'buy_x_get_y', 'bundle')),
+    value DECIMAL(10,2) NOT NULL,
+    min_purchase_amount DECIMAL(10,2) DEFAULT 0,
+    max_discount_amount DECIMAL(10,2),
+    usage_limit INT,
+    usage_count INT DEFAULT 0,
+    per_customer_limit INT DEFAULT 1,
+    valid_from TIMESTAMP DEFAULT NOW(),
+    valid_until TIMESTAMP,
+    applicable_collections INT[],
+    applicable_products INT[],
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW()
 );
 
--- COLLECTION-PRODUCT MAPPING
-CREATE TABLE IF NOT EXISTS collection_products (
-  id SERIAL PRIMARY KEY,
-  collection_id INTEGER REFERENCES collections(id) ON DELETE CASCADE,
-  product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
-  display_order INTEGER DEFAULT 0,
-  added_at TIMESTAMP DEFAULT NOW(),
-  UNIQUE(collection_id, product_id)
-);
-
--- LAYOUT SECTIONS (for dynamic page builder)
+-- 3. Layout Sections (Dynamic Editor)
 CREATE TABLE IF NOT EXISTS layout_sections (
-  id SERIAL PRIMARY KEY,
-  section_type VARCHAR(50) NOT NULL, -- hero_slider, categories, featured_products, banners, newsletter, custom_html
-  section_name VARCHAR(100),
-  config JSONB NOT NULL, -- section-specific configuration
-  display_order INTEGER DEFAULT 0,
-  is_active BOOLEAN DEFAULT true,
-  page_location VARCHAR(50) DEFAULT 'homepage', -- homepage, product_page, collection_page
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+    id SERIAL PRIMARY KEY,
+    section_id VARCHAR(50) UNIQUE NOT NULL,
+    page_name VARCHAR(50) DEFAULT 'home',
+    type VARCHAR(50) NOT NULL,
+    order_index INT DEFAULT 0,
+    settings JSONB DEFAULT '{}',
+    is_visible BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- WEBHOOKS & INTEGRATIONS
+-- 4. Webhooks (Custom Integrations)
 CREATE TABLE IF NOT EXISTS webhooks (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  url VARCHAR(500) NOT NULL,
-  events TEXT[] NOT NULL, -- ['order.created', 'order.completed', 'product.updated']
-  secret_key VARCHAR(100),
-  is_active BOOLEAN DEFAULT true,
-  last_triggered TIMESTAMP,
-  success_count INTEGER DEFAULT 0,
-  failure_count INTEGER DEFAULT 0,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    url TEXT NOT NULL,
+    events TEXT[] NOT NULL,
+    secret_key VARCHAR(255),
+    is_active BOOLEAN DEFAULT TRUE,
+    last_triggered_at TIMESTAMP,
+    success_count INT DEFAULT 0,
+    failure_count INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW()
 );
 
--- WEBHOOK LOGS
-CREATE TABLE IF NOT EXISTS webhook_logs (
-  id SERIAL PRIMARY KEY,
-  webhook_id INTEGER REFERENCES webhooks(id) ON DELETE CASCADE,
-  event_type VARCHAR(50),
-  payload JSONB,
-  response_status INTEGER,
-  response_body TEXT,
-  success BOOLEAN,
-  created_at TIMESTAMP DEFAULT NOW()
+-- 5. Collections
+CREATE TABLE IF NOT EXISTS collections (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    description TEXT,
+    image_url TEXT,
+    sort_order VARCHAR(20) DEFAULT 'manual',
+    is_visible BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- CART RECOVERY TEMPLATES
-CREATE TABLE IF NOT EXISTS email_templates (
-  id SERIAL PRIMARY KEY,
-  template_key VARCHAR(50) UNIQUE NOT NULL, -- abandoned_cart_1hr, abandoned_cart_24hr
-  subject VARCHAR(255),
-  body_html TEXT,
-  body_text TEXT,
-  variables JSONB, -- available template variables
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS collection_products (
+    id SERIAL PRIMARY KEY,
+    collection_id INT REFERENCES collections(id) ON DELETE CASCADE,
+    product_id INT REFERENCES products(id) ON DELETE CASCADE,
+    position INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(collection_id, product_id)
 );
 
--- ANALYTICS TRACKING
-CREATE TABLE IF NOT EXISTS analytics_events (
-  id SERIAL PRIMARY KEY,
-  event_type VARCHAR(50) NOT NULL,
-  session_id VARCHAR(100),
-  customer_id INTEGER,
-  metadata JSONB,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
--- INDEXES FOR PERFORMANCE
-CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons(code);
-CREATE INDEX IF NOT EXISTS idx_coupons_active ON coupons(is_active, valid_from, valid_until);
-CREATE INDEX IF NOT EXISTS idx_abandoned_carts_session ON abandoned_carts(session_id);
-CREATE INDEX IF NOT EXISTS idx_abandoned_carts_email ON abandoned_carts(customer_email);
-CREATE INDEX IF NOT EXISTS idx_abandoned_carts_status ON abandoned_carts(status, expires_at);
-CREATE INDEX IF NOT EXISTS idx_collections_slug ON collections(slug);
-CREATE INDEX IF NOT EXISTS idx_collection_products_product ON collection_products(product_id);
-CREATE INDEX IF NOT EXISTS idx_layout_sections_active ON layout_sections(is_active, page_location, display_order);
-CREATE INDEX IF NOT EXISTS idx_webhooks_active ON webhooks(is_active);
-CREATE INDEX IF NOT EXISTS idx_webhook_logs_created ON webhook_logs(created_at);
-
--- CMS TABLES (for homepage/content management)
+-- 6. CMS Tables
 CREATE TABLE IF NOT EXISTS cms_hero_sliders (
-  id SERIAL PRIMARY KEY,
-  title VARCHAR(255) NOT NULL,
-  subtitle TEXT,
-  image_url VARCHAR(500),
-  cta_text VARCHAR(100),
-  cta_link VARCHAR(500),
-  background_color VARCHAR(20) DEFAULT '#f8f9fa',
-  text_color VARCHAR(20) DEFAULT '#000000',
-  display_order INTEGER DEFAULT 0,
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255),
+    subtitle TEXT,
+    image_url TEXT,
+    cta_text VARCHAR(50),
+    cta_link VARCHAR(255),
+    bg_color VARCHAR(7),
+    order_index INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS cms_categories (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  slug VARCHAR(100) UNIQUE NOT NULL,
-  icon_emoji VARCHAR(10) DEFAULT '📂',
-  image_url VARCHAR(500),
-  description TEXT,
-  display_order INTEGER DEFAULT 0,
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    image_url TEXT,
+    description TEXT,
+    order_index INT DEFAULT 0,
+    is_visible BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS cms_offer_banners (
-  id SERIAL PRIMARY KEY,
-  title VARCHAR(255) NOT NULL,
-  subtitle TEXT,
-  offer_text VARCHAR(255),
-  image_url VARCHAR(500),
-  gradient_start VARCHAR(20) DEFAULT '#667eea',
-  gradient_end VARCHAR(20) DEFAULT '#764ba2',
-  cta_text VARCHAR(100),
-  cta_link VARCHAR(500),
-  display_order INTEGER DEFAULT 0,
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255),
+    offer_text TEXT,
+    image_url TEXT,
+    link_url VARCHAR(255),
+    bg_color VARCHAR(7),
+    text_color VARCHAR(7),
+    start_date TIMESTAMP,
+    end_date TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS cms_product_sections (
-  id SERIAL PRIMARY KEY,
-  title VARCHAR(255) DEFAULT '',
-  subtitle TEXT,
-  section_type VARCHAR(50) DEFAULT 'featured',
-  display_order INTEGER DEFAULT 0,
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255),
+    section_type VARCHAR(50) DEFAULT 'grid',
+    collection_id INT,
+    product_ids INT[],
+    max_products INT DEFAULT 8,
+    bg_color VARCHAR(7),
+    order_index INT DEFAULT 0,
+    is_visible BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS cms_trust_features (
-  id SERIAL PRIMARY KEY,
-  icon_emoji VARCHAR(10) DEFAULT '✓',
-  title VARCHAR(255) NOT NULL,
-  description TEXT,
-  display_order INTEGER DEFAULT 0,
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+    id SERIAL PRIMARY KEY,
+    icon VARCHAR(100),
+    title VARCHAR(100),
+    description TEXT,
+    order_index INT DEFAULT 0,
+    is_visible BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS cms_newsletter_settings (
-  id SERIAL PRIMARY KEY,
-  title VARCHAR(255) DEFAULT 'Subscribe',
-  subtitle TEXT,
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) DEFAULT 'Subscribe to our newsletter',
+    description TEXT,
+    placeholder_text VARCHAR(100) DEFAULT 'Enter your email',
+    button_text VARCHAR(50) DEFAULT 'Subscribe',
+    bg_image_url TEXT,
+    bg_color VARCHAR(7),
+    is_active BOOLEAN DEFAULT TRUE,
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- CMS INDEXES
-CREATE INDEX IF NOT EXISTS idx_cms_hero_sliders_active ON cms_hero_sliders(is_active, display_order);
-CREATE INDEX IF NOT EXISTS idx_cms_categories_active ON cms_categories(is_active, display_order);
-CREATE INDEX IF NOT EXISTS idx_cms_banners_active ON cms_offer_banners(is_active, display_order);
-CREATE INDEX IF NOT EXISTS idx_cms_sections_active ON cms_product_sections(is_active, display_order);
+-- Indexes for performance
+CREATE INDEX IF NOT EXISTS idx_abandoned_carts_email ON abandoned_carts(user_email);
+CREATE INDEX IF NOT EXISTS idx_abandoned_carts_created ON abandoned_carts(created_at);
+CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons(code);
+CREATE INDEX IF NOT EXISTS idx_coupons_active ON coupons(is_active) WHERE is_active = TRUE;
+CREATE INDEX IF NOT EXISTS idx_layout_sections_page ON layout_sections(page_name);
+CREATE INDEX IF NOT EXISTS idx_layout_sections_order ON layout_sections(order_index);
+CREATE INDEX IF NOT EXISTS idx_webhooks_active ON webhooks(is_active) WHERE is_active = TRUE;
+CREATE INDEX IF NOT EXISTS idx_collections_slug ON collections(slug);
+CREATE INDEX IF NOT EXISTS idx_collection_products_position ON collection_products(position);

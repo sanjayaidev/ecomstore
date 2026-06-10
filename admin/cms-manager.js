@@ -453,7 +453,7 @@ const CMS = (() => {
   });
 
   // ── Public API ──
-  return {
+  const publicAPI = {
     loadCMSData,
     closeModal,
     editSlider,
@@ -463,6 +463,15 @@ const CMS = (() => {
     editTrust,
     deleteSlider,
     deleteCategory,
-    deleteBanner
+    deleteBanner,
+    showToast,
+    esc
   };
+
+  // Expose globally for other scripts
+  window.Admin = window.Admin || {};
+  window.Admin.closeModal = publicAPI.closeModal;
+  window.Admin.showToast = publicAPI.showToast;
+
+  return publicAPI;
 })();
