@@ -270,32 +270,82 @@
       initSlider();
     }
 
-    let currentSlide = 0, slideInterval;
-
-    function initSlider() {
-      const wrapper = document.getElementById('slider-wrapper');
-      const dotsContainer = document.getElementById('slider-dots');
-      wrapper.innerHTML = sliderConfig.slides.map((slide, i) => 
-        `<div class="slide ${i===0?'active':''}" style="background:${slide.gradient}"><div class="slide-content"><div class="container"><h1 class="slide-title">${slide.title}</h1><p class="slide-subtitle">${slide.subtitle}</p><a href="${slide.ctaLink}" class="btn-primary btn-slide">${slide.ctaText}</a></div></div><div class="slide-image"><img src="${slide.image}" alt="${slide.title}" loading="lazy"></div></div>`
-      ).join('');
-      dotsContainer.innerHTML = sliderConfig.slides.map((_, i) => `<button class="dot ${i===0?'active':''}" onclick="goToSlide(${i})"></button>`).join('');
-      if (sliderConfig.autoPlay) startAutoPlay();
-    }
-
-    function showSlide(index) {
-      const slides = document.querySelectorAll('.slide'), dots = document.querySelectorAll('.dot');
-      slides.forEach(s => s.classList.remove('active'));
-      dots.forEach(d => d.classList.remove('active'));
-      currentSlide = (index + slides.length) % slides.length;
-      slides[currentSlide].classList.add('active');
-      dots[currentSlide].classList.add('active');
-    }
-
-    function slideNext() { showSlide(currentSlide + 1); resetAutoPlay(); }
-    function slidePrev() { showSlide(currentSlide - 1); resetAutoPlay(); }
-    function goToSlide(index) { showSlide(index); resetAutoPlay(); }
-    function startAutoPlay() { slideInterval = setInterval(() => showSlide(currentSlide + 1), sliderConfig.autoPlayDelay); }
-    function resetAutoPlay() { clearInterval(slideInterval); startAutoPlay(); }
+   let currentSlide = 0;
+let slideInterval;
+let totalSlides = 0;
+ 
+function initSlider() {
+  const wrapper = document.getElementById('slider-wrapper');
+  const dotsContainer = document.getElementById('slider-dots');
+  if (!wrapper || !sliderConfig.slides.length) return;
+ 
+  totalSlides = sliderConfig.slides.length;
+ 
+  wrapper.innerHTML = sliderConfig.slides.map((slide, i) =>
+    `<div class="slide" style="background:${slide.gradient}">
+      <div class="slide-content">
+        <div class="container">
+          <h1 class="slide-title">${slide.title}</h1>
+          <p class="slide-subtitle">${slide.subtitle}</p>
+          <a href="${slide.ctaLink}" class="btn-primary btn-slide">${slide.ctaText}</a>
+        </div>
+      </div>
+      <div class="slide-image">
+        <img src="${slide.image}" alt="${slide.title}" loading="${i === 0 ? 'eager' : 'lazy'}">
+      </div>
+    </div>`
+  ).join('');
+ 
+  dotsContainer.innerHTML = sliderConfig.slides.map((_, i) =>
+    `<button class="dot ${i === 0 ? 'active' : ''}" onclick="goToSlide(${i})" aria-label="Go to slide ${i + 1}"></button>`
+  ).join('');
+ 
+  // Make wrapper a non-wrapping flex row
+  wrapper.style.cssText = [
+    'display:flex',
+    'flex-wrap:nowrap',
+    'width:100%',
+    'height:100%',
+    'transition:transform 0.6s cubic-bezier(0.4,0,0.2,1)',
+    'will-change:transform'
+  ].join(';');
+ 
+  // Force each slide to full width and never shrink
+  wrapper.querySelectorAll('.slide').forEach(slide => {
+    slide.style.cssText = 'flex:0 0 100%;min-width:100%;height:100%';
+  });
+ 
+  goToSlide(0, false);
+  if (sliderConfig.autoPlay) startAutoPlay();
+}
+ 
+function goToSlide(index, animate = true) {
+  const wrapper = document.getElementById('slider-wrapper');
+  const dots = document.querySelectorAll('.slider-dots .dot');
+  if (!wrapper || !totalSlides) return;
+ 
+  // Wrap around in both directions
+  currentSlide = ((index % totalSlides) + totalSlides) % totalSlides;
+ 
+  if (!animate) {
+    wrapper.style.transition = 'none';
+    requestAnimationFrame(() => {
+      wrapper.style.transform = `translateX(-${currentSlide * 100}%)`;
+      requestAnimationFrame(() => { wrapper.style.transition = ''; });
+    });
+  } else {
+    wrapper.style.transform = `translateX(-${currentSlide * 100}%)`;
+  }
+ 
+  dots.forEach((d, i) => d.classList.toggle('active', i === currentSlide));
+}
+ 
+function slideNext() { goToSlide(currentSlide + 1); resetAutoPlay(); }
+function slidePrev() { goToSlide(currentSlide - 1); resetAutoPlay(); }
+function startAutoPlay() {
+  slideInterval = setInterval(() => goToSlide(currentSlide + 1), sliderConfig.autoPlayDelay || 5000);
+}
+function resetAutoPlay() { clearInterval(slideInterval); startAutoPlay(); }
     function handleSearch() { const q = document.getElementById('search-input').value.trim(); if(q) window.location.href = `pages/products.html?search=${encodeURIComponent(q)}`; }
     
     // Newsletter handler - now integrated with API
