@@ -166,6 +166,18 @@ CREATE TABLE IF NOT EXISTS cms_newsletter_settings (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
+-- 7. Live Edit Overrides (for storing page-specific element edits)
+CREATE TABLE IF NOT EXISTS live_edit_overrides (
+    id SERIAL PRIMARY KEY,
+    page VARCHAR(255) NOT NULL,
+    element_key VARCHAR(255) NOT NULL,
+    selector TEXT NOT NULL,
+    changes JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    UNIQUE (page, element_key)
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_abandoned_carts_email ON abandoned_carts(user_email);
 CREATE INDEX IF NOT EXISTS idx_abandoned_carts_created ON abandoned_carts(created_at);
@@ -178,6 +190,8 @@ CREATE INDEX IF NOT EXISTS idx_collections_slug ON collections(slug);
 CREATE INDEX IF NOT EXISTS idx_collection_products_position ON collection_products(position);
 CREATE INDEX IF NOT EXISTS idx_hero_sliders_active ON cms_hero_sliders(is_active) WHERE is_active = TRUE;
 CREATE INDEX IF NOT EXISTS idx_hero_sliders_order ON cms_hero_sliders(display_order);
+CREATE INDEX IF NOT EXISTS idx_live_edit_overrides_page ON live_edit_overrides(page);
+CREATE INDEX IF NOT EXISTS idx_live_edit_overrides_updated ON live_edit_overrides(updated_at DESC);
 
 -- Default slider data
 INSERT INTO cms_hero_sliders (title, subtitle, image_url, cta_text, cta_link, background_color, text_color, display_order, is_active) VALUES
