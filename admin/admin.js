@@ -467,10 +467,10 @@ function activateFormTab(id) {
 // CATEGORIES
 // ═══════════════════════════════════
 const DEFAULT_CATEGORIES = [
-  { id: 'saree', name: 'Saree', slug: 'saree' },
-  { id: 'kurti', name: 'Kurti', slug: 'kurti' },
-  { id: 'dress', name: 'Dress', slug: 'dress' },
-  { id: 'top', name: 'Top', slug: 'top' }
+  { id: 'saree', name: 'Saree', slug: 'saree', image_url: '/images/categories/saree.jpg' },
+  { id: 'kurti', name: 'Kurti', slug: 'kurti', image_url: '/images/categories/kurti.jpg' },
+  { id: 'dress', name: 'Dress', slug: 'dress', image_url: '/images/categories/dress.jpg' },
+  { id: 'top', name: 'Top', slug: 'top', image_url: '/images/categories/top.jpg' }
 ];
 
 function renderCategories() {
@@ -480,7 +480,10 @@ function renderCategories() {
   state.categories = cats;
   tbody.innerHTML = cats.map(c => {
     const count = state.products.filter(p => (p.category||'').toLowerCase() === c.slug).length;
-    return `<tr><td><strong>${escHtml(c.name)}</strong></td><td><code style="font-size:.8rem;background:#f3f4f6;padding:2px 6px;border-radius:4px">${escHtml(c.slug)}</code></td><td>${count}</td><td><div style="display:flex;gap:6px"><button class="btn-icon edit-cat" data-id="${c.id}" title="Edit">✏️</button><button class="btn-icon danger delete-cat" data-id="${c.id}" title="Delete">🗑️</button></div></td></tr>`;
+    const imgHtml = c.image_url 
+      ? `<img src="${escHtml(c.image_url)}" alt="${escHtml(c.name)}" style="width:40px;height:40px;object-fit:cover;border-radius:4px">`
+      : `<div style="width:40px;height:40px;background:#f3f4f6;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:0.75rem">No Img</div>`;
+    return `<tr><td><strong>${escHtml(c.name)}</strong></td><td><code style="font-size:.8rem;background:#f3f4f6;padding:2px 6px;border-radius:4px">${escHtml(c.slug)}</code></td><td>${imgHtml}</td><td>${count}</td><td><div style="display:flex;gap:6px"><button class="btn-icon edit-cat" data-id="${c.id}" title="Edit">✏️</button><button class="btn-icon danger delete-cat" data-id="${c.id}" title="Delete">🗑️</button></div></td></tr>`;
   }).join('');
   tbody.querySelectorAll('.edit-cat').forEach(btn => btn.addEventListener('click', () => openCategoryModal(btn.dataset.id)));
   tbody.querySelectorAll('.delete-cat').forEach(btn => btn.addEventListener('click', () => openDeleteModal('category', btn.dataset.id)));
@@ -503,18 +506,23 @@ function openCategoryModal(id = null) {
   $('categoryForm').reset(); delete $('categorySlug').dataset.manual;
   if (id) {
     const cat = state.categories.find(c => c.id === id);
-    if (cat) { $('categoryId').value = cat.id; $('categoryName').value = cat.name; $('categorySlug').value = cat.slug; }
+    if (cat) { 
+      $('categoryId').value = cat.id; 
+      $('categoryName').value = cat.name; 
+      $('categorySlug').value = cat.slug;
+      $('categoryImageUrl').value = cat.image_url || '';
+    }
   }
   $('categoryModal').showModal();
 }
 
 function handleCategorySubmit(e) {
   e.preventDefault();
-  const id = $('categoryId').value, name = $('categoryName').value.trim(), slug = $('categorySlug').value.trim() || name.toLowerCase().replace(/\s+/g,'-');
+  const id = $('categoryId').value, name = $('categoryName').value.trim(), slug = $('categorySlug').value.trim() || name.toLowerCase().replace(/\s+/g,'-'), image_url = $('categoryImageUrl').value.trim();
   if (id) {
     const idx = state.categories.findIndex(c => c.id === id);
-    if (idx > -1) state.categories[idx] = { id, name, slug };
-  } else { state.categories.push({ id: slug, name, slug }); }
+    if (idx > -1) state.categories[idx] = { id, name, slug, image_url: image_url || undefined };
+  } else { state.categories.push({ id: slug, name, slug, image_url: image_url || undefined }); }
   $('categoryModal').close(); renderCategories();
   showToast(`✅ Category ${id ? 'updated' : 'added'}`, 'success');
 }
