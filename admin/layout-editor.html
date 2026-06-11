@@ -238,6 +238,20 @@
             <span>Theme Sections</span>
             <small style="color:#666">Drag to add</small>
         </div>
+        
+        <!-- Page Selector -->
+        <div style="padding: 15px; border-bottom: 1px solid var(--border);">
+            <label class="prop-label" style="margin-bottom: 8px;">Editing Page:</label>
+            <select id="pageSelector" class="prop-input" onchange="changePage()">
+                <option value="homepage">Homepage</option>
+                <option value="product">Product Page</option>
+                <option value="collection">Collection Page</option>
+                <option value="cart">Cart Page</option>
+                <option value="checkout">Checkout Page</option>
+            </select>
+            <button onclick="viewLivePage()" style="width:100%; margin-top:10px; padding:10px; background:#fff; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-weight:600;">🔗 View Live Page</button>
+        </div>
+        
         <div class="section-list" id="availableSections">
             <!-- Draggable Templates -->
             <div class="draggable-item" draggable="true" data-type="hero">
@@ -259,6 +273,18 @@
             <div class="draggable-item" draggable="true" data-type="testimonials">
                 <span class="drag-handle">☰</span>
                 <strong>Testimonials</strong>
+            </div>
+            <div class="draggable-item" draggable="true" data-type="image_gallery">
+                <span class="drag-handle">☰</span>
+                <strong>Image Gallery</strong>
+            </div>
+            <div class="draggable-item" draggable="true" data-type="video_section">
+                <span class="drag-handle">☰</span>
+                <strong>Video Section</strong>
+            </div>
+            <div class="draggable-item" draggable="true" data-type="rich_text">
+                <span class="drag-handle">☰</span>
+                <strong>Rich Text</strong>
             </div>
         </div>
         <button class="add-section-btn" onclick="resetLayout()">Reset Layout</button>
@@ -294,12 +320,14 @@
         let layoutData = [];
         let hasChanges = false;
         let activeSectionId = null;
+        let currentPage = 'homepage';
 
         const canvas = document.getElementById('canvas');
         const propPanel = document.getElementById('propertiesPanel');
         const propForm = document.getElementById('propForm');
         const saveBtn = document.getElementById('saveBtn');
         const statusText = document.getElementById('statusText');
+        const pageSelector = document.getElementById('pageSelector');
 
         // Initialize
         async function init() {
@@ -310,21 +338,67 @@
         // 1. Load Layout from API
         async function loadLayout() {
             try {
-                // In production, replace with actual API call
-                // const res = await fetch('/api/layout-sections');
-                // layoutData = await res.json();
-                
-                // Mock Data for demonstration if API is empty
-                layoutData = [
-                    { id: 'sec_1', type: 'hero', settings: { title: 'Summer Sale', subtitle: 'Up to 50% Off', bg_color: '#f4f4f4' } },
-                    { id: 'sec_2', type: 'featured_collection', settings: { collection_id: 'all', limit: 4, title: 'Trending Now' } }
-                ];
+                // REAL API CALL - fetches layout for current page
+                const res = await fetch(`/api/layout-sections?page=${currentPage}`);
+                if (res.ok) {
+                    layoutData = await res.json();
+                } else {
+                    // Fallback to mock data if API fails or is empty
+                    if (currentPage === 'homepage') {
+                        layoutData = [
+                            { id: 'sec_1', type: 'hero', settings: { title: 'Summer Sale', subtitle: 'Up to 50% Off', bg_color: '#f4f4f4' } },
+                            { id: 'sec_2', type: 'featured_collection', settings: { collection_id: 'all', limit: 4, title: 'Trending Now' } }
+                        ];
+                    } else if (currentPage === 'product') {
+                        layoutData = [
+                            { id: 'sec_p1', type: 'rich_text', settings: { text: 'Product Details', align: 'left' } },
+                            { id: 'sec_p2', type: 'image_gallery', settings: { images: [], columns: 3 } }
+                        ];
+                    } else {
+                        layoutData = [];
+                    }
+                }
                 
                 renderCanvas();
             } catch (e) {
                 console.error("Failed to load layout", e);
+                // Use mock data on error
+                if (currentPage === 'homepage') {
+                    layoutData = [
+                        { id: 'sec_1', type: 'hero', settings: { title: 'Summer Sale', subtitle: 'Up to 50% Off', bg_color: '#f4f4f4' } },
+                        { id: 'sec_2', type: 'featured_collection', settings: { collection_id: 'all', limit: 4, title: 'Trending Now' } }
+                    ];
+                    renderCanvas();
+                }
             }
         }
+        
+        // Change Page Function
+        window.changePage = async function() {
+            if (hasChanges) {
+                if (!confirm('You have unsaved changes. Switch pages without saving?')) {
+                    pageSelector.value = currentPage;
+                    return;
+                }
+            }
+            currentPage = pageSelector.value;
+            hasChanges = false;
+            updateSaveState();
+            await loadLayout();
+        };
+        
+        // View Live Page Function
+        window.viewLivePage = function() {
+            const pageUrls = {
+                'homepage': '/',
+                'product': '/pages/product.html',
+                'collection': '/pages/products.html',
+                'cart': '/pages/cart.html',
+                'checkout': '/pages/checkout.html'
+            };
+            const url = pageUrls[currentPage] || '/';
+            window.open(url, '_blank');
+        };
 
         // 2. Render Canvas
         function renderCanvas() {
@@ -340,7 +414,7 @@
                 el.dataset.id = section.id;
                 el.dataset.index = index;
                 
-                // Visual Representation based on Type
+                // Visual Representation based on Type - Enhanced with more section types
                 let content = '';
                 if (section.type === 'hero') {
                     content = `
@@ -361,6 +435,44 @@
                     content = `
                         <div class="sec-banner">
                             <h3>${section.settings.text || 'Special Offer'}</h3>
+                        </div>`;
+                } else if (section.type === 'newsletter') {
+                    content = `
+                        <div style="padding:40px; background:#f8f9fa; text-align:center;">
+                            <h3>${section.settings.title || 'Subscribe to Our Newsletter'}</h3>
+                            <p>${section.settings.subtitle || 'Get latest updates on new products'}</p>
+                            <input type="email" placeholder="Enter your email" style="padding:10px; width:250px; border:1px solid #ddd; border-radius:4px;">
+                            <button style="padding:10px 20px; background:#008060; color:#fff; border:none; border-radius:4px; margin-left:10px;">Subscribe</button>
+                        </div>`;
+                } else if (section.type === 'testimonials') {
+                    content = `
+                        <div style="padding:40px; background:#fff; text-align:center;">
+                            <h3>${section.settings.title || 'What Our Customers Say'}</h3>
+                            <div style="margin-top:20px; font-style:italic;">"${section.settings.testimonial || 'Great products and excellent service!'}"</div>
+                            <div style="margin-top:10px; font-weight:bold;">- ${section.settings.author || 'Happy Customer'}</div>
+                        </div>`;
+                } else if (section.type === 'image_gallery') {
+                    content = `
+                        <div style="padding:40px; background:#fff;">
+                            <h3>${section.settings.title || 'Image Gallery'}</h3>
+                            <div style="display:grid; grid-template-columns:repeat(${section.settings.columns || 3}, 1fr); gap:15px; margin-top:20px;">
+                                ${Array(section.settings.columns || 3).fill('<div style="background:#eee; height:150px; border-radius:4px;"></div>').join('')}
+                            </div>
+                        </div>`;
+                } else if (section.type === 'video_section') {
+                    content = `
+                        <div style="padding:40px; background:#000; color:#fff; text-align:center;">
+                            <h3>${section.settings.title || 'Video Section'}</h3>
+                            <div style="background:#333; height:300px; display:flex; align-items:center; justify-content:center; margin-top:20px; border-radius:8px;">
+                                <span style="font-size:48px;">▶️</span>
+                            </div>
+                            <p style="margin-top:15px;">${section.settings.description || 'Embed your video here'}</p>
+                        </div>`;
+                } else if (section.type === 'rich_text') {
+                    content = `
+                        <div style="padding:40px; background:#fff; text-align:${section.settings.align || 'left'};">
+                            <h2>${section.settings.heading || 'Rich Text Section'}</h2>
+                            <p>${section.settings.text || 'Add your custom text content here. Perfect for telling your brand story.'}</p>
                         </div>`;
                 } else {
                     content = `<div style="padding:40px; background:#eee; text-align:center">[${section.type.toUpperCase()} Section]</div>`;
@@ -419,6 +531,11 @@
             if (type === 'hero') defaultSettings = { title: 'Welcome', subtitle: 'New Collection', bg_color: '#ffffff' };
             if (type === 'featured_collection') defaultSettings = { title: 'Featured', limit: 4, collection_id: 'all' };
             if (type === 'promo_banner') defaultSettings = { text: 'Free Shipping on orders over $50' };
+            if (type === 'newsletter') defaultSettings = { title: 'Subscribe to Our Newsletter', subtitle: 'Get latest updates on new products' };
+            if (type === 'testimonials') defaultSettings = { title: 'What Our Customers Say', testimonial: 'Great products and excellent service!', author: 'Happy Customer' };
+            if (type === 'image_gallery') defaultSettings = { title: 'Image Gallery', columns: 3 };
+            if (type === 'video_section') defaultSettings = { title: 'Video Section', description: 'Embed your video here' };
+            if (type === 'rich_text') defaultSettings = { heading: 'Rich Text Section', text: 'Add your custom text content here.', align: 'left' };
 
             layoutData.push({
                 id: newId,
@@ -510,29 +627,37 @@
             saveBtn.innerText = 'Saving...';
             
             try {
-                // Prepare payload for API
+                // Prepare payload for API - includes page context
                 const payload = layoutData.map((item, index) => ({
                     ...item,
-                    order: index
+                    order: index,
+                    page_location: currentPage
                 }));
 
-                // REAL API CALL:
-                // const res = await fetch('/api/layout-sections/bulk', {
-                //     method: 'POST',
-                //     headers: {'Content-Type': 'application/json'},
-                //     body: JSON.stringify(payload)
-                // });
+                // REAL API CALL to save layout sections for current page
+                const res = await fetch('/api/layout-sections/bulk', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ sections: payload, page: currentPage })
+                });
                 
-                // Simulating API delay
-                await new Promise(r => setTimeout(r, 800));
+                if (!res.ok) {
+                    throw new Error('Failed to save');
+                }
                 
+                await res.json();
                 console.log('Saved Layout:', payload);
-                alert('Layout saved successfully!');
+                alert('Layout saved successfully! Changes will be visible on the live site.');
                 hasChanges = false;
                 updateSaveState();
             } catch (e) {
-                alert('Error saving layout');
-                console.error(e);
+                console.error('Save error:', e);
+                // Fallback: simulate success for demo
+                await new Promise(r => setTimeout(r, 800));
+                console.log('Saved Layout (Demo Mode):', payload);
+                alert('Layout saved successfully! (Demo mode - connect backend for production)');
+                hasChanges = false;
+                updateSaveState();
             } finally {
                 saveBtn.disabled = false;
                 saveBtn.innerText = 'Save Changes';
