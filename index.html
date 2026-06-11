@@ -162,12 +162,16 @@
       </div>
     </section>
 
-    <section class="newsletter-section">
+    <section class="newsletter-section" id="newsletter-section" style="display:none">
       <div class="container">
         <div class="newsletter-content">
-          <div class="newsletter-text"><h2>Subscribe to Our Newsletter</h2><p>Get latest updates on new products and upcoming sales</p></div>
+          <div class="newsletter-text">
+            <h2 id="nl-title">Subscribe to Our Newsletter</h2>
+            <p id="nl-subtitle">Get latest updates on new products and upcoming sales</p>
+          </div>
           <form class="newsletter-form" onsubmit="handleNewsletter(event)">
-            <input type="email" placeholder="Enter your email address" required>
+            <input type="email" id="nl-email" placeholder="Enter your email address" required>
+            <input type="text" id="nl-name" placeholder="Your name (optional)" style="display:none">
             <button type="submit" class="btn-primary">Subscribe</button>
           </form>
         </div>
@@ -293,10 +297,59 @@
     function startAutoPlay() { slideInterval = setInterval(() => showSlide(currentSlide + 1), sliderConfig.autoPlayDelay); }
     function resetAutoPlay() { clearInterval(slideInterval); startAutoPlay(); }
     function handleSearch() { const q = document.getElementById('search-input').value.trim(); if(q) window.location.href = `pages/products.html?search=${encodeURIComponent(q)}`; }
-    function handleNewsletter(e) { e.preventDefault(); alert('Thank you for subscribing!'); e.target.reset(); }
+    
+    // Newsletter handler - now integrated with API
+    async function handleNewsletter(e) {
+      e.preventDefault();
+      const email = document.getElementById('nl-email')?.value;
+      const name = document.getElementById('nl-name')?.value || '';
+      
+      if (!email || !email.includes('@')) {
+        alert('Please enter a valid email address');
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/integrations/newsletter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, name })
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert('🎉 Thank you for subscribing! You will receive our latest updates.');
+          e.target.reset();
+        } else {
+          alert('❌ ' + (result.error || 'Subscription failed. Please try again.'));
+        }
+      } catch (err) {
+        console.error('Newsletter error:', err);
+        alert('❌ Subscription failed. Please try again later.');
+      }
+    }
+    
+    // Load newsletter settings from CMS
+    async function loadNewsletterSettings() {
+      try {
+        const res = await fetch('/api/cms/newsletter');
+        const result = await res.json();
+        if (result.success && result.data) {
+          const nl = result.data;
+          if (nl.is_active !== false) {
+            const section = document.getElementById('newsletter-section');
+            if (section) section.style.display = 'block';
+            if (nl.title) document.getElementById('nl-title').textContent = nl.title;
+            if (nl.subtitle) document.getElementById('nl-subtitle').textContent = nl.subtitle;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load newsletter settings:', err);
+      }
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
       loadSliderData(); // Load slider data from CMS API
+      loadNewsletterSettings(); // Load newsletter settings from CMS
       productRenderer.renderProducts('featured', { limit: 6, sort: 'newest' });
       productRenderer.renderProducts('trending', { limit: 4, sort: 'trending' });
       productRenderer.renderProducts('new-arrivals', { limit: 8, sort: 'newest' });

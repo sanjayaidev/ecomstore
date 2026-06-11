@@ -15,6 +15,15 @@ import {
   triggerWebhook,
   handleCSVImport
 } from './enhanced-features.js';
+import {
+  handleWhatsAppIntegration,
+  handleEmailIntegration,
+  handleNewsletterSubscribe,
+  handleAbandonedCartRecovery,
+  handleOrderNotification,
+  handleOTPSend,
+  handlePromotionalOffer
+} from './integrations.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -809,6 +818,18 @@ export default async function handler(req, res) {
       }
       if (pathParts[1] === 'webhooks') return handleWebhooks(req, res, sql, params);
       if (pathParts[1] === 'csv-import') return handleCSVImport(req, res, sql);
+      
+      // Integration endpoints (WhatsApp, Email, Newsletter)
+      if (pathParts[1] === 'integrations') {
+        if (pathParts[2] === 'whatsapp') return handleWhatsAppIntegration(req, res);
+        if (pathParts[2] === 'email') return handleEmailIntegration(req, res);
+        if (pathParts[2] === 'newsletter') return handleNewsletterSubscribe(req, res);
+        if (pathParts[2] === 'abandoned-cart') return handleAbandonedCartRecovery(req, res);
+        if (pathParts[2] === 'order-notification') return handleOrderNotification(req, res);
+        if (pathParts[2] === 'otp') return handleOTPSend(req, res);
+        if (pathParts[2] === 'promotional') return handlePromotionalOffer(req, res);
+        return json(res, 404, { error: 'Integration endpoint not found' });
+      }
       
       // Customer accounts endpoint
       if (pathParts[1] === 'customers') {
