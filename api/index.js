@@ -621,6 +621,31 @@ export default async function handler(req, res) {
       }
       if (pathParts[1] === 'webhooks') return handleWebhooks(req, res, sql, params);
       if (pathParts[1] === 'csv-import') return handleCSVImport(req, res, sql);
+      
+      // Customer accounts endpoint
+      if (pathParts[1] === 'customers') {
+        const customerId = params.get('id') || pathParts[2];
+        if (req.method === 'GET' && customerId) {
+          const users = await sql`SELECT id, name, email, phone, address, city, pincode, created_at FROM users WHERE id = ${parseInt(customerId)}`;
+          if (!users.length) return json(res, 404, { error: 'Customer not found' });
+          return json(res, 200, users[0]);
+        }
+        if (req.method === 'PUT' && customerId) {
+          const body = await parseBody(req);
+          const clauses = ['updated_at = NOW()'];
+          if (body.name !== undefined) clauses.push(`name = '${body.name}'`);
+          if (body.email !== undefined) clauses.push(`email = '${body.email}'`);
+          if (body.phone !== undefined) clauses.push(`phone = '${body.phone}'`);
+          if (body.address !== undefined) clauses.push(`address = '${body.address}'`);
+          if (body.city !== undefined) clauses.push(`city = '${body.city}'`);
+          if (body.pincode !== undefined) clauses.push(`pincode = '${body.pincode}'`);
+          const result = await sql`UPDATE users SET ${sql.join(clauses.map(c=>sql.raw(c)), sql`, `)} WHERE id = ${parseInt(customerId)} RETURNING id, name, email, phone, address, city, pincode`;
+          if (!result.length) return json(res, 404, { error: 'Customer not found' });
+          return json(res, 200, result[0]);
+        }
+        return json(res, 400, { error: 'Invalid request' });
+      }
+      
       if (pathParts[1] === 'login') {
         if (req.method !== 'POST') return json(res, 405, { error: 'Method Not Allowed' });
         const body = await parseBody(req);

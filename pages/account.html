@@ -851,98 +851,80 @@
 
     <script src="../js/cartManager.js"></script>
     <script>
-        // Mock Data (Replace with actual API calls)
-        let customer = {
-            firstName: 'Priya',
-            lastName: 'Sharma',
-            email: 'priya.sharma@email.com',
-            phone: '+91 9876543210',
-            address: '123 MG Road',
-            city: 'Mumbai',
-            pincode: '400001'
-        };
-
-        const orders = [
-            {
-                id: 'ORD-2026-001',
-                date: '2026-01-15',
-                status: 'delivered',
-                total: 2499,
-                items: [
-                    { name: 'Blue Floral Saree', price: 1999, qty: 1, image: '../images/1.webp' },
-                    { name: 'Traditional Earrings', price: 500, qty: 1, image: '../images/4.webp' }
-                ],
-                tracking: [
-                    { status: 'Order Placed', date: '2026-01-15', completed: true },
-                    { status: 'Processing', date: '2026-01-16', completed: true },
-                    { status: 'Shipped', date: '2026-01-17', completed: true },
-                    { status: 'Delivered', date: '2026-01-20', completed: true }
-                ]
-            },
-            {
-                id: 'ORD-2026-002',
-                date: '2026-01-22',
-                status: 'in_transit',
-                total: 3299,
-                items: [
-                    { name: 'Designer Kurti Set', price: 1599, qty: 2, image: '../images/2.webp' }
-                ],
-                tracking: [
-                    { status: 'Order Placed', date: '2026-01-22', completed: true },
-                    { status: 'Processing', date: '2026-01-23', completed: true },
-                    { status: 'Shipped', date: '2026-01-24', completed: true },
-                    { status: 'Out for Delivery', date: '2026-01-26', completed: false }
-                ]
-            },
-            {
-                id: 'ORD-2026-003',
-                date: '2026-01-25',
-                status: 'processing',
-                total: 899,
-                items: [
-                    { name: 'Casual Summer Dress', price: 899, qty: 1, image: '../images/3.webp' }
-                ],
-                tracking: [
-                    { status: 'Order Placed', date: '2026-01-25', completed: true },
-                    { status: 'Processing', date: '2026-01-26', completed: false },
-                    { status: 'Shipped', date: '', completed: false },
-                    { status: 'Delivered', date: '', completed: false }
-                ]
-            }
-        ];
-
-        const offers = [
-            { title: 'Birthday Special', desc: 'Get 25% OFF on your next purchase', code: 'BDAY25', valid: 'Valid for 7 days' },
-            { title: 'Loyalty Reward', desc: 'Flat ₹200 OFF on orders above ₹1500', code: 'LOYAL200', valid: 'Valid for 15 days' },
-            { title: 'Weekend Sale', desc: 'Buy 2 Get 1 FREE on all accessories', code: 'WEEKEND3', valid: 'This weekend only' }
-        ];
-
-        const recommendedProducts = [
-            { id: 1, name: 'Embroidered Clutch', price: 799, image: '../images/6.webp' },
-            { id: 2, name: 'Pearl Necklace', price: 1299, image: '../images/4.webp' },
-            { id: 3, name: 'Ethnic Footwear', price: 1599, image: '../images/5.webp' },
-            { id: 4, name: 'Silk Scarf', price: 699, image: '../images/6.webp' }
-        ];
+        // API Configuration
+        const API_BASE = '/api';
+        
+        // State
+        let customer = null;
+        let orders = [];
+        let offers = [];
+        let recommendedProducts = [];
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            loadCustomerData();
-            loadOrders();
-            loadOffers();
-            loadRecommendations();
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadCustomerData();
+            await loadOrders();
+            await loadOffers();
+            await loadRecommendations();
             updateCartCount();
         });
 
-        // Load Customer Data
-        function loadCustomerData() {
-            document.getElementById('customerName').textContent = customer.firstName;
-            document.getElementById('firstName').value = customer.firstName;
-            document.getElementById('lastName').value = customer.lastName;
-            document.getElementById('email').value = customer.email;
-            document.getElementById('phone').value = customer.phone;
-            document.getElementById('address').value = customer.address;
-            document.getElementById('city').value = customer.city;
-            document.getElementById('pincode').value = customer.pincode;
+        // Load Customer Data from API
+        async function loadCustomerData() {
+            try {
+                // Get user from session/localStorage
+                const userId = localStorage.getItem('userId');
+                if (!userId) {
+                    // Show login prompt or redirect
+                    showLoginPrompt();
+                    return;
+                }
+                
+                const response = await fetch(`${API_BASE}/customers/${userId}`);
+                if (response.ok) {
+                    customer = await response.json();
+                    renderCustomerData();
+                } else {
+                    showLoginPrompt();
+                }
+            } catch (error) {
+                console.error('Error loading customer data:', error);
+                showLoginPrompt();
+            }
+        }
+        
+        function showLoginPrompt() {
+            document.getElementById('customerName').textContent = 'Guest';
+            document.querySelector('.account-content').innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-user-lock"></i>
+                    <h3>Please Login</h3>
+                    <p>Login to view your account details</p>
+                    <a href="../index.html" class="btn-primary" style="display: inline-block; margin-top: 20px;">Go to Home</a>
+                </div>
+            `;
+        }
+        
+        function renderCustomerData() {
+            if (!customer) return;
+            document.getElementById('customerName').textContent = customer.name || customer.email;
+            const firstNameInput = document.getElementById('firstName');
+            const lastNameInput = document.getElementById('lastName');
+            if (firstNameInput && customer.name) {
+                const names = customer.name.split(' ');
+                firstNameInput.value = names[0] || '';
+                lastNameInput.value = names.slice(1).join(' ') || '';
+            }
+            const emailInput = document.getElementById('email');
+            if (emailInput) emailInput.value = customer.email || '';
+            const phoneInput = document.getElementById('phone');
+            if (phoneInput) phoneInput.value = customer.phone || '';
+            const addressInput = document.getElementById('address');
+            if (addressInput) addressInput.value = customer.address || '';
+            const cityInput = document.getElementById('city');
+            if (cityInput) cityInput.value = customer.city || '';
+            const pincodeInput = document.getElementById('pincode');
+            if (pincodeInput) pincodeInput.value = customer.pincode || '';
         }
 
         // Show Tab
@@ -1098,14 +1080,35 @@
             document.getElementById('orderModal').classList.remove('show');
         };
 
-        // Load Offers
-        function loadOffers() {
+        // Load Offers from API
+        async function loadOffers() {
+            try {
+                const response = await fetch(`${API_BASE}/coupons?active=true`);
+                if (response.ok) {
+                    offers = await response.json();
+                }
+                renderOffers();
+            } catch (error) {
+                console.error('Error loading offers:', error);
+                offers = [];
+                renderOffers();
+            }
+        }
+        
+        function renderOffers() {
             const container = document.getElementById('offersGrid');
+            if (!container) return;
+            
+            if (offers.length === 0) {
+                container.innerHTML = '<p class="empty-state">No exclusive offers available right now.</p>';
+                return;
+            }
+            
             container.innerHTML = offers.map((offer, i) => `
                 <div class="offer-card">
-                    <div class="offer-badge">${offer.valid}</div>
-                    <h3 class="offer-title">${offer.title}</h3>
-                    <p class="offer-desc">${offer.desc}</p>
+                    <div class="offer-badge">${offer.valid_until ? 'Valid until ' + new Date(offer.valid_until).toLocaleDateString() : 'Limited Time'}</div>
+                    <h3 class="offer-title">${offer.code}</h3>
+                    <p class="offer-desc">${offer.description || offer.type === 'percentage' ? `${offer.value}% OFF` : `₹${offer.value} OFF`}</p>
                     <div class="offer-code">${offer.code}</div><br>
                     <button class="btn-copy-code" onclick="copyCode('${offer.code}')">
                         <i class="fas fa-copy"></i> Copy Code
@@ -1120,15 +1123,36 @@
             alert(`Code ${code} copied to clipboard!`);
         };
 
-        // Load Recommendations
-        function loadRecommendations() {
+        // Load Recommendations from API
+        async function loadRecommendations() {
+            try {
+                const response = await fetch(`${API_BASE}/products?limit=4&sort=trending`);
+                if (response.ok) {
+                    recommendedProducts = await response.json();
+                }
+                renderRecommendations();
+            } catch (error) {
+                console.error('Error loading recommendations:', error);
+                recommendedProducts = [];
+                renderRecommendations();
+            }
+        }
+        
+        function renderRecommendations() {
             const container = document.getElementById('alsoBuyGrid');
+            if (!container) return;
+            
+            if (recommendedProducts.length === 0) {
+                container.innerHTML = '<p class="empty-state">No recommendations available.</p>';
+                return;
+            }
+            
             container.innerHTML = recommendedProducts.map(product => `
                 <div class="product-card-mini">
-                    <img src="${product.image}" alt="${product.name}">
+                    <img src="${product.image_1 || product.image || '../images/1.png'}" alt="${product.title}" onerror="this.src='../images/1.png'">
                     <div class="product-card-mini-info">
-                        <div class="product-card-mini-name">${product.name}</div>
-                        <div class="product-card-mini-price">₹${product.price.toLocaleString()}</div>
+                        <div class="product-card-mini-name">${product.title}</div>
+                        <div class="product-card-mini-price">₹${(product.discount_price || product.price).toLocaleString()}</div>
                         <button class="btn-add-cart" onclick="addToCart(${product.id})">
                             <i class="fas fa-cart-plus"></i> Add to Cart
                         </button>

@@ -13,12 +13,22 @@ export async function handleCoupons(req, res, sql, params) {
   const method = req.method;
   if (method === 'GET') {
     const id = params.get('id');
+    const active = params.get('active');
+    
     if (id) {
       const coupons = await sql`SELECT * FROM coupons WHERE id = ${Number(id)}`;
       if (!coupons.length) return res.status(404).json({ error: 'Coupon not found' });
       return res.status(200).json(coupons[0]);
     }
-    return res.status(200).json(await sql`SELECT * FROM coupons ORDER BY created_at DESC`);
+    
+    // Filter by active status if provided
+    let query;
+    if (active === 'true') {
+      query = sql`SELECT * FROM coupons WHERE is_active = true ORDER BY created_at DESC`;
+    } else {
+      query = sql`SELECT * FROM coupons ORDER BY created_at DESC`;
+    }
+    return res.status(200).json(await query);
   }
   if (method === 'POST') {
     const b = await parseBody(req);
