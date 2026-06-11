@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Visual Editor - Shop Style</title>
+    <style>
+        :root {
+            --primary: #008060;
+            --secondary: #5a667f;
+            --success: #00b386;
+            --warning: #ffab00;
+            --danger: #d82c0d;
+            --bg: #f1f2f4;
+            --surface: #ffffff;
+            --border: #dfe3e8;
+            --text: #202223;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden;
+        }
+
+        /* Top Bar - Editor Controls */
+        .editor-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 10000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .editor-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .editor-logo {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .page-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .page-selector label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #637381;
+        }
+
+        .page-select {
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background: white;
+            cursor: pointer;
+            min-width: 200px;
+        }
+
+        .editor-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-editor {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary {
+            background: #f1f2f4;
+            color: var(--text);
+        }
+
+        .btn-secondary:hover {
+            background: #e4e5e7;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            opacity: 0.9;
+        }
+
+        .save-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: #637381;
+            padding: 6px 12px;
+            background: #f1f2f4;
+            border-radius: 20px;
+        }
+
+        .save-indicator.saved {
+            color: var(--success);
+            background: #e6f7f3;
+        }
+
+        .save-indicator.unsaved {
+            color: var(--warning);
+            background: #fff8e6;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            margin-top: 60px;
+            height: calc(100vh - 60px);
+            position: relative;
+        }
+
+        .site-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+
+        /* Section Overlay Styles */
+        .editable-section {
+            position: relative;
+            cursor: pointer;
+            transition: outline 0.2s;
+        }
+
+        .editable-section:hover {
+            outline: 2px dashed var(--primary);
+            outline-offset: 2px;
+        }
+
+        .editable-section.active {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        .section-toolbar {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 5px;
+            display: none;
+            gap: 5px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10001;
+        }
+
+        .editable-section:hover .section-toolbar,
+        .editable-section.active .section-toolbar {
+            display: flex;
+        }
+
+        .toolbar-btn {
+            padding: 6px 10px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .toolbar-btn:hover {
+            background: #f1f2f4;
+        }
+
+        .toolbar-btn.edit {
+            color: var(--primary);
+        }
+
+        .toolbar-btn.move {
+            color: var(--secondary);
+        }
+
+        .toolbar-btn.delete {
+            color: var(--danger);
+        }
+
+        .toolbar-btn.add {
+            color: var(--success);
+        }
+
+        /* Sidebar Panel */
+        .sidebar-panel {
+            position: fixed;
+            top: 60px;
+            right: -350px;
+            width: 350px;
+            height: calc(100vh - 60px);
+            background: var(--surface);
+            border-left: 1px solid var(--border);
+            overflow-y: auto;
+            transition: right 0.3s ease;
+            z-index: 10001;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+        }
+
+        .sidebar-panel.open {
+            right: 0;
+        }
+
+        .panel-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .panel-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #637381;
+        }
+
+        .panel-content {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #637381;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 128, 96, 0.1);
+        }
+
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .color-picker-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .color-picker {
+            width: 50px;
+            height: 40px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            padding: 2px;
+        }
+
+        .section-list-item {
+            padding: 15px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            margin-bottom: 10px;
+            cursor: grab;
+            background: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-list-item:hover {
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .add-section-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .add-section-card {
+            padding: 20px;
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .add-section-card:hover {
+            border-color: var(--primary);
+            background: #f0fdf9;
+        }
+
+        .add-section-card i {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .add-section-card span {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* Version History Panel */
+        .version-panel {
+            position: fixed;
+            top: 60px;
+            left: -300px;
+            width: 300px;
+            height: calc(100vh - 60px);
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            transition: left 0.3s ease;
+            z-index: 10001;
+        }
+
+        .version-panel.open {
+            left: 0;
+        }
+
+        .version-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+        }
+
+        .version-item:hover {
+            background: #f1f2f4;
+        }
+
+        .version-item.current {
+            background: #e6f7f3;
+            border-left: 3px solid var(--success);
+        }
+
+        .version-date {
+            font-size: 0.8rem;
+            color: #637381;
+            margin-bottom: 4px;
+        }
+
+        .version-info {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f1f2f4;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 10002;
+        }
+
+        .toast {
+            background: var(--text);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast.success {
+            background: var(--success);
+        }
+
+        .toast.error {
+            background: var(--danger);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Editor Top Bar -->
+    <div class="editor-bar">
+        <div class="editor-left">
+            <div class="editor-logo">
+                <i class="fas fa-paint-brush"></i>
+                Live Visual Editor
+            </div>
+            <div class="page-selector">
+                <label>Editing:</label>
+                <select class="page-select" id="pageSelector" onchange="changePage()">
+                    <option value="homepage">Homepage</option>
+                    <option value="product">Product Page</option>
+                    <option value="collection">Collection Page</option>
+                    <option value="cart">Cart Page</option>
+                    <option value="checkout">Checkout Page</option>
+                </select>
+            </div>
+        </div>
+        <div class="editor-right">
+            <div class="save-indicator" id="saveIndicator">
+                <i class="fas fa-check-circle"></i>
+                <span id="saveStatus">All changes saved</span>
+            </div>
+            <button class="btn-editor btn-secondary" onclick="toggleVersionHistory()">
+                <i class="fas fa-history"></i>
+                History
+            </button>
+            <button class="btn-editor btn-secondary" onclick="previewSite()">
+                <i class="fas fa-eye"></i>
+                Preview
+            </button>
+            <button class="btn-editor btn-primary" onclick="publishChanges()" id="publishBtn" disabled>
+                <i class="fas fa-upload"></i>
+                Publish
+            </button>
+        </div>
+    </div>
+
+    <!-- Version History Panel -->
+    <div class="version-panel" id="versionPanel">
+        <div class="panel-header">
+            <div class="panel-title">Version History</div>
+            <button class="panel-close" onclick="toggleVersionHistory()">&times;</button>
+        </div>
+        <div id="versionList">
+            <!-- Versions will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Settings Sidebar Panel -->
+    <div class="sidebar-panel" id="settingsPanel">
+        <div class="panel-header">
+            <div class="panel-title" id="panelTitle">Edit Section</div>
+            <button class="panel-close" onclick="closeSettingsPanel()">&times;</button>
+        </div>
+        <div class="panel-content" id="panelContent">
+            <!-- Dynamic form fields will be inserted here -->
+        </div>
+    </div>
+
+    <!-- Main Content with Site Frame -->
+    <div class="main-content">
+        <iframe 
+            class="site-frame" 
+            id="siteFrame" 
+            src="/?editor=true"
+            onload="onFrameLoad()"
+        ></iframe>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // State Management
+        let currentPage = 'homepage';
+        let layoutData = [];
+        let hasUnsavedChanges = false;
+        let activeSectionId = null;
+        let versionHistory = [];
+        let frameLoaded = false;
+
+        // Initialize
+        async function init() {
+            await loadLayout();
+            await loadVersionHistory();
+        }
+
+        // Load Layout for Current Page
+        async function loadLayout() {
+            try {
+                const res = await fetch(`/api/layout-sections?page=${currentPage}`);
+                if (res.ok) {
+                    layoutData = await res.json();
+                } else {
+                    layoutData = getDefaultLayout(currentPage);
+                }
+                injectEditorScripts();
+            } catch (e) {
+                console.error('Failed to load layout:', e);
+                layoutData = getDefaultLayout(currentPage);
+                injectEditorScripts();
+            }
+        }
+
+        // Get Default Layout for Page
+        function getDefaultLayout(page) {
+            const defaults = {
+                homepage: [
+                    { id: 'hero_1', type: 'hero', order: 0, settings: { title: 'Welcome', subtitle: 'Discover Amazing Products', bg_color: '#f8f9fa' } },
+                    { id: 'featured_1', type: 'featured_collection', order: 1, settings: { title: 'Featured Products', limit: 8 } },
+                    { id: 'banner_1', type: 'promo_banner', order: 2, settings: { text: 'Free Shipping on Orders $50+' } }
+                ],
+                product: [
+                    { id: 'product_main', type: 'product_main', order: 0, settings: {} },
+                    { id: 'gallery_1', type: 'image_gallery', order: 1, settings: { columns: 3 } }
+                ],
+                collection: [
+                    { id: 'collection_header', type: 'collection_header', order: 0, settings: {} },
+                    { id: 'product_grid', type: 'product_grid', order: 1, settings: { columns: 4 } }
+                ],
+                cart: [
+                    { id: 'cart_main', type: 'cart_main', order: 0, settings: {} }
+                ],
+                checkout: [
+                    { id: 'checkout_main', type: 'checkout_main', order: 0, settings: {} }
+                ]
+            };
+            return defaults[page] || [];
+        }
+
+        // Load Version History
+        async function loadVersionHistory() {
+            try {
+                const res = await fetch(`/api/layout-versions?page=${currentPage}`);
+                if (res.ok) {
+                    versionHistory = await res.json();
+                    renderVersionList();
+                }
+            } catch (e) {
+                console.error('Failed to load versions:', e);
+            }
+        }
+
+        // Render Version List
+        function renderVersionList() {
+            const container = document.getElementById('versionList');
+            if (versionHistory.length === 0) {
+                container.innerHTML = '<div style="padding:20px; text-align:center; color:#999;">No version history yet</div>';
+                return;
+            }
+            container.innerHTML = versionHistory.map((v, i) => `
+                <div class="version-item ${i === 0 ? 'current' : ''}" onclick="restoreVersion('${v.id}')">
+                    <div class="version-date">${new Date(v.created_at).toLocaleString()}</div>
+                    <div class="version-info">${v.changes_summary || 'Version ' + (versionHistory.length - i)}</div>
+                </div>
+            `).join('');
+        }
+
+        // Change Page
+        async function changePage() {
+            if (hasUnsavedChanges) {
+                if (!confirm('You have unsaved changes. Switch pages without saving?')) {
+                    document.getElementById('pageSelector').value = currentPage;
+                    return;
+                }
+            }
+            
+            currentPage = document.getElementById('pageSelector').value;
+            showLoading(true);
+            
+            try {
+                await loadLayout();
+                await loadVersionHistory();
+                
+                // Reload iframe with new page
+                const pageUrls = {
+                    homepage: '/?editor=true',
+                    product: '/pages/product.html?editor=true',
+                    collection: '/pages/products.html?editor=true',
+                    cart: '/pages/cart.html?editor=true',
+                    checkout: '/pages/checkout.html?editor=true'
+                };
+                document.getElementById('siteFrame').src = pageUrls[currentPage] || '/?editor=true';
+                
+                hasUnsavedChanges = false;
+                updateSaveIndicator();
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Inject Editor Scripts into Iframe
+        function injectEditorScripts() {
+            if (!frameLoaded) return;
+            
+            const frame = document.getElementById('siteFrame');
+            const frameDoc = frame.contentDocument || frame.contentWindow.document;
+            
+            // Add data attributes to sections
+            layoutData.forEach((section, index) => {
+                const selector = getSectionSelector(section.type, index);
+                const element = frameDoc.querySelector(selector);
+                if (element) {
+                    element.classList.add('editable-section');
+                    element.dataset.sectionId = section.id;
+                    element.dataset.sectionType = section.type;
+                    element.dataset.sectionIndex = index;
+                    
+                    // Add toolbar
+                    if (!element.querySelector('.section-toolbar')) {
+                        const toolbar = createSectionToolbar(section, index);
+                        element.appendChild(toolbar);
+                    }
+                }
+            });
+        }
+
+        // Get CSS Selector for Section Type
+        function getSectionSelector(type, index) {
+            const selectors = {
+                hero: '.hero-slider, .sec-hero',
+                featured_collection: '.featured-section, .sec-featured',
+                promo_banner: '.offer-banners, .sec-banner',
+                newsletter: '.newsletter-section',
+                categories: '.categories-section',
+                product_main: '.product-main, .product-details',
+                image_gallery: '.gallery-section, .image-gallery',
+                product_grid: '.products-grid',
+                collection_header: '.collection-header',
+                cart_main: '.cart-main, .cart-page',
+                checkout_main: '.checkout-main, .checkout-page'
+            };
+            return selectors[type] || `section:nth-of-type(${index + 1})`;
+        }
+
+        // Create Section Toolbar
+        function createSectionToolbar(section, index) {
+            const toolbar = document.createElement('div');
+            toolbar.className = 'section-toolbar';
+            toolbar.innerHTML = `
+                <button class="toolbar-btn edit" onclick="editSection('${section.id}')">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="toolbar-btn move" onclick="moveSection(${index}, -1)">
+                    <i class="fas fa-arrow-up"></i>
+                </button>
+                <button class="toolbar-btn move" onclick="moveSection(${index}, 1)">
+                    <i class="fas fa-arrow-down"></i>
+                </button>
+                <button class="toolbar-btn delete" onclick="deleteSection('${section.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            return toolbar;
+        }
+
+        // Edit Section
+        window.editSection = function(sectionId) {
+            const section = layoutData.find(s => s.id === sectionId);
+            if (!section) return;
+            
+            activeSectionId = sectionId;
+            const panel = document.getElementById('settingsPanel');
+            const title = document.getElementById('panelTitle');
+            const content = document.getElementById('panelContent');
+            
+            title.textContent = `Edit ${section.type.replace(/_/g, ' ').toUpperCase()}`;
+            content.innerHTML = generateFormFields(section);
+            
+            panel.classList.add('open');
+            
+            // Highlight section in iframe
+            highlightSection(sectionId);
+        };
+
+        // Generate Form Fields Based on Section Type
+        function generateFormFields(section) {
+            let fields = '';
+            const settings = section.settings || {};
+            
+            // Common fields based on section type
+            if (settings.title !== undefined) {
+                fields += createFormField('title', 'Title', 'text', settings.title);
+            }
+            if (settings.subtitle !== undefined) {
+                fields += createFormField('subtitle', 'Subtitle', 'text', settings.subtitle);
+            }
+            if (settings.text !== undefined) {
+                fields += createFormField('text', 'Text', 'textarea', settings.text);
+            }
+            if (settings.bg_color !== undefined) {
+                fields += createColorField('bg_color', 'Background Color', settings.bg_color);
+            }
+            if (settings.limit !== undefined) {
+                fields += createFormField('limit', 'Product Limit', 'number', settings.limit);
+            }
+            if (settings.columns !== undefined) {
+                fields += createFormField('columns', 'Columns', 'number', settings.columns);
+            }
+            if (settings.heading !== undefined) {
+                fields += createFormField('heading', 'Heading', 'text', settings.heading);
+            }
+            
+            // Save button
+            fields += `
+                <div style="margin-top:30px; display:flex; gap:10px;">
+                    <button class="btn-editor btn-primary" style="flex:1;" onclick="saveSectionSettings()">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                    <button class="btn-editor btn-secondary" onclick="closeSettingsPanel()">
+                        Cancel
+                    </button>
+                </div>
+            `;
+            
+            return fields;
+        }
+
+        // Create Form Field HTML
+        function createFormField(name, label, type, value) {
+            if (type === 'textarea') {
+                return `
+                    <div class="form-group">
+                        <label class="form-label">${label}</label>
+                        <textarea class="form-input form-textarea" data-field="${name}">${value || ''}</textarea>
+                    </div>
+                `;
+            }
+            return `
+                <div class="form-group">
+                    <label class="form-label">${label}</label>
+                    <input type="${type}" class="form-input" data-field="${name}" value="${value || ''}">
+                </div>
+            `;
+        }
+
+        // Create Color Picker Field
+        function createColorField(name, label, value) {
+            return `
+                <div class="form-group">
+                    <label class="form-label">${label}</label>
+                    <div class="color-picker-wrapper">
+                        <input type="color" class="color-picker" data-field="${name}" value="${value || '#ffffff'}">
+                        <input type="text" class="form-input" data-field="${name}" value="${value || '#ffffff'}" style="flex:1;">
+                    </div>
+                </div>
+            `;
+        }
+
+        // Save Section Settings
+        window.saveSectionSettings = function() {
+            const section = layoutData.find(s => s.id === activeSectionId);
+            if (!section) return;
+            
+            const panelContent = document.getElementById('panelContent');
+            const inputs = panelContent.querySelectorAll('[data-field]');
+            
+            inputs.forEach(input => {
+                const field = input.dataset.field;
+                section.settings[field] = input.value;
+            });
+            
+            // Sync color picker and text input
+            const colorPickers = panelContent.querySelectorAll('.color-picker');
+            colorPickers.forEach(picker => {
+                const textInput = picker.nextElementSibling;
+                if (textInput && textInput.dataset.field === picker.dataset.field) {
+                    picker.value = textInput.value;
+                }
+            });
+            
+            hasUnsavedChanges = true;
+            updateSaveIndicator();
+            closeSettingsPanel();
+            injectEditorScripts();
+            showToast('Section updated successfully', 'success');
+        };
+
+        // Close Settings Panel
+        window.closeSettingsPanel = function() {
+            document.getElementById('settingsPanel').classList.remove('open');
+            activeSectionId = null;
+        };
+
+        // Move Section
+        window.moveSection = function(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= layoutData.length) return;
+            
+            const temp = layoutData[index];
+            layoutData[index] = layoutData[newIndex];
+            layoutData[newIndex] = temp;
+            
+            layoutData.forEach((s, i) => s.order = i);
+            
+            hasUnsavedChanges = true;
+            updateSaveIndicator();
+            injectEditorScripts();
+        };
+
+        // Delete Section
+        window.deleteSection = function(sectionId) {
+            if (!confirm('Are you sure you want to delete this section?')) return;
+            
+            layoutData = layoutData.filter(s => s.id !== sectionId);
+            hasUnsavedChanges = true;
+            updateSaveIndicator();
+            injectEditorScripts();
+            showToast('Section deleted', 'success');
+        };
+
+        // Highlight Section in Iframe
+        function highlightSection(sectionId) {
+            const frame = document.getElementById('siteFrame');
+            const frameDoc = frame.contentDocument || frame.contentWindow.document;
+            
+            frameDoc.querySelectorAll('.editable-section').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            const element = frameDoc.querySelector(`[data-section-id="${sectionId}"]`);
+            if (element) {
+                element.classList.add('active');
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        // Save/Publish Changes
+        window.publishChanges = async function() {
+            if (!hasUnsavedChanges) return;
+            
+            showLoading(true);
+            try {
+                const res = await fetch('/api/layout-sections', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        page: currentPage,
+                        sections: layoutData
+                    })
+                });
+                
+                if (res.ok) {
+                    hasUnsavedChanges = false;
+                    updateSaveIndicator();
+                    await loadVersionHistory();
+                    showToast('Changes published successfully!', 'success');
+                } else {
+                    throw new Error('Failed to save');
+                }
+            } catch (e) {
+                showToast('Failed to save changes', 'error');
+                console.error(e);
+            } finally {
+                showLoading(false);
+            }
+        };
+
+        // Preview Site (without editor)
+        window.previewSite = function() {
+            const pageUrls = {
+                homepage: '/',
+                product: '/pages/product.html',
+                collection: '/pages/products.html',
+                cart: '/pages/cart.html',
+                checkout: '/pages/checkout.html'
+            };
+            window.open(pageUrls[currentPage] || '/', '_blank');
+        };
+
+        // Toggle Version History Panel
+        window.toggleVersionHistory = function() {
+            document.getElementById('versionPanel').classList.toggle('open');
+        };
+
+        // Restore Previous Version
+        window.restoreVersion = async function(versionId) {
+            if (!confirm('Restore this version? Current unsaved changes will be lost.')) return;
+            
+            showLoading(true);
+            try {
+                const res = await fetch(`/api/layout-versions/${versionId}/restore`, {
+                    method: 'POST'
+                });
+                
+                if (res.ok) {
+                    await loadLayout();
+                    injectEditorScripts();
+                    hasUnsavedChanges = false;
+                    updateSaveIndicator();
+                    toggleVersionHistory();
+                    showToast('Version restored successfully', 'success');
+                }
+            } catch (e) {
+                showToast('Failed to restore version', 'error');
+            } finally {
+                showLoading(false);
+            }
+        };
+
+        // Update Save Indicator
+        function updateSaveIndicator() {
+            const indicator = document.getElementById('saveIndicator');
+            const status = document.getElementById('saveStatus');
+            const publishBtn = document.getElementById('publishBtn');
+            
+            if (hasUnsavedChanges) {
+                indicator.className = 'save-indicator unsaved';
+                indicator.innerHTML = '<i class="fas fa-exclamation-circle"></i><span>Unsaved changes</span>';
+                publishBtn.disabled = false;
+            } else {
+                indicator.className = 'save-indicator saved';
+                indicator.innerHTML = '<i class="fas fa-check-circle"></i><span>All changes saved</span>';
+                publishBtn.disabled = true;
+            }
+        }
+
+        // Show/Hide Loading Overlay
+        function showLoading(show) {
+            document.getElementById('loadingOverlay').classList.toggle('show', show);
+        }
+
+        // Show Toast Notification
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Iframe Load Handler
+        window.onFrameLoad = function() {
+            frameLoaded = true;
+            setTimeout(injectEditorScripts, 500);
+        };
+
+        // Handle keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + S to save
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                if (hasUnsavedChanges) {
+                    publishChanges();
+                }
+            }
+        });
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
