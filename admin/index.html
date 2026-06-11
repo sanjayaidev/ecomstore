@@ -921,79 +921,75 @@
 <div id="toastContainer" class="toast-container"></div>
 
 <!-- Collection Modal -->
-<div class="modal-overlay" id="collectionModal">
-  <div class="modal-box">
-    <div class="modal-header">
-      <h3 id="collectionModalTitle">Add Collection</h3>
-      <button class="modal-close" id="closeCollectionModal">×</button>
-    </div>
-    <div class="modal-body">
-      <form id="collectionForm">
-        <input type="hidden" id="collectionId" name="edit_id">
-        <div class="form-group"><label>Name *</label><input type="text" id="collectionName" name="name" required placeholder="Summer Collection"></div>
-        <div class="form-group"><label>Slug</label><input type="text" id="collectionSlug" name="slug" placeholder="summer-collection"></div>
-        <div class="form-group"><label>Description</label><textarea id="collectionDescription" name="description" rows="3" placeholder="Curated summer products"></textarea></div>
-        <div class="form-group"><label>Image URL</label><input type="text" id="collectionImageUrl" name="image_url" placeholder="/images/collections/summer.jpg"></div>
-        <div class="form-group" style="display:flex;align-items:center;gap:10px">
-          <label class="toggle-switch"><input type="checkbox" id="collectionIsVisible" name="is_visible" checked><span class="toggle-slider"></span></label>
-          <span>Visible</span>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn-secondary" id="cancelCollectionModal">Cancel</button>
-          <button type="submit" class="btn-primary">Save Collection</button>
-        </div>
-      </form>
-    </div>
+<dialog class="modal modal-lg" id="collectionModal">
+  <div class="modal-header">
+    <h3 id="collectionModalTitle">Add Collection</h3>
+    <button class="modal-close" id="closeCollectionModal">×</button>
   </div>
-</div>
+  <div class="modal-form">
+    <form id="collectionForm">
+      <input type="hidden" id="collectionId" name="edit_id">
+      <div class="form-group"><label>Name *</label><input type="text" id="collectionName" name="name" required placeholder="Summer Collection"></div>
+      <div class="form-group"><label>Slug</label><input type="text" id="collectionSlug" name="slug" placeholder="summer-collection"></div>
+      <div class="form-group"><label>Description</label><textarea id="collectionDescription" name="description" rows="3" placeholder="Curated summer products"></textarea></div>
+      <div class="form-group"><label>Image URL</label><input type="text" id="collectionImageUrl" name="image_url" placeholder="/images/collections/summer.jpg"></div>
+      <div class="form-group" style="display:flex;align-items:center;gap:10px">
+        <label class="toggle-switch"><input type="checkbox" id="collectionIsVisible" name="is_visible" checked><span class="toggle-slider"></span></label>
+        <span>Visible</span>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="cancelCollectionModal">Cancel</button>
+        <button type="submit" class="btn-primary">Save Collection</button>
+      </div>
+    </form>
+  </div>
+</dialog>
 
 <!-- Coupon Modal -->
-<div class="modal-overlay" id="couponModal">
-  <div class="modal-box">
-    <div class="modal-header">
-      <h3 id="couponModalTitle">Add Coupon</h3>
-      <button class="modal-close" id="closeCouponModal">×</button>
-    </div>
-    <div class="modal-body">
-      <form id="couponForm">
-        <input type="hidden" id="couponId" name="edit_id">
-        <div class="form-row">
-          <div class="form-group"><label>Code *</label><input type="text" id="couponCode" name="code" required placeholder="SUMMER20" style="text-transform:uppercase"></div>
-          <div class="form-group"><label>Type *</label>
-            <select id="couponType" name="type" required>
-              <option value="percentage">Percentage (%)</option>
-              <option value="fixed">Fixed Amount (₹)</option>
-              <option value="buy_x_get_y">Buy X Get Y</option>
-              <option value="bundle">Bundle Deal</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group"><label>Description</label><input type="text" id="couponDescription" name="description" placeholder="Summer Sale Discount"></div>
-        <div class="form-group"><label>Value *</label><input type="number" id="couponValue" name="value" required placeholder="20" step="0.01"></div>
-        <div class="form-row">
-          <div class="form-group"><label>Min Purchase</label><input type="number" id="couponMinPurchaseAmount" name="min_purchase_amount" value="0" step="0.01"></div>
-          <div class="form-group"><label>Max Discount</label><input type="number" id="couponMaxDiscountAmount" name="max_discount_amount" placeholder="Optional" step="0.01"></div>
-        </div>
-        <div class="form-row">
-          <div class="form-group"><label>Usage Limit</label><input type="number" id="couponUsageLimit" name="usage_limit" placeholder="Unlimited"></div>
-          <div class="form-group"><label>Per Customer Limit</label><input type="number" id="couponPerCustomerLimit" name="per_customer_limit" value="1"></div>
-        </div>
-        <div class="form-row">
-          <div class="form-group"><label>Valid From</label><input type="datetime-local" id="couponValidFrom" name="valid_from"></div>
-          <div class="form-group"><label>Valid Until</label><input type="datetime-local" id="couponValidUntil" name="valid_until"></div>
-        </div>
-        <div class="form-group" style="display:flex;align-items:center;gap:10px">
-          <label class="toggle-switch"><input type="checkbox" id="couponIsActive" name="is_active" checked><span class="toggle-slider"></span></label>
-          <span>Active</span>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn-secondary" id="cancelCouponModal">Cancel</button>
-          <button type="submit" class="btn-primary">Save Coupon</button>
-        </div>
-      </form>
-    </div>
+<dialog class="modal modal-lg" id="couponModal">
+  <div class="modal-header">
+    <h3 id="couponModalTitle">Add Coupon</h3>
+    <button class="modal-close" id="closeCouponModal">×</button>
   </div>
-</div>
+  <div class="modal-form">
+    <form id="couponForm">
+      <input type="hidden" id="couponId" name="edit_id">
+      <div class="form-row">
+        <div class="form-group"><label>Code *</label><input type="text" id="couponCode" name="code" required placeholder="SUMMER20" style="text-transform:uppercase"></div>
+        <div class="form-group"><label>Type *</label>
+          <select id="couponType" name="type" required>
+            <option value="percentage">Percentage (%)</option>
+            <option value="fixed">Fixed Amount (₹)</option>
+            <option value="buy_x_get_y">Buy X Get Y</option>
+            <option value="bundle">Bundle Deal</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label>Description</label><input type="text" id="couponDescription" name="description" placeholder="Summer Sale Discount"></div>
+      <div class="form-group"><label>Value *</label><input type="number" id="couponValue" name="value" required placeholder="20" step="0.01"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Min Purchase</label><input type="number" id="couponMinPurchaseAmount" name="min_purchase_amount" value="0" step="0.01"></div>
+        <div class="form-group"><label>Max Discount</label><input type="number" id="couponMaxDiscountAmount" name="max_discount_amount" placeholder="Optional" step="0.01"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Usage Limit</label><input type="number" id="couponUsageLimit" name="usage_limit" placeholder="Unlimited"></div>
+        <div class="form-group"><label>Per Customer Limit</label><input type="number" id="couponPerCustomerLimit" name="per_customer_limit" value="1"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Valid From</label><input type="datetime-local" id="couponValidFrom" name="valid_from"></div>
+        <div class="form-group"><label>Valid Until</label><input type="datetime-local" id="couponValidUntil" name="valid_until"></div>
+      </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:10px">
+        <label class="toggle-switch"><input type="checkbox" id="couponIsActive" name="is_active" checked><span class="toggle-slider"></span></label>
+        <span>Active</span>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="cancelCouponModal">Cancel</button>
+        <button type="submit" class="btn-primary">Save Coupon</button>
+      </div>
+    </form>
+  </div>
+</dialog>
 
 <script src="/admin/admin.js"></script>
 <script src="/admin/cms-manager.js"></script>
