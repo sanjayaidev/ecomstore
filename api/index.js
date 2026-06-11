@@ -773,6 +773,88 @@ async function handleCMS(req, res, sql, pathParts, params) {
   return json(res, 404, { success: false, error: 'CMS endpoint not found' });
 }
 
+async function handleLiveEdits(req, res, sql) {
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return json(res, 405, { error: 'Method not allowed' });
+ 
+  const body = await parseBody(req);
+  const { page, changes } = body;
+ 
+  if (!page || !changes || typeof changes !== 'object') {
+    return json(res, 400, { error: 'page and changes are required' });
+  }
+ 
+  const entries = Object.entries(changes);
+  if (!entries.length) return json(res, 200, { success: true, saved: 0 });
+ 
+  // Ensure the table exists (safe to run every time — no-op if already there)
+  await sql`
+    CREATE TABLE IF NOT EXISTS live_edit_overrides (
+      id          SERIAL PRIMARY KEY,
+      page        VARCHAR(255) NOT NULL,
+      element_key VARCHAR(255) NOT NULL,
+      selector    TEXT         NOT NULL,
+      changes     JSONB        NOT NULL DEFAULT '{}',
+      created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
+      updated_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
+      UNIQUE (page, element_key)
+    )
+  `;
+ 
+  let saved = 0;
+  const errors = [];
+ 
+  for (const [elementKey, payload] of entries) {
+    const { selector, changes: elChanges } = payload || {};
+    if (!selector || !elChanges) continue;
+ 
+    try {
+      await sql`
+        INSERT INTO live_edit_overrides (page, element_key, selector, changes, updated_at)
+        VALUES (${page}, ${elementKey}, ${selector}, ${JSON.stringify(elChanges)}, NOW())
+        ON CONFLICT (page, element_key)
+        DO UPDATE SET
+          selector   = EXCLUDED.selector,
+          changes    = EXCLUDED.changes,
+          updated_at = NOW()
+      `;
+      saved++;
+    } catch (err) {
+      console.error('[live-edits] Failed to save element:', elementKey, err.message);
+      errors.push({ elementKey, error: err.message });
+    }
+  }
+ 
+  if (errors.length && !saved) {
+    return json(res, 500, { error: 'All saves failed', errors });
+  }
+ 
+  return json(res, 200, { success: true, saved, errors: errors.length ? errors : undefined });
+}
+ 
+ 
+// ═══════════════════════════════════════════
+// GET ENDPOINT — returns overrides for a page
+// so your frontend can replay them on load.
+// ═══════════════════════════════════════════
+ 
+async function getLiveEdits(req, res, sql, params) {
+  const page = params.get('page');
+  if (!page) return json(res, 400, { error: 'page param required' });
+ 
+  try {
+    const rows = await sql`
+      SELECT element_key, selector, changes
+      FROM live_edit_overrides
+      WHERE page = ${page}
+      ORDER BY updated_at DESC
+    `;
+    return json(res, 200, { success: true, overrides: rows });
+  } catch (err) {
+    // Table may not exist yet — return empty
+    return json(res, 200, { success: true, overrides: [] });
+  }
+}
 // ============ MAIN ROUTER ============
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -797,8 +879,13 @@ export default async function handler(req, res) {
       if (pathParts[1] === 'payment' && pathParts[2] === 'cashfree') return handleCashfreePayment(req, res, sql, params);
       if (pathParts[1] === 'auth')     return handleAuth(req, res, pathParts);
       if (pathParts[1] === 'admin')    return handleAdmin(req, res, sql, pathParts);
-      if (pathParts[1] === 'cms')      return handleCMS(req, res, sql, pathParts, params);
-      // Enhanced Features Routes
+      if (pathParts[1] === 'cms') {
+        if (pathParts[2] === 'live-edits') {
+          if (req.method === 'GET') return getLiveEdits(req, res, sql, params);
+          return handleLiveEdits(req, res, sql);
+        }
+        return handleCMS(req, res, sql, pathParts, params);
+      }
       if (pathParts[1] === 'coupons') {
         if (pathParts[2] === 'validate') return validateCoupon(req, res, sql);
         return handleCoupons(req, res, sql, params);
