@@ -508,5 +508,43 @@ function resetAutoPlay() { clearInterval(slideInterval); startAutoPlay(); }
       }
     }
   </script>
+  
+<script>
+(async function replayLiveEdits() {
+  try {
+    const page = window.location.pathname || '/';
+    const res  = await fetch('/api/cms/live-edits?page=' + encodeURIComponent(page));
+    const data = await res.json();
+    if (!data.success || !data.overrides?.length) return;
+ 
+    data.overrides.forEach(({ selector, changes }) => {
+      const els = document.querySelectorAll(selector);
+      if (!els.length) return;
+      els.forEach(el => {
+        if (changes.textContent)    el.textContent             = changes.textContent;
+        if (changes.text)           el.textContent             = changes.text;
+        if (changes.color)          el.style.color             = changes.color;
+        if (changes.background)     el.style.background        = changes.background;
+        if (changes.src)            el.src                     = changes.src;
+        if (changes.slideTitle) {
+          const t = el.querySelector('.slide-title');
+          if (t) t.textContent = changes.slideTitle;
+        }
+        if (changes.slideSub) {
+          const s = el.querySelector('.slide-subtitle');
+          if (s) s.textContent = changes.slideSub;
+        }
+        if (changes.slideBtn) {
+          const b = el.querySelector('.btn-slide');
+          if (b) { b.textContent = changes.slideBtn; if (changes.slideBtnLink) b.href = changes.slideBtnLink; }
+        }
+        if (changes.slideBackground) el.style.background = changes.slideBackground;
+      });
+    });
+  } catch(e) {
+    console.warn('[live-edits] Could not replay overrides:', e.message);
+  }
+})();
+</script>
 </body>
 </html>
