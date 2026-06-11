@@ -1,1130 +1,784 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Visual Editor - Shop Style</title>
-    <style>
-        :root {
-            --primary: #008060;
-            --secondary: #5a667f;
-            --success: #00b386;
-            --warning: #ffab00;
-            --danger: #d82c0d;
-            --bg: #f1f2f4;
-            --surface: #ffffff;
-            --border: #dfe3e8;
-            --text: #202223;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            overflow: hidden;
-        }
-
-        /* Top Bar - Editor Controls */
-        .editor-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 60px;
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
-            z-index: 10000;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .editor-left {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .editor-logo {
-            font-weight: 700;
-            font-size: 1.2rem;
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .page-selector {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .page-selector label {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #637381;
-        }
-
-        .page-select {
-            padding: 8px 16px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 0.9rem;
-            background: white;
-            cursor: pointer;
-            min-width: 200px;
-        }
-
-        .editor-right {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .btn-editor {
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
-            border: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s;
-        }
-
-        .btn-secondary {
-            background: #f1f2f4;
-            color: var(--text);
-        }
-
-        .btn-secondary:hover {
-            background: #e4e5e7;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            opacity: 0.9;
-        }
-
-        .btn-success {
-            background: var(--success);
-            color: white;
-        }
-
-        .btn-success:hover {
-            opacity: 0.9;
-        }
-
-        .save-indicator {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.85rem;
-            color: #637381;
-            padding: 6px 12px;
-            background: #f1f2f4;
-            border-radius: 20px;
-        }
-
-        .save-indicator.saved {
-            color: var(--success);
-            background: #e6f7f3;
-        }
-
-        .save-indicator.unsaved {
-            color: var(--warning);
-            background: #fff8e6;
-        }
-
-        /* Main Content Area */
-        .main-content {
-            margin-top: 60px;
-            height: calc(100vh - 60px);
-            position: relative;
-        }
-
-        .site-frame {
-            width: 100%;
-            height: 100%;
-            border: none;
-            background: white;
-        }
-
-        /* Section Overlay Styles */
-        .editable-section {
-            position: relative;
-            cursor: pointer;
-            transition: outline 0.2s;
-        }
-
-        .editable-section:hover {
-            outline: 2px dashed var(--primary);
-            outline-offset: 2px;
-        }
-
-        .editable-section.active {
-            outline: 2px solid var(--primary);
-            outline-offset: 2px;
-        }
-
-        .section-toolbar {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 5px;
-            display: none;
-            gap: 5px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 10001;
-        }
-
-        .editable-section:hover .section-toolbar,
-        .editable-section.active .section-toolbar {
-            display: flex;
-        }
-
-        .toolbar-btn {
-            padding: 8px 12px;
-            border: none;
-            background: #f8f9fa;
-            cursor: pointer;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.2s;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .toolbar-btn:hover {
-            background: white;
-            transform: translateY(-1px);
-            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
-        }
-
-        .toolbar-btn.edit {
-            color: #008060;
-            background: #e6f7f3;
-        }
-
-        .toolbar-btn.edit:hover {
-            background: #008060;
-            color: white;
-        }
-
-        .toolbar-btn.move {
-            color: #5a667f;
-            background: #f1f2f4;
-        }
-
-        .toolbar-btn.move:hover {
-            background: #5a667f;
-            color: white;
-        }
-
-        .toolbar-btn.delete {
-            color: #d82c0d;
-            background: #fff1f0;
-        }
-
-        .toolbar-btn.delete:hover {
-            background: #d82c0d;
-            color: white;
-        }
-
-        .toolbar-btn.add {
-            color: #00b386;
-            background: #e6f7f3;
-        }
-
-        .toolbar-btn.add:hover {
-            background: #00b386;
-            color: white;
-        }
-
-        /* Sidebar Panel */
-        .sidebar-panel {
-            position: fixed;
-            top: 60px;
-            right: -350px;
-            width: 350px;
-            height: calc(100vh - 60px);
-            background: var(--surface);
-            border-left: 1px solid var(--border);
-            overflow-y: auto;
-            transition: right 0.3s ease;
-            z-index: 10001;
-            box-shadow: -4px 0 20px rgba(0,0,0,0.1);
-        }
-
-        .sidebar-panel.open {
-            right: 0;
-        }
-
-        .panel-header {
-            padding: 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .panel-title {
-            font-weight: 700;
-            font-size: 1.1rem;
-        }
-
-        .panel-close {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #637381;
-        }
-
-        .panel-content {
-            padding: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #637381;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 0.9rem;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(0, 128, 96, 0.1);
-        }
-
-        .form-textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-
-        .color-picker-wrapper {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .color-picker {
-            width: 50px;
-            height: 40px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            cursor: pointer;
-            padding: 2px;
-        }
-
-        .section-list-item {
-            padding: 15px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            margin-bottom: 10px;
-            cursor: grab;
-            background: white;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .section-list-item:hover {
-            border-color: var(--primary);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-        .add-section-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .add-section-card {
-            padding: 20px;
-            border: 2px dashed var(--border);
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .add-section-card:hover {
-            border-color: var(--primary);
-            background: #f0fdf9;
-        }
-
-        .add-section-card i {
-            font-size: 1.5rem;
-            color: var(--primary);
-            margin-bottom: 8px;
-        }
-
-        .add-section-card span {
-            display: block;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        /* Version History Panel */
-        .version-panel {
-            position: fixed;
-            top: 60px;
-            left: -300px;
-            width: 300px;
-            height: calc(100vh - 60px);
-            background: var(--surface);
-            border-right: 1px solid var(--border);
-            overflow-y: auto;
-            transition: left 0.3s ease;
-            z-index: 10001;
-        }
-
-        .version-panel.open {
-            left: 0;
-        }
-
-        .version-item {
-            padding: 15px 20px;
-            border-bottom: 1px solid var(--border);
-            cursor: pointer;
-        }
-
-        .version-item:hover {
-            background: #f1f2f4;
-        }
-
-        .version-item.current {
-            background: #e6f7f3;
-            border-left: 3px solid var(--success);
-        }
-
-        .version-date {
-            font-size: 0.8rem;
-            color: #637381;
-            margin-bottom: 4px;
-        }
-
-        .version-info {
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-
-        /* Loading Overlay */
-        .loading-overlay {
-            position: fixed;
-            top: 60px;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255,255,255,0.9);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        }
-
-        .loading-overlay.show {
-            display: flex;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f1f2f4;
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Toast Notifications */
-        .toast-container {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 10002;
-        }
-
-        .toast {
-            background: var(--text);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 6px;
-            margin-top: 10px;
-            font-size: 0.9rem;
-            animation: slideIn 0.3s ease;
-        }
-
-        .toast.success {
-            background: var(--success);
-        }
-
-        .toast.error {
-            background: var(--danger);
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-    </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Editor — EcomStore</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bar: #18181b;
+      --bar-border: #2d2d30;
+      --bar-text: #e4e4e7;
+      --bar-muted: #a1a1aa;
+      --bar-hover: #27272a;
+      --bar-active: #3f3f46;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --danger: #ef4444;
+      --success: #22c55e;
+      --panel-bg: #1c1c1f;
+      --panel-border: #2d2d30;
+      --panel-text: #e4e4e7;
+      --panel-muted: #a1a1aa;
+      --panel-input-bg: #27272a;
+      --panel-input-border: #3f3f46;
+    }
+
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f10; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      height: 52px; background: var(--bar); border-bottom: 1px solid var(--bar-border);
+      display: flex; align-items: center; gap: 0; flex-shrink: 0; z-index: 100;
+    }
+    .topbar-brand {
+      padding: 0 20px; font-weight: 700; font-size: 0.9rem; color: var(--bar-text);
+      border-right: 1px solid var(--bar-border); height: 100%; display: flex; align-items: center; gap: 8px; white-space: nowrap;
+    }
+    .topbar-brand span { color: var(--accent); }
+
+    .page-picker {
+      padding: 0 12px; display: flex; align-items: center; gap: 8px;
+      border-right: 1px solid var(--bar-border); height: 100%;
+    }
+    .page-picker label { font-size: 0.78rem; color: var(--bar-muted); }
+    .page-picker select {
+      background: var(--bar-active); color: var(--bar-text); border: 1px solid var(--bar-border);
+      border-radius: 6px; padding: 5px 10px; font-size: 0.82rem; cursor: pointer;
+    }
+
+    .topbar-tools { display: flex; align-items: center; gap: 2px; padding: 0 8px; flex: 1; }
+    .tool-btn {
+      background: none; border: none; color: var(--bar-muted); cursor: pointer;
+      padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;
+      transition: background 0.15s, color 0.15s; white-space: nowrap;
+    }
+    .tool-btn:hover { background: var(--bar-hover); color: var(--bar-text); }
+    .tool-btn.active { background: var(--bar-active); color: var(--bar-text); }
+    .tool-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+    .tool-btn .badge { background: var(--danger); color: white; border-radius: 4px; padding: 1px 5px; font-size: 0.68rem; font-weight: 700; }
+
+    .topbar-right { display: flex; align-items: center; gap: 6px; padding: 0 12px; margin-left: auto; border-left: 1px solid var(--bar-border); }
+    .viewport-btns { display: flex; gap: 2px; background: var(--bar-active); border-radius: 6px; padding: 2px; }
+    .vp-btn { background: none; border: none; color: var(--bar-muted); cursor: pointer; padding: 4px 8px; border-radius: 4px; font-size: 0.78rem; transition: all 0.15s; }
+    .vp-btn.active { background: var(--bar); color: var(--bar-text); }
+    .btn-publish { background: var(--accent); color: white; border: none; padding: 7px 16px; border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+    .btn-publish:hover { background: var(--accent-hover); }
+    .btn-publish:disabled { opacity: 0.45; cursor: not-allowed; }
+    .save-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--bar-muted); transition: background 0.3s; flex-shrink: 0; }
+    .save-dot.unsaved { background: #f59e0b; }
+    .save-dot.saved { background: var(--success); }
+
+    /* ── MAIN WORKSPACE ── */
+    .workspace { flex: 1; display: flex; overflow: hidden; }
+
+    /* ── CANVAS ── */
+    .canvas-wrap {
+      flex: 1; display: flex; align-items: flex-start; justify-content: center;
+      background: #141416; overflow: auto; padding: 20px;
+    }
+    .canvas-frame {
+      background: white; box-shadow: 0 0 0 1px rgba(255,255,255,0.06);
+      border-radius: 4px; overflow: hidden; position: relative;
+      transition: width 0.3s ease; width: 100%; max-width: 1440px;
+    }
+    .canvas-frame.tablet { max-width: 768px; }
+    .canvas-frame.mobile { max-width: 390px; }
+    .canvas-frame iframe { width: 100%; border: none; display: block; min-height: 600px; }
+
+    /* ── RIGHT PANEL ── */
+    .edit-panel {
+      width: 0; background: var(--panel-bg); border-left: 1px solid var(--panel-border);
+      overflow: hidden; transition: width 0.25s ease; flex-shrink: 0;
+      display: flex; flex-direction: column;
+    }
+    .edit-panel.open { width: 320px; }
+
+    .panel-head {
+      padding: 16px; border-bottom: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: center;
+    }
+    .panel-head h3 { font-size: 0.88rem; font-weight: 600; color: var(--panel-text); }
+    .panel-close { background: none; border: none; color: var(--panel-muted); cursor: pointer; font-size: 1.2rem; line-height: 1; padding: 2px 6px; border-radius: 4px; }
+    .panel-close:hover { background: var(--bar-active); color: var(--panel-text); }
+
+    .panel-body { flex: 1; overflow-y: auto; padding: 16px; }
+    .panel-body::-webkit-scrollbar { width: 4px; }
+    .panel-body::-webkit-scrollbar-thumb { background: var(--bar-active); border-radius: 4px; }
+
+    .field-group { margin-bottom: 16px; }
+    .field-group label { display: block; font-size: 0.75rem; color: var(--panel-muted); margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+    .field-group input[type="text"],
+    .field-group input[type="url"],
+    .field-group textarea,
+    .field-group select {
+      width: 100%; background: var(--panel-input-bg); border: 1px solid var(--panel-input-border);
+      border-radius: 6px; color: var(--panel-text); font-size: 0.85rem; padding: 8px 10px;
+      font-family: inherit; transition: border-color 0.15s; resize: vertical;
+    }
+    .field-group input:focus, .field-group textarea:focus, .field-group select:focus {
+      outline: none; border-color: var(--accent);
+    }
+    .color-row { display: flex; gap: 8px; align-items: center; }
+    .color-row input[type="color"] { width: 36px; height: 36px; border: 1px solid var(--panel-input-border); border-radius: 6px; cursor: pointer; background: none; padding: 2px; }
+    .color-row input[type="text"] { flex: 1; }
+
+    .img-preview { width: 100%; height: 100px; object-fit: cover; border-radius: 6px; margin-top: 6px; border: 1px solid var(--panel-input-border); display: none; }
+    .img-preview.show { display: block; }
+
+    .panel-actions { padding: 12px 16px; border-top: 1px solid var(--panel-border); display: flex; gap: 8px; }
+    .panel-actions button { flex: 1; padding: 8px; border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; border: none; }
+    .btn-apply { background: var(--accent); color: white; }
+    .btn-apply:hover { background: var(--accent-hover); }
+    .btn-cancel-edit { background: var(--bar-active); color: var(--panel-text); }
+    .btn-cancel-edit:hover { background: var(--bar-hover); }
+
+    /* ── EDIT HIGHLIGHT OVERLAY ── */
+    .highlight-overlay {
+      position: absolute; pointer-events: none; border: 2px solid var(--accent);
+      border-radius: 4px; transition: all 0.1s; display: none; z-index: 9999;
+    }
+    .highlight-label {
+      position: absolute; top: -24px; left: 0; background: var(--accent); color: white;
+      font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 3px; white-space: nowrap;
+    }
+    .edit-toolbar {
+      position: absolute; top: -36px; right: 0; background: var(--bar);
+      border: 1px solid var(--bar-border); border-radius: 6px; display: flex; gap: 2px; padding: 3px;
+    }
+    .et-btn {
+      background: none; border: none; color: var(--bar-muted); cursor: pointer;
+      padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; transition: all 0.15s;
+    }
+    .et-btn:hover { background: var(--bar-active); color: var(--bar-text); }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(60px);
+      background: var(--bar); color: var(--bar-text); padding: 10px 20px; border-radius: 8px;
+      font-size: 0.85rem; font-weight: 500; border: 1px solid var(--bar-border);
+      transition: transform 0.25s ease; z-index: 9999; pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.success { border-color: var(--success); }
+    .toast.error { border-color: var(--danger); }
+
+    /* ── LOADING ── */
+    .loading-bar { height: 2px; background: var(--accent); width: 0; transition: width 0.4s ease; position: absolute; top: 0; left: 0; right: 0; z-index: 200; }
+  </style>
 </head>
 <body>
-    <!-- Editor Top Bar -->
-    <div class="editor-bar">
-        <div class="editor-left">
-            <div class="editor-logo">
-                <i class="fas fa-paint-brush"></i>
-                Live Visual Editor
-            </div>
-            <div class="page-selector">
-                <label>Editing:</label>
-                <select class="page-select" id="pageSelector" onchange="changePage()">
-                    <option value="homepage">Homepage</option>
-                    <option value="product">Product Page</option>
-                    <option value="collection">Collection Page</option>
-                    <option value="cart">Cart Page</option>
-                    <option value="checkout">Checkout Page</option>
-                </select>
-            </div>
-        </div>
-        <div class="editor-right">
-            <div class="save-indicator" id="saveIndicator">
-                <i class="fas fa-check-circle"></i>
-                <span id="saveStatus">All changes saved</span>
-            </div>
-            <button class="btn-editor btn-secondary" onclick="toggleVersionHistory()">
-                <i class="fas fa-history"></i>
-                History
-            </button>
-            <button class="btn-editor btn-secondary" onclick="previewSite()">
-                <i class="fas fa-eye"></i>
-                Preview
-            </button>
-            <button class="btn-editor btn-secondary" onclick="viewLiveSite()">
-                <i class="fas fa-external-link-alt"></i>
-                View Live
-            </button>
-            <button class="btn-editor btn-primary" onclick="publishChanges()" id="publishBtn" disabled>
-                <i class="fas fa-upload"></i>
-                Publish
-            </button>
-        </div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg>
+    Ecom<span>Editor</span>
+  </div>
+
+  <div class="page-picker">
+    <label>Page</label>
+    <select id="pageSelect" onchange="changePage()">
+      <option value="/">Homepage</option>
+      <option value="/pages/products.html">Products</option>
+      <option value="/pages/product.html?id=1">Product detail</option>
+      <option value="/pages/cart.html">Cart</option>
+    </select>
+  </div>
+
+  <div class="topbar-tools">
+    <button class="tool-btn active" id="btnEditMode" onclick="setMode('edit')" title="Edit mode">
+      <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Edit
+    </button>
+    <button class="tool-btn" id="btnPreviewMode" onclick="setMode('preview')" title="Preview (no edit handles)">
+      <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      Preview
+    </button>
+
+    <div style="width:1px;height:24px;background:var(--bar-border);margin:0 6px"></div>
+
+    <button class="tool-btn" onclick="undo()" title="Undo (Ctrl+Z)">
+      <svg viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+      Undo
+    </button>
+    <button class="tool-btn" onclick="redo()" title="Redo (Ctrl+Y)">
+      <svg viewBox="0 0 24 24"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 0 4-4h12"/></svg>
+      Redo
+    </button>
+
+    <div style="width:1px;height:24px;background:var(--bar-border);margin:0 6px"></div>
+
+    <button class="tool-btn" onclick="reloadFrame()" title="Reload iframe">
+      <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      Reload
+    </button>
+
+    <span id="undoCount" class="tool-btn" style="cursor:default;opacity:0.5;font-size:0.75rem;padding:6px 8px"></span>
+  </div>
+
+  <div class="topbar-right">
+    <div class="viewport-btns">
+      <button class="vp-btn active" onclick="setViewport('desktop')" title="Desktop">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </button>
+      <button class="vp-btn" onclick="setViewport('tablet')" title="Tablet">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+      </button>
+      <button class="vp-btn" onclick="setViewport('mobile')" title="Mobile">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+      </button>
     </div>
+    <div class="save-dot" id="saveDot" title="Save status"></div>
+    <button class="btn-publish" id="btnPublish" onclick="publishChanges()" disabled>Publish</button>
+  </div>
+</div>
 
-    <!-- Version History Panel -->
-    <div class="version-panel" id="versionPanel">
-        <div class="panel-header">
-            <div class="panel-title">Version History</div>
-            <button class="panel-close" onclick="toggleVersionHistory()">&times;</button>
+<!-- WORKSPACE -->
+<div class="workspace">
+
+  <!-- CANVAS -->
+  <div class="canvas-wrap">
+    <div class="canvas-frame" id="canvasFrame">
+      <div class="loading-bar" id="loadingBar"></div>
+      <div class="highlight-overlay" id="highlight">
+        <div class="highlight-label" id="highlightLabel"></div>
+        <div class="edit-toolbar">
+          <button class="et-btn" onclick="openEditPanel()">Edit</button>
+          <button class="et-btn" onclick="makeEditable()">Inline</button>
+          <button class="et-btn" style="color:#f87171" onclick="cancelHighlight()">✕</button>
         </div>
-        <div id="versionList">
-            <!-- Versions will be loaded here -->
-        </div>
+      </div>
+      <iframe id="siteFrame" src="/" onload="onFrameLoad()"></iframe>
     </div>
+  </div>
 
-    <!-- Settings Sidebar Panel -->
-    <div class="sidebar-panel" id="settingsPanel">
-        <div class="panel-header">
-            <div class="panel-title" id="panelTitle">Edit Section</div>
-            <button class="panel-close" onclick="closeSettingsPanel()">&times;</button>
-        </div>
-        <div class="panel-content" id="panelContent">
-            <!-- Dynamic form fields will be inserted here -->
-        </div>
+  <!-- RIGHT PANEL -->
+  <div class="edit-panel" id="editPanel">
+    <div class="panel-head">
+      <h3 id="panelTitle">Edit element</h3>
+      <button class="panel-close" onclick="closePanel()">×</button>
     </div>
-
-    <!-- Main Content with Site Frame -->
-    <div class="main-content">
-        <iframe 
-            class="site-frame" 
-            id="siteFrame" 
-            src="/?editor=true"
-            onload="onFrameLoad()"
-        ></iframe>
+    <div class="panel-body" id="panelBody"></div>
+    <div class="panel-actions">
+      <button class="btn-cancel-edit" onclick="closePanel()">Cancel</button>
+      <button class="btn-apply" onclick="applyEdits()">Apply</button>
     </div>
+  </div>
 
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="spinner"></div>
-    </div>
+</div>
 
-    <!-- Toast Container -->
-    <div class="toast-container" id="toastContainer"></div>
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
 
-    <script>
-        // State Management
-        let currentPage = 'homepage';
-        let layoutData = [];
-        let hasUnsavedChanges = false;
-        let activeSectionId = null;
-        let versionHistory = [];
-        let frameLoaded = false;
+<script>
+'use strict';
 
-        // Initialize
-        async function init() {
-            await loadLayout();
-            await loadVersionHistory();
-        }
+const frame = () => document.getElementById('siteFrame');
+const frameDoc = () => frame().contentDocument;
+const canvasFrame = document.getElementById('canvasFrame');
+const highlight = document.getElementById('highlight');
+const highlightLabel = document.getElementById('highlightLabel');
+const editPanel = document.getElementById('editPanel');
+const panelBody = document.getElementById('panelBody');
+const panelTitle = document.getElementById('panelTitle');
+const saveDot = document.getElementById('saveDot');
+const btnPublish = document.getElementById('btnPublish');
+const undoCountEl = document.getElementById('undoCount');
 
-        // Load Layout for Current Page
-        async function loadLayout() {
-            try {
-                const res = await fetch(`/api/layout-sections?page=${currentPage}`);
-                if (res.ok) {
-                    layoutData = await res.json();
-                } else {
-                    layoutData = getDefaultLayout(currentPage);
-                }
-                injectEditorScripts();
-            } catch (e) {
-                console.error('Failed to load layout:', e);
-                layoutData = getDefaultLayout(currentPage);
-                injectEditorScripts();
-            }
-        }
+let mode = 'edit';
+let frameReady = false;
+let activeEl = null;
+let undoStack = [];
+let redoStack = [];
+let pendingChanges = {};
+let editingFields = {};
 
-        // Get Default Layout for Page
-        function getDefaultLayout(page) {
-            const defaults = {
-                homepage: [
-                    { id: 'hero_1', type: 'hero', order: 0, settings: { title: 'Welcome', subtitle: 'Discover Amazing Products', bg_color: '#f8f9fa' } },
-                    { id: 'featured_1', type: 'featured_collection', order: 1, settings: { title: 'Featured Products', limit: 8 } },
-                    { id: 'banner_1', type: 'promo_banner', order: 2, settings: { text: 'Free Shipping on Orders $50+' } }
-                ],
-                product: [
-                    { id: 'product_main', type: 'product_main', order: 0, settings: {} },
-                    { id: 'gallery_1', type: 'image_gallery', order: 1, settings: { columns: 3 } }
-                ],
-                collection: [
-                    { id: 'collection_header', type: 'collection_header', order: 0, settings: {} },
-                    { id: 'product_grid', type: 'product_grid', order: 1, settings: { columns: 4 } }
-                ],
-                cart: [
-                    { id: 'cart_main', type: 'cart_main', order: 0, settings: {} }
-                ],
-                checkout: [
-                    { id: 'checkout_main', type: 'checkout_main', order: 0, settings: {} }
-                ]
-            };
-            return defaults[page] || [];
-        }
+function onFrameLoad() {
+  frameReady = true;
+  document.getElementById('loadingBar').style.width = '0';
+  if (mode === 'edit') setupEditMode();
+  syncIframeHeight();
+  toast('Page loaded', 'success');
+}
 
-        // Load Version History
-        async function loadVersionHistory() {
-            try {
-                const res = await fetch(`/api/layout-versions?page=${currentPage}`);
-                if (res.ok) {
-                    versionHistory = await res.json();
-                    renderVersionList();
-                }
-            } catch (e) {
-                console.error('Failed to load versions:', e);
-            }
-        }
+function syncIframeHeight() {
+  try {
+    const h = frameDoc().body.scrollHeight;
+    frame().style.height = Math.max(h, 600) + 'px';
+  } catch(e) {}
+  setTimeout(syncIframeHeight, 1000);
+}
 
-        // Render Version List
-        function renderVersionList() {
-            const container = document.getElementById('versionList');
-            if (versionHistory.length === 0) {
-                container.innerHTML = '<div style="padding:20px; text-align:center; color:#999;">No version history yet</div>';
-                return;
-            }
-            container.innerHTML = versionHistory.map((v, i) => `
-                <div class="version-item ${i === 0 ? 'current' : ''}" onclick="restoreVersion('${v.id}')">
-                    <div class="version-date">${new Date(v.created_at).toLocaleString()}</div>
-                    <div class="version-info">${v.changes_summary || 'Version ' + (versionHistory.length - i)}</div>
-                </div>
-            `).join('');
-        }
+// ── EDIT MODE SETUP ──
+function setupEditMode() {
+  if (!frameReady) return;
+  try {
+    const doc = frameDoc();
 
-        // Change Page
-        async function changePage() {
-            if (hasUnsavedChanges) {
-                if (!confirm('You have unsaved changes. Switch pages without saving?')) {
-                    document.getElementById('pageSelector').value = currentPage;
-                    return;
-                }
-            }
-            
-            currentPage = document.getElementById('pageSelector').value;
-            showLoading(true);
-            
-            try {
-                await loadLayout();
-                await loadVersionHistory();
-                
-                // Reload iframe with new page
-                const pageUrls = {
-                    homepage: '/?editor=true',
-                    product: '/pages/product.html?editor=true',
-                    collection: '/pages/products.html?editor=true',
-                    cart: '/pages/cart.html?editor=true',
-                    checkout: '/pages/checkout.html?editor=true'
-                };
-                document.getElementById('siteFrame').src = pageUrls[currentPage] || '/?editor=true';
-                
-                hasUnsavedChanges = false;
-                updateSaveIndicator();
-            } finally {
-                showLoading(false);
-            }
-        }
+    // Inject editor styles into iframe
+    let style = doc.getElementById('__editor_styles');
+    if (!style) {
+      style = doc.createElement('style');
+      style.id = '__editor_styles';
+      doc.head.appendChild(style);
+    }
+    style.textContent = `
+      [data-editable]:hover { outline: 2px dashed #3b82f6 !important; outline-offset: 2px; cursor: pointer !important; }
+      [data-editable].editing { outline: 2px solid #3b82f6 !important; outline-offset: 2px; }
+      [contenteditable="true"] { outline: 2px solid #22c55e !important; outline-offset: 2px; cursor: text !important; }
+    `;
 
-        // Inject Editor Scripts into Iframe
-        function injectEditorScripts() {
-            if (!frameLoaded) return;
-            
-            const frame = document.getElementById('siteFrame');
-            const frameDoc = frame.contentDocument || frame.contentWindow.document;
-            
-            // Add data attributes to sections
-            layoutData.forEach((section, index) => {
-                const selector = getSectionSelector(section.type, index);
-                const element = frameDoc.querySelector(selector);
-                if (element) {
-                    element.classList.add('editable-section');
-                    element.dataset.sectionId = section.id;
-                    element.dataset.sectionType = section.type;
-                    element.dataset.sectionIndex = index;
-                    
-                    // Add toolbar
-                    if (!element.querySelector('.section-toolbar')) {
-                        const toolbar = createSectionToolbar(section, index);
-                        element.appendChild(toolbar);
-                    }
-                }
-            });
-        }
+    // Tag editable elements
+    const selectors = [
+      { sel: '.slide-title', type: 'text', label: 'Slide title' },
+      { sel: '.slide-subtitle', type: 'text', label: 'Slide subtitle' },
+      { sel: '.btn-slide', type: 'text', label: 'Slide button' },
+      { sel: '.offer-content h3', type: 'text', label: 'Banner heading' },
+      { sel: '.offer-content p:not(.offer-tag)', type: 'text', label: 'Banner text' },
+      { sel: '.offer-tag', type: 'text', label: 'Offer tag' },
+      { sel: '.btn-offer', type: 'text', label: 'Banner button' },
+      { sel: '.offer-banner', type: 'bg', label: 'Banner background' },
+      { sel: '.section-header h2', type: 'text', label: 'Section title' },
+      { sel: '.section-header p:not(.view-all-link)', type: 'text', label: 'Section subtitle' },
+      { sel: '.feature-card h3', type: 'text', label: 'Feature title' },
+      { sel: '.feature-card p', type: 'text', label: 'Feature text' },
+      { sel: '.feature-card .feature-icon', type: 'text', label: 'Feature icon' },
+      { sel: '.feature-card', type: 'bg', label: 'Feature card bg' },
+      { sel: '.newsletter-text h2', type: 'text', label: 'Newsletter title' },
+      { sel: '.newsletter-text p', type: 'text', label: 'Newsletter subtitle' },
+      { sel: '.slide', type: 'slide', label: 'Slide' },
+      { sel: '.slide-image img', type: 'image', label: 'Slide image' },
+    ];
 
-        // Get CSS Selector for Section Type
-        function getSectionSelector(type, index) {
-            const selectors = {
-                hero: '.hero-slider, .sec-hero',
-                featured_collection: '.featured-section, .sec-featured',
-                promo_banner: '.offer-banners, .sec-banner',
-                newsletter: '.newsletter-section',
-                categories: '.categories-section',
-                product_main: '.product-main, .product-details',
-                image_gallery: '.gallery-section, .image-gallery',
-                product_grid: '.products-grid',
-                collection_header: '.collection-header',
-                cart_main: '.cart-main, .cart-page',
-                checkout_main: '.checkout-main, .checkout-page'
-            };
-            return selectors[type] || `section:nth-of-type(${index + 1})`;
-        }
+    selectors.forEach(({ sel, type, label }) => {
+      doc.querySelectorAll(sel).forEach((el, i) => {
+        el.dataset.editable = type;
+        el.dataset.editLabel = label + (doc.querySelectorAll(sel).length > 1 ? ` ${i + 1}` : '');
+        el.removeEventListener('click', handleElClick);
+        el.addEventListener('click', handleElClick);
+        el.removeEventListener('mouseenter', handleElHover);
+        el.addEventListener('mouseenter', handleElHover);
+        el.removeEventListener('mouseleave', handleElLeave);
+        el.addEventListener('mouseleave', handleElLeave);
+      });
+    });
 
-        // Create Section Toolbar
-        function createSectionToolbar(section, index) {
-            const toolbar = document.createElement('div');
-            toolbar.className = 'section-toolbar';
-            toolbar.innerHTML = `
-                <button class="toolbar-btn edit" onclick="editSection('${section.id}')">
-                    <i class="fas fa-edit"></i> Edit
-                </button>
-                <button class="toolbar-btn move" onclick="moveSection(${index}, -1)">
-                    <i class="fas fa-arrow-up"></i>
-                </button>
-                <button class="toolbar-btn move" onclick="moveSection(${index}, 1)">
-                    <i class="fas fa-arrow-down"></i>
-                </button>
-                <button class="toolbar-btn delete" onclick="deleteSection('${section.id}')">
-                    <i class="fas fa-trash"></i>
-                </button>
-            `;
-            return toolbar;
-        }
+  } catch(e) { console.warn('Edit setup error:', e); }
+}
 
-        // Edit Section
-        window.editSection = function(sectionId) {
-            const section = layoutData.find(s => s.id === sectionId);
-            if (!section) return;
-            
-            activeSectionId = sectionId;
-            const panel = document.getElementById('settingsPanel');
-            const title = document.getElementById('panelTitle');
-            const content = document.getElementById('panelContent');
-            
-            title.textContent = `Edit ${section.type.replace(/_/g, ' ').toUpperCase()}`;
-            content.innerHTML = generateFormFields(section);
-            
-            panel.classList.add('open');
-            
-            // Highlight section in iframe
-            highlightSection(sectionId);
-        };
+function handleElClick(e) {
+  if (this.contentEditable === 'true') return;
+  e.preventDefault(); e.stopPropagation();
+  selectElement(this);
+}
 
-        // Generate Form Fields Based on Section Type
-        function generateFormFields(section) {
-            let fields = '';
-            const settings = section.settings || {};
-            
-            // Common fields based on section type
-            if (settings.title !== undefined) {
-                fields += createFormField('title', 'Title', 'text', settings.title);
-            }
-            if (settings.subtitle !== undefined) {
-                fields += createFormField('subtitle', 'Subtitle', 'text', settings.subtitle);
-            }
-            if (settings.text !== undefined) {
-                fields += createFormField('text', 'Text', 'textarea', settings.text);
-            }
-            if (settings.bg_color !== undefined) {
-                fields += createColorField('bg_color', 'Background Color', settings.bg_color);
-            }
-            if (settings.limit !== undefined) {
-                fields += createFormField('limit', 'Product Limit', 'number', settings.limit);
-            }
-            if (settings.columns !== undefined) {
-                fields += createFormField('columns', 'Columns', 'number', settings.columns);
-            }
-            if (settings.heading !== undefined) {
-                fields += createFormField('heading', 'Heading', 'text', settings.heading);
-            }
-            
-            // Save button
-            fields += `
-                <div style="margin-top:30px; display:flex; gap:10px;">
-                    <button class="btn-editor btn-primary" style="flex:1;" onclick="saveSectionSettings()">
-                        <i class="fas fa-save"></i> Save Changes
-                    </button>
-                    <button class="btn-editor btn-secondary" onclick="closeSettingsPanel()">
-                        Cancel
-                    </button>
-                </div>
-            `;
-            
-            return fields;
-        }
+function handleElHover() { positionHighlight(this); }
+function handleElLeave() { if (this !== activeEl) { /* keep highlight if active */ } }
 
-        // Create Form Field HTML
-        function createFormField(name, label, type, value) {
-            if (type === 'textarea') {
-                return `
-                    <div class="form-group">
-                        <label class="form-label">${label}</label>
-                        <textarea class="form-input form-textarea" data-field="${name}">${value || ''}</textarea>
-                    </div>
-                `;
-            }
-            return `
-                <div class="form-group">
-                    <label class="form-label">${label}</label>
-                    <input type="${type}" class="form-input" data-field="${name}" value="${value || ''}">
-                </div>
-            `;
-        }
+function selectElement(el) {
+  if (activeEl) activeEl.classList.remove('editing');
+  activeEl = el;
+  el.classList.add('editing');
+  positionHighlight(el);
+}
 
-        // Create Color Picker Field
-        function createColorField(name, label, value) {
-            return `
-                <div class="form-group">
-                    <label class="form-label">${label}</label>
-                    <div class="color-picker-wrapper">
-                        <input type="color" class="color-picker" data-field="${name}" value="${value || '#ffffff'}">
-                        <input type="text" class="form-input" data-field="${name}" value="${value || '#ffffff'}" style="flex:1;">
-                    </div>
-                </div>
-            `;
-        }
+function positionHighlight(el) {
+  try {
+    const frameRect = frame().getBoundingClientRect();
+    const canvasRect = canvasFrame.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    // elRect is relative to iframe's viewport
+    const scrollY = frameDoc().documentElement.scrollTop || frameDoc().body.scrollTop;
 
-        // Save Section Settings
-        window.saveSectionSettings = function() {
-            const section = layoutData.find(s => s.id === activeSectionId);
-            if (!section) return;
-            
-            const panelContent = document.getElementById('panelContent');
-            const inputs = panelContent.querySelectorAll('[data-field]');
-            
-            inputs.forEach(input => {
-                const field = input.dataset.field;
-                section.settings[field] = input.value;
-            });
-            
-            // Sync color picker and text input
-            const colorPickers = panelContent.querySelectorAll('.color-picker');
-            colorPickers.forEach(picker => {
-                const textInput = picker.nextElementSibling;
-                if (textInput && textInput.dataset.field === picker.dataset.field) {
-                    picker.value = textInput.value;
-                }
-            });
-            
-            hasUnsavedChanges = true;
-            updateSaveIndicator();
-            closeSettingsPanel();
-            injectEditorScripts();
-            showToast('Section updated successfully', 'success');
-        };
+    const top = frameRect.top - canvasRect.top + elRect.top + scrollY - canvasFrame.scrollTop;
+    const left = frameRect.left - canvasRect.left + elRect.left;
 
-        // Close Settings Panel
-        window.closeSettingsPanel = function() {
-            document.getElementById('settingsPanel').classList.remove('open');
-            activeSectionId = null;
-        };
+    highlight.style.cssText = `
+      display:block; top:${top}px; left:${left}px;
+      width:${elRect.width}px; height:${elRect.height}px;
+    `;
+    highlightLabel.textContent = el.dataset.editLabel || el.tagName.toLowerCase();
+  } catch(e) {}
+}
 
-        // Move Section
-        window.moveSection = function(index, direction) {
-            const newIndex = index + direction;
-            if (newIndex < 0 || newIndex >= layoutData.length) return;
-            
-            const temp = layoutData[index];
-            layoutData[index] = layoutData[newIndex];
-            layoutData[newIndex] = temp;
-            
-            layoutData.forEach((s, i) => s.order = i);
-            
-            hasUnsavedChanges = true;
-            updateSaveIndicator();
-            injectEditorScripts();
-        };
+function cancelHighlight() {
+  highlight.style.display = 'none';
+  if (activeEl) { activeEl.classList.remove('editing'); activeEl = null; }
+  closePanel();
+}
 
-        // Delete Section
-        window.deleteSection = function(sectionId) {
-            if (!confirm('Are you sure you want to delete this section?')) return;
-            
-            layoutData = layoutData.filter(s => s.id !== sectionId);
-            hasUnsavedChanges = true;
-            updateSaveIndicator();
-            injectEditorScripts();
-            showToast('Section deleted', 'success');
-        };
+// ── INLINE EDITING ──
+function makeEditable() {
+  if (!activeEl) return;
+  const type = activeEl.dataset.editable;
+  if (type === 'bg' || type === 'slide' || type === 'image') {
+    openEditPanel(); return;
+  }
+  activeEl.contentEditable = 'true';
+  activeEl.focus();
 
-        // Highlight Section in Iframe
-        function highlightSection(sectionId) {
-            const frame = document.getElementById('siteFrame');
-            const frameDoc = frame.contentDocument || frame.contentWindow.document;
-            
-            frameDoc.querySelectorAll('.editable-section').forEach(el => {
-                el.classList.remove('active');
-            });
-            
-            const element = frameDoc.querySelector(`[data-section-id="${sectionId}"]`);
-            if (element) {
-                element.classList.add('active');
-                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }
+  const sel = frameDoc().getSelection();
+  const range = frameDoc().createRange();
+  range.selectNodeContents(activeEl);
+  sel.removeAllRanges();
+  sel.addRange(range);
 
-        // Save/Publish Changes
-        window.publishChanges = async function() {
-            if (!hasUnsavedChanges) return;
-            
-            showLoading(true);
-            try {
-                const res = await fetch('/api/layout-sections', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        page: currentPage,
-                        sections: layoutData
-                    })
-                });
-                
-                if (res.ok) {
-                    hasUnsavedChanges = false;
-                    updateSaveIndicator();
-                    await loadVersionHistory();
-                    showToast('Changes published successfully!', 'success');
-                } else {
-                    throw new Error('Failed to save');
-                }
-            } catch (e) {
-                showToast('Failed to save changes', 'error');
-                console.error(e);
-            } finally {
-                showLoading(false);
-            }
-        };
+  const originalText = activeEl.textContent;
+  activeEl.addEventListener('blur', function onBlur() {
+    activeEl.removeEventListener('blur', onBlur);
+    activeEl.contentEditable = 'false';
+    const newText = activeEl.textContent;
+    if (newText !== originalText) {
+      pushUndo({ el: activeEl, prop: 'textContent', old: originalText, val: newText });
+      queueChange(activeEl, 'text', newText);
+    }
+  }, { once: true });
 
-        // Preview Site (without editor)
-        window.previewSite = function() {
-            const pageUrls = {
-                homepage: '/',
-                product: '/pages/product.html',
-                collection: '/pages/products.html',
-                cart: '/pages/cart.html',
-                checkout: '/pages/checkout.html'
-            };
-            window.open(pageUrls[currentPage] || '/', '_blank');
-        };
+  toast('Type to edit, click away to save');
+}
 
-        // View Live Site (opens actual live site in new tab)
-        window.viewLiveSite = function() {
-            const pageUrls = {
-                homepage: '/',
-                product: '/pages/product.html',
-                collection: '/pages/products.html',
-                cart: '/pages/cart.html',
-                checkout: '/pages/checkout.html'
-            };
-            // Open without editor=true parameter to show live version
-            window.open(pageUrls[currentPage] || '/', '_blank');
-        };
+// ── PANEL EDITING ──
+function openEditPanel() {
+  if (!activeEl) return;
+  const type = activeEl.dataset.editable;
+  const label = activeEl.dataset.editLabel || 'Element';
+  panelTitle.textContent = `Edit: ${label}`;
+  editingFields = {};
 
-        // Toggle Version History Panel
-        window.toggleVersionHistory = function() {
-            document.getElementById('versionPanel').classList.toggle('open');
-        };
+  let html = '';
 
-        // Restore Previous Version
-        window.restoreVersion = async function(versionId) {
-            if (!confirm('Restore this version? Current unsaved changes will be lost.')) return;
-            
-            showLoading(true);
-            try {
-                const res = await fetch(`/api/layout-versions/${versionId}/restore`, {
-                    method: 'POST'
-                });
-                
-                if (res.ok) {
-                    await loadLayout();
-                    injectEditorScripts();
-                    hasUnsavedChanges = false;
-                    updateSaveIndicator();
-                    toggleVersionHistory();
-                    showToast('Version restored successfully', 'success');
-                }
-            } catch (e) {
-                showToast('Failed to restore version', 'error');
-            } finally {
-                showLoading(false);
-            }
-        };
+  if (type === 'text') {
+    const txt = activeEl.textContent.trim();
+    html += field('Text content', `<textarea id="ef_text" rows="3">${escHtml(txt)}</textarea>`);
+    html += field('Text color', colorField('ef_color', rgbToHex(getComputedStyle(activeEl, null).color)));
+    editingFields.text = { prop: 'textContent', key: 'ef_text' };
+    editingFields.color = { prop: 'style.color', key: 'ef_color' };
+  }
 
-        // Update Save Indicator
-        function updateSaveIndicator() {
-            const indicator = document.getElementById('saveIndicator');
-            const status = document.getElementById('saveStatus');
-            const publishBtn = document.getElementById('publishBtn');
-            
-            if (hasUnsavedChanges) {
-                indicator.className = 'save-indicator unsaved';
-                indicator.innerHTML = '<i class="fas fa-exclamation-circle"></i><span>Unsaved changes</span>';
-                publishBtn.disabled = false;
-            } else {
-                indicator.className = 'save-indicator saved';
-                indicator.innerHTML = '<i class="fas fa-check-circle"></i><span>All changes saved</span>';
-                publishBtn.disabled = true;
-            }
-        }
+  if (type === 'bg') {
+    const bg = getComputedStyle(activeEl, null).background;
+    const bgColor = getComputedStyle(activeEl, null).backgroundColor;
+    html += field('Background color', colorField('ef_bg', rgbToHex(bgColor)));
+    html += field('Gradient (CSS)', `<input type="text" id="ef_gradient" value="${escHtml(extractGradient(activeEl))}" placeholder="linear-gradient(135deg,#667eea,#764ba2)">`);
+    editingFields.bg = { prop: 'style.background', key: 'ef_gradient', fallbackKey: 'ef_bg' };
+  }
 
-        // Show/Hide Loading Overlay
-        function showLoading(show) {
-            document.getElementById('loadingOverlay').classList.toggle('show', show);
-        }
+  if (type === 'image') {
+    const src = activeEl.src || '';
+    html += field('Image URL', `<input type="url" id="ef_img" value="${escHtml(src)}" placeholder="https://…"><img class="img-preview ${src ? 'show' : ''}" id="imgPreview" src="${escHtml(src)}">`);
+    editingFields.image = { prop: 'src', key: 'ef_img' };
+  }
 
-        // Show Toast Notification
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.textContent = message;
-            container.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.style.animation = 'slideIn 0.3s ease reverse';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
+  if (type === 'slide') {
+    const titleEl = activeEl.querySelector('.slide-title');
+    const subEl = activeEl.querySelector('.slide-subtitle');
+    const btnEl = activeEl.querySelector('.btn-slide');
+    html += field('Title', `<input type="text" id="ef_stitle" value="${escHtml(titleEl ? titleEl.textContent.trim() : '')}">`);
+    html += field('Subtitle', `<input type="text" id="ef_ssub" value="${escHtml(subEl ? subEl.textContent.trim() : '')}">`);
+    html += field('Button text', `<input type="text" id="ef_sbtn" value="${escHtml(btnEl ? btnEl.textContent.trim() : '')}">`);
+    html += field('Button link', `<input type="url" id="ef_sbtnlink" value="${escHtml(btnEl ? btnEl.href : '')}">`);
+    html += field('Background', colorField('ef_sbg', extractFirstColor(activeEl)));
+    editingFields.slide = {
+      title: 'ef_stitle', sub: 'ef_ssub', btn: 'ef_sbtn', btnlink: 'ef_sbtnlink', bg: 'ef_sbg'
+    };
+  }
 
-        // Iframe Load Handler
-        window.onFrameLoad = function() {
-            frameLoaded = true;
-            console.log('Frame loaded, injecting editor scripts...');
-            setTimeout(() => {
-                injectEditorScripts();
-                setupSectionClickHandlers();
-            }, 500);
-        };
+  panelBody.innerHTML = html || '<p style="color:var(--panel-muted);font-size:0.85rem">No editable properties for this element.</p>';
 
-        // Setup Section Click Handlers for Live Editor
-        function setupSectionClickHandlers() {
-            const frame = document.getElementById('siteFrame');
-            if (!frame) return;
-            
-            const frameDoc = frame.contentDocument || frame.contentWindow.document;
-            
-            // Add click handlers to editable sections
-            frameDoc.querySelectorAll('.editable-section').forEach(section => {
-                section.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    // Remove active class from all sections
-                    frameDoc.querySelectorAll('.editable-section').forEach(s => s.classList.remove('active'));
-                    
-                    // Add active class to clicked section
-                    this.classList.add('active');
-                    
-                    // Open settings panel
-                    const sectionId = this.dataset.sectionId;
-                    const sectionIndex = this.dataset.sectionIndex;
-                    if (sectionId) {
-                        editSection(sectionId);
-                    }
-                });
-            });
-        }
+  // Live preview for color pickers
+  panelBody.querySelectorAll('input[type="color"]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const textInp = document.getElementById(inp.id.replace('_cp', ''));
+      if (textInp) textInp.value = inp.value;
+      livePreview();
+    });
+  });
 
-        // Handle keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            // Ctrl/Cmd + S to save
-            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                e.preventDefault();
-                if (hasUnsavedChanges) {
-                    publishChanges();
-                }
-            }
-        });
+  panelBody.querySelectorAll('input[type="text"], input[type="url"], textarea').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const cpInp = document.getElementById(inp.id + '_cp');
+      if (cpInp && inp.value.startsWith('#')) cpInp.value = inp.value;
+      if (inp.id === 'ef_img') {
+        const prev = document.getElementById('imgPreview');
+        if (prev) { prev.src = inp.value; prev.classList.toggle('show', !!inp.value); }
+      }
+      livePreview();
+    });
+  });
 
-        // Initialize on load
-        init();
-    </script>
+  editPanel.classList.add('open');
+}
+
+function livePreview() {
+  if (!activeEl) return;
+  const f = editingFields;
+  if (f.text) activeEl.textContent = val('ef_text') || activeEl.textContent;
+  if (f.color) activeEl.style.color = val('ef_color') || '';
+  if (f.bg) {
+    const grad = val('ef_gradient');
+    activeEl.style.background = grad || val('ef_bg') || '';
+  }
+  if (f.image) activeEl.src = val('ef_img') || activeEl.src;
+  if (f.slide) {
+    const t = activeEl.querySelector('.slide-title');
+    const s = activeEl.querySelector('.slide-subtitle');
+    const b = activeEl.querySelector('.btn-slide');
+    if (t) t.textContent = val('ef_stitle') || t.textContent;
+    if (s) s.textContent = val('ef_ssub') || s.textContent;
+    if (b) { b.textContent = val('ef_sbtn') || b.textContent; b.href = val('ef_sbtnlink') || b.href; }
+    activeEl.style.background = val('ef_sbg') || activeEl.style.background;
+  }
+}
+
+function applyEdits() {
+  livePreview();
+  pushUndo({ snapshot: captureState() });
+  queueChangeFromPanel();
+  closePanel();
+  markUnsaved();
+  toast('Changes applied', 'success');
+}
+
+function queueChangeFromPanel() {
+  if (!activeEl) return;
+  const id = elementId(activeEl);
+  pendingChanges[id] = pendingChanges[id] || { selector: cssSel(activeEl), changes: {} };
+  const f = editingFields;
+  if (f.text) pendingChanges[id].changes.textContent = val('ef_text');
+  if (f.color) pendingChanges[id].changes.color = val('ef_color');
+  if (f.bg) pendingChanges[id].changes.background = val('ef_gradient') || val('ef_bg');
+  if (f.image) pendingChanges[id].changes.src = val('ef_img');
+  if (f.slide) {
+    pendingChanges[id].changes.slideTitle = val('ef_stitle');
+    pendingChanges[id].changes.slideSub = val('ef_ssub');
+    pendingChanges[id].changes.slideBtn = val('ef_sbtn');
+    pendingChanges[id].changes.slideBtnLink = val('ef_sbtnlink');
+    pendingChanges[id].changes.slideBackground = val('ef_sbg');
+  }
+}
+
+function queueChange(el, type, value) {
+  const id = elementId(el);
+  pendingChanges[id] = pendingChanges[id] || { selector: cssSel(el), changes: {} };
+  pendingChanges[id].changes[type] = value;
+  markUnsaved();
+}
+
+function closePanel() {
+  editPanel.classList.remove('open');
+  editingFields = {};
+}
+
+// ── UNDO/REDO ──
+let snapshotBefore = null;
+
+function captureState() {
+  try { return frameDoc().body.innerHTML; } catch(e) { return ''; }
+}
+
+function pushUndo(entry) {
+  undoStack.push(entry);
+  if (undoStack.length > 50) undoStack.shift();
+  redoStack = [];
+  updateUndoCount();
+}
+
+function undo() {
+  if (!undoStack.length) { toast('Nothing to undo'); return; }
+  redoStack.push(captureState());
+  const entry = undoStack.pop();
+  if (entry.snapshot) {
+    try { frameDoc().body.innerHTML = entry.snapshot; setupEditMode(); }
+    catch(e) {}
+  } else if (entry.el && entry.prop) {
+    try {
+      const parts = entry.prop.split('.');
+      let target = entry.el;
+      for (let i = 0; i < parts.length - 1; i++) target = target[parts[i]];
+      target[parts[parts.length - 1]] = entry.old;
+    } catch(e) {}
+  }
+  updateUndoCount();
+  toast('Undone');
+}
+
+function redo() {
+  if (!redoStack.length) { toast('Nothing to redo'); return; }
+  undoStack.push({ snapshot: captureState() });
+  const snapshot = redoStack.pop();
+  try { frameDoc().body.innerHTML = snapshot; setupEditMode(); }
+  catch(e) {}
+  updateUndoCount();
+  toast('Redone');
+}
+
+function updateUndoCount() {
+  undoCountEl.textContent = undoStack.length ? `${undoStack.length} changes` : '';
+}
+
+// ── PUBLISH ──
+async function publishChanges() {
+  if (!Object.keys(pendingChanges).length) return;
+  btnPublish.disabled = true; btnPublish.textContent = 'Publishing…';
+  document.getElementById('loadingBar').style.width = '60%';
+
+  try {
+    const res = await fetch('/api/cms/live-edits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ page: document.getElementById('pageSelect').value, changes: pendingChanges })
+    });
+    document.getElementById('loadingBar').style.width = '100%';
+    setTimeout(() => document.getElementById('loadingBar').style.width = '0', 400);
+
+    if (res.ok) {
+      pendingChanges = {};
+      markSaved();
+      toast('Published!', 'success');
+    } else {
+      toast('Publish failed — check console', 'error');
+    }
+  } catch(e) {
+    toast('Network error', 'error');
+  } finally {
+    btnPublish.textContent = 'Publish';
+    btnPublish.disabled = !Object.keys(pendingChanges).length;
+  }
+}
+
+function markUnsaved() {
+  saveDot.className = 'save-dot unsaved';
+  btnPublish.disabled = false;
+}
+function markSaved() {
+  saveDot.className = 'save-dot saved';
+  btnPublish.disabled = true;
+}
+
+// ── MODE / VIEWPORT ──
+function setMode(m) {
+  mode = m;
+  document.getElementById('btnEditMode').classList.toggle('active', m === 'edit');
+  document.getElementById('btnPreviewMode').classList.toggle('active', m === 'preview');
+  if (frameReady) {
+    try {
+      const s = frameDoc().getElementById('__editor_styles');
+      if (s) s.textContent = m === 'edit' ? s.textContent : '';
+    } catch(e) {}
+  }
+  cancelHighlight();
+  if (m === 'edit' && frameReady) setupEditMode();
+}
+
+function setViewport(vp) {
+  const frame = document.getElementById('canvasFrame');
+  document.querySelectorAll('.vp-btn').forEach(b => b.classList.remove('active'));
+  event.target.closest('.vp-btn').classList.add('active');
+  frame.className = 'canvas-frame' + (vp !== 'desktop' ? ` ${vp}` : '');
+}
+
+function changePage() {
+  const url = document.getElementById('pageSelect').value;
+  document.getElementById('loadingBar').style.width = '40%';
+  frame().src = url;
+  cancelHighlight();
+  closePanel();
+}
+
+function reloadFrame() {
+  frame().src = frame().src;
+  cancelHighlight();
+  closePanel();
+}
+
+// ── HELPERS ──
+function val(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+function field(label, inputHtml) {
+  return `<div class="field-group"><label>${label}</label>${inputHtml}</div>`;
+}
+
+function colorField(id, hex) {
+  return `<div class="color-row">
+    <input type="color" id="${id}_cp" value="${hex}" title="Pick color">
+    <input type="text" id="${id}" value="${hex}" placeholder="#ffffff" maxlength="7">
+  </div>`;
+}
+
+function rgbToHex(rgb) {
+  if (!rgb || rgb === 'transparent') return '#ffffff';
+  if (rgb.startsWith('#')) return rgb;
+  const m = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (!m) return '#ffffff';
+  return '#' + [m[1], m[2], m[3]].map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
+}
+
+function extractGradient(el) {
+  try {
+    const bg = el.style.background || el.style.backgroundImage || '';
+    if (bg.includes('gradient')) return bg;
+    return '';
+  } catch(e) { return ''; }
+}
+
+function extractFirstColor(el) {
+  try {
+    const bg = el.style.background || el.style.backgroundColor || '';
+    const m = bg.match(/#[0-9a-f]{3,6}/i);
+    return m ? m[0] : '#667eea';
+  } catch(e) { return '#667eea'; }
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function elementId(el) {
+  return el.dataset.editLabel?.replace(/\s+/g, '_') || Math.random().toString(36).slice(2);
+}
+
+function cssSel(el) {
+  if (el.id) return '#' + el.id;
+  const parts = [];
+  let cur = el;
+  while (cur && cur.nodeType === 1 && cur !== frameDoc().body) {
+    let sel = cur.tagName.toLowerCase();
+    if (cur.className) {
+      const c = Array.from(cur.classList).find(c => !['editing','active'].includes(c));
+      if (c) sel += '.' + c;
+    }
+    const siblings = cur.parentNode?.children;
+    if (siblings && Array.from(siblings).filter(s => s.tagName === cur.tagName).length > 1) {
+      const idx = Array.from(siblings).indexOf(cur) + 1;
+      sel += `:nth-child(${idx})`;
+    }
+    parts.unshift(sel);
+    cur = cur.parentNode;
+  }
+  return parts.join(' > ');
+}
+
+// ── KEYBOARD SHORTCUTS ──
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); publishChanges(); }
+});
+
+// ── TOAST ──
+let toastTimer;
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+</script>
 </body>
 </html>
