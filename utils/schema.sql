@@ -93,7 +93,8 @@ CREATE TABLE IF NOT EXISTS cms_hero_sliders (
     image_url TEXT,
     cta_text VARCHAR(50),
     cta_link VARCHAR(255),
-    bg_color VARCHAR(7),
+    background_color VARCHAR(7),
+    text_color VARCHAR(7),
     display_order INT DEFAULT 0,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT NOW(),
@@ -175,3 +176,12 @@ CREATE INDEX IF NOT EXISTS idx_layout_sections_order ON layout_sections(order_in
 CREATE INDEX IF NOT EXISTS idx_webhooks_active ON webhooks(is_active) WHERE is_active = TRUE;
 CREATE INDEX IF NOT EXISTS idx_collections_slug ON collections(slug);
 CREATE INDEX IF NOT EXISTS idx_collection_products_position ON collection_products(position);
+CREATE INDEX IF NOT EXISTS idx_hero_sliders_active ON cms_hero_sliders(is_active) WHERE is_active = TRUE;
+CREATE INDEX IF NOT EXISTS idx_hero_sliders_order ON cms_hero_sliders(display_order);
+
+-- Default slider data
+INSERT INTO cms_hero_sliders (title, subtitle, image_url, cta_text, cta_link, background_color, text_color, display_order, is_active) VALUES
+('New Collection 2026', 'Discover the latest trends in fashion', 'images/10.png', 'Shop Now', 'pages/products.html?sort=newest', '#667eea', '#ffffff', 1, TRUE),
+('Summer Sale', 'Up to 70% off on selected items', 'images/11.png', 'Grab Deals', 'pages/products.html', '#f093fb', '#ffffff', 2, TRUE),
+('Traditional Elegance', 'Beautiful sarees for every occasion', 'images/12.png', 'Explore Sarees', 'pages/products.html?category=saree', '#4facfe', '#ffffff', 3, TRUE)
+ON CONFLICT DO NOTHING;

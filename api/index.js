@@ -639,7 +639,13 @@ async function handleCMS(req, res, sql, pathParts, params) {
 
   if (pathParts[2] === 'sliders') {
     const urlId = extractId();
-    if (req.method === 'GET') return json(res, 200, { success: true, data: await sql`SELECT * FROM cms_hero_sliders ORDER BY display_order ASC` });
+    if (req.method === 'GET') {
+      const activeOnly = params.get('active') === 'true';
+      const query = activeOnly 
+        ? sql`SELECT * FROM cms_hero_sliders WHERE is_active = TRUE ORDER BY display_order ASC`
+        : sql`SELECT * FROM cms_hero_sliders ORDER BY display_order ASC`;
+      return json(res, 200, { success: true, data: await query });
+    }
     if (req.method === 'POST') {
       const b = await parseBody(req);
       if (!b.title) return json(res, 400, { success: false, error: 'Title required' });

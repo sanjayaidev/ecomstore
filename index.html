@@ -232,15 +232,16 @@
       try {
         const response = await fetch('/api/cms/sliders?active=true');
         if (response.ok) {
-          const sliders = await response.json();
-          if (sliders && sliders.length > 0) {
+          const result = await response.json();
+          const sliders = result.success ? result.data : result;
+          if (sliders && Array.isArray(sliders) && sliders.length > 0) {
             sliderConfig.slides = sliders.map(slide => ({
               image: slide.image_url || 'images/10.png',
               title: slide.title || 'Welcome',
               subtitle: slide.subtitle || '',
               ctaText: slide.cta_text || 'Shop Now',
               ctaLink: slide.cta_link || 'pages/products.html',
-              gradient: slide.bg_color ? `linear-gradient(135deg, ${slide.bg_color}dd 0%, ${slide.bg_color}99 100%)` : 'linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%)'
+              gradient: slide.background_color ? `linear-gradient(135deg, ${slide.background_color}dd 0%, ${slide.background_color}99 100%)` : 'linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%)'
             }));
           } else {
             // Default fallback slides if no CMS data
