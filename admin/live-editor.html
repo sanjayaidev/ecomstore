@@ -247,7 +247,6 @@
         <div class="edit-toolbar">
           <button class="et-btn" onclick="openEditPanel()">Edit</button>
           <button class="et-btn" onclick="makeEditable()">Inline</button>
-          <button class="et-btn" style="color:#f87171" onclick="cancelHighlight()">✕</button>
         </div>
       </div>
       <iframe id="siteFrame" src="/" onload="onFrameLoad()"></iframe>
@@ -350,12 +349,18 @@ function setupEditMode() {
       { sel: '.newsletter-text p', type: 'text', label: 'Newsletter subtitle' },
       { sel: '.slide', type: 'slide', label: 'Slide' },
       { sel: '.slide-image img', type: 'image', label: 'Slide image' },
+      { sel: '[data-editable]', type: 'auto', label: 'Editable' }
     ];
 
     selectors.forEach(({ sel, type, label }) => {
       doc.querySelectorAll(sel).forEach((el, i) => {
-        el.dataset.editable = type;
-        el.dataset.editLabel = label + (doc.querySelectorAll(sel).length > 1 ? ` ${i + 1}` : '');
+        // Only set if not already set by HTML attribute
+        if (!el.dataset.editable && type !== 'auto') {
+          el.dataset.editable = type;
+          el.dataset.editLabel = label + (doc.querySelectorAll(sel).length > 1 ? ` ${i + 1}` : '');
+        } else if (type === 'auto' && !el.dataset.editLabel) {
+          el.dataset.editLabel = label;
+        }
         el.removeEventListener('click', handleElClick);
         el.addEventListener('click', handleElClick);
         el.removeEventListener('mouseenter', handleElHover);
