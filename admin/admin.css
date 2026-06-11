@@ -744,7 +744,10 @@
   padding: 0; box-shadow: var(--shadow-lg);
   max-width: 620px; width: 93vw;
   max-height: 92vh; overflow-y: auto;
+  display: block; /* Ensure dialog displays properly */
+  margin: auto; /* Center the dialog */
 }
+.modal:not([open]) { display: none; }
 .modal::backdrop { background: rgba(17,24,39,0.5); backdrop-filter: blur(2px); }
 .modal-sm { max-width: 420px; }
 .modal-lg { max-width: 760px; }
