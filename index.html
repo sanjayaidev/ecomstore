@@ -31,7 +31,7 @@
           <ul class="nav-links">
             <li><a href="/" class="active">Home</a></li>
             <li><a href="pages/products.html">Shop</a></li>
-            <li id="auth-nav-item"><a href="pages/account.html"><i class="fas fa-user"></i> Account</a></li>
+            <li id="auth-nav-item"><a href="#" onclick="handleAccountClick(); return false;"><i class="fas fa-user"></i> Account</a></li>
             <li><a href="pages/cart.html">Cart <span id="cart-count" class="cart-badge">0</span></a></li>
             <li id="login-nav-item"><a href="#login-modal" class="btn-login mobile-hide" onclick="showLoginModal()"><i class="fas fa-sign-in-alt"></i> Login</a></li>
             <li><a href="#" class="mobile-menu-toggle"><i class="fas fa-bars"></i></a></li>
@@ -325,6 +325,16 @@
         // User is not logged in - show login button, change Account to Login/Register
         loginNavItem.style.display = 'block';
         authNavItem.innerHTML = '<a href="#" onclick="showLoginModal(); return false;"><i class="fas fa-user-plus"></i> Register</a>';
+      }
+    }
+
+    // Handle Account Click - Show modal if not logged in
+    function handleAccountClick() {
+      const authToken = localStorage.getItem('authToken');
+      if (authToken) {
+        window.location.href = 'pages/account.html';
+      } else {
+        showLoginModal();
       }
     }
 
