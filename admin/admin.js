@@ -47,6 +47,8 @@ function bootAdmin() {
   setupUserDropdown();
   setupProductModal();
   setupCategoryModal();
+  setupCollectionModal();
+  setupCouponModal();
   setupDeleteModal();
   setupSearchFilters();
   setupOrderTabs();
@@ -59,6 +61,8 @@ function bootAdmin() {
   fetchProducts();
   fetchOrders();
   renderCategories();
+  renderCollections();
+  renderCoupons();
 }
 
 // ═══════════════════════════════════
@@ -525,6 +529,166 @@ function handleCategorySubmit(e) {
   } else { state.categories.push({ id: slug, name, slug, image_url: image_url || undefined }); }
   $('categoryModal').close(); renderCategories();
   showToast(`✅ Category ${id ? 'updated' : 'added'}`, 'success');
+}
+
+// ═══════════════════════════════════
+// COLLECTIONS — SETUP & RENDER
+// ═══════════════════════════════════
+state.collections = [];
+
+function renderCollections() {
+  const tbody = $('collectionsTableBody');
+  if (!tbody) return;
+  if (!state.collections.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:32px">No collections found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = state.collections.map(c => {
+    const imgHtml = c.image_url 
+      ? `<img src="${escHtml(c.image_url)}" alt="${escHtml(c.name)}" style="width:40px;height:40px;object-fit:cover;border-radius:4px" onerror="this.src='/images/placeholder.webp'">`
+      : `<div style="width:40px;height:40px;background:#f3f4f6;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:0.75rem">No Img</div>`;
+    const visibilityClass = c.is_visible !== false ? 'status-active' : 'status-inactive';
+    const visibilityLabel = c.is_visible !== false ? 'Visible' : 'Hidden';
+    return `<tr><td><strong>${escHtml(c.name)}</strong></td><td><code style="font-size:.8rem;background:#f3f4f6;padding:2px 6px;border-radius:4px">${escHtml(c.slug || '')}</code></td><td>${imgHtml}</td><td><span class="status-badge ${visibilityClass}">${visibilityLabel}</span></td><td><div style="display:flex;gap:6px"><button class="btn-icon edit-col" data-id="${c.id}" title="Edit">✏️</button><button class="btn-icon danger delete-col" data-id="${c.id}" title="Delete">🗑️</button></div></td></tr>`;
+  }).join('');
+  tbody.querySelectorAll('.edit-col').forEach(btn => btn.addEventListener('click', () => openCollectionModal(btn.dataset.id)));
+  tbody.querySelectorAll('.delete-col').forEach(btn => btn.addEventListener('click', () => openDeleteModal('collection', btn.dataset.id)));
+}
+
+function setupCollectionModal() {
+  $('addCollectionBtn')?.addEventListener('click', () => openCollectionModal(null));
+  $('closeCollectionModal')?.addEventListener('click', () => $('collectionModal').close());
+  $('cancelCollectionModal')?.addEventListener('click', () => $('collectionModal').close());
+  $('collectionForm')?.addEventListener('submit', handleCollectionSubmit);
+  $('collectionName')?.addEventListener('input', function() {
+    const slugEl = $('collectionSlug');
+    if (slugEl && !slugEl.dataset.manual) { slugEl.value = this.value.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,''); }
+  });
+  $('collectionSlug')?.addEventListener('input', function() { this.dataset.manual = '1'; });
+}
+
+function openCollectionModal(id = null) {
+  $('collectionModalTitle').textContent = id ? 'Edit Collection' : 'Add Collection';
+  $('collectionForm').reset(); delete $('collectionSlug').dataset.manual;
+  if (id) {
+    const col = state.collections.find(c => c.id === id);
+    if (col) { 
+      $('collectionId').value = col.id; 
+      $('collectionName').value = col.name; 
+      $('collectionSlug').value = col.slug || '';
+      $('collectionDescription').value = col.description || '';
+      $('collectionImageUrl').value = col.image_url || '';
+      $('collectionIsVisible').checked = col.is_visible !== false;
+    }
+  }
+  $('collectionModal').showModal();
+}
+
+function handleCollectionSubmit(e) {
+  e.preventDefault();
+  const form = e.target;
+  const id = form.edit_id.value;
+  const data = {
+    id: id || undefined,
+    name: form.name.value.trim(),
+    slug: form.slug.value.trim() || form.name.value.trim().toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,''),
+    description: form.description.value.trim(),
+    image_url: form.image_url.value.trim() || undefined,
+    is_visible: form.is_visible.checked
+  };
+  if (id) {
+    const idx = state.collections.findIndex(c => c.id === id);
+    if (idx > -1) state.collections[idx] = { ...state.collections[idx], ...data };
+  } else {
+    data.id = Date.now().toString();
+    state.collections.push(data);
+  }
+  $('collectionModal').close(); renderCollections();
+  showToast(`✅ Collection ${id ? 'updated' : 'added'}`, 'success');
+}
+
+// ═══════════════════════════════════
+// COUPONS — SETUP & RENDER
+// ═══════════════════════════════════
+state.coupons = [];
+
+function renderCoupons() {
+  const tbody = $('couponsTableBody');
+  if (!tbody) return;
+  if (!state.coupons.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted" style="padding:32px">No coupons found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = state.coupons.map(c => {
+    const statusClass = c.is_active !== false ? 'status-active' : 'status-inactive';
+    const statusLabel = c.is_active !== false ? 'Active' : 'Inactive';
+    const valueDisplay = c.type === 'percentage' ? `${c.value}%` : c.type === 'fixed' ? `₹${c.value}` : c.value;
+    const validUntil = c.valid_until ? new Date(c.valid_until).toLocaleDateString('en-IN') : '—';
+    const usageDisplay = (c.usage_count || 0) + (c.usage_limit ? ` / ${c.usage_limit}` : '');
+    return `<tr><td><strong style="font-family:monospace">${escHtml(c.code)}</strong></td><td style="text-transform:capitalize">${escHtml(c.type)}</td><td>${valueDisplay}</td><td>₹${c.min_purchase_amount || 0}</td><td>${usageDisplay}</td><td>${validUntil}</td><td><span class="status-badge ${statusClass}">${statusLabel}</span></td><td><div style="display:flex;gap:6px"><button class="btn-icon edit-cpn" data-id="${c.id}" title="Edit">✏️</button><button class="btn-icon danger delete-cpn" data-id="${c.id}" title="Delete">🗑️</button></div></td></tr>`;
+  }).join('');
+  tbody.querySelectorAll('.edit-cpn').forEach(btn => btn.addEventListener('click', () => openCouponModal(btn.dataset.id)));
+  tbody.querySelectorAll('.delete-cpn').forEach(btn => btn.addEventListener('click', () => openDeleteModal('coupon', btn.dataset.id)));
+}
+
+function setupCouponModal() {
+  $('addCouponBtn')?.addEventListener('click', () => openCouponModal(null));
+  $('closeCouponModal')?.addEventListener('click', () => $('couponModal').close());
+  $('cancelCouponModal')?.addEventListener('click', () => $('couponModal').close());
+  $('couponForm')?.addEventListener('submit', handleCouponSubmit);
+  $('couponCode')?.addEventListener('input', function() { this.value = this.value.toUpperCase(); });
+}
+
+function openCouponModal(id = null) {
+  $('couponModalTitle').textContent = id ? 'Edit Coupon' : 'Add Coupon';
+  $('couponForm').reset();
+  if (id) {
+    const cpn = state.coupons.find(c => c.id === id);
+    if (cpn) { 
+      $('couponId').value = cpn.id; 
+      $('couponCode').value = cpn.code;
+      $('couponType').value = cpn.type;
+      $('couponDescription').value = cpn.description || '';
+      $('couponValue').value = cpn.value;
+      $('couponMinPurchaseAmount').value = cpn.min_purchase_amount || 0;
+      $('couponMaxDiscountAmount').value = cpn.max_discount_amount || '';
+      $('couponUsageLimit').value = cpn.usage_limit || '';
+      $('couponPerCustomerLimit').value = cpn.per_customer_limit || 1;
+      $('couponValidFrom').value = cpn.valid_from || '';
+      $('couponValidUntil').value = cpn.valid_until || '';
+      $('couponIsActive').checked = cpn.is_active !== false;
+    }
+  }
+  $('couponModal').showModal();
+}
+
+function handleCouponSubmit(e) {
+  e.preventDefault();
+  const form = e.target;
+  const id = form.edit_id.value;
+  const data = {
+    id: id || undefined,
+    code: form.code.value.trim().toUpperCase(),
+    type: form.type.value,
+    description: form.description.value.trim(),
+    value: parseFloat(form.value.value) || 0,
+    min_purchase_amount: parseFloat(form.min_purchase_amount.value) || 0,
+    max_discount_amount: form.max_discount_amount.value ? parseFloat(form.max_discount_amount.value) : null,
+    usage_limit: form.usage_limit.value ? parseInt(form.usage_limit.value) : null,
+    per_customer_limit: parseInt(form.per_customer_limit.value) || 1,
+    valid_from: form.valid_from.value || null,
+    valid_until: form.valid_until.value || null,
+    is_active: form.is_active.checked
+  };
+  if (id) {
+    const idx = state.coupons.findIndex(c => c.id === id);
+    if (idx > -1) state.coupons[idx] = { ...state.coupons[idx], ...data };
+  } else {
+    data.id = Date.now().toString();
+    state.coupons.push(data);
+  }
+  $('couponModal').close(); renderCoupons();
+  showToast(`✅ Coupon ${id ? 'updated' : 'added'}`, 'success');
 }
 
 // ═══════════════════════════════════
