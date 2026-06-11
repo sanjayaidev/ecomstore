@@ -199,36 +199,64 @@
         }
 
         .toolbar-btn {
-            padding: 6px 10px;
+            padding: 8px 12px;
             border: none;
-            background: transparent;
+            background: #f8f9fa;
             cursor: pointer;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: 600;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
+            transition: all 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
         .toolbar-btn:hover {
-            background: #f1f2f4;
+            background: white;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
         }
 
         .toolbar-btn.edit {
-            color: var(--primary);
+            color: #008060;
+            background: #e6f7f3;
+        }
+
+        .toolbar-btn.edit:hover {
+            background: #008060;
+            color: white;
         }
 
         .toolbar-btn.move {
-            color: var(--secondary);
+            color: #5a667f;
+            background: #f1f2f4;
+        }
+
+        .toolbar-btn.move:hover {
+            background: #5a667f;
+            color: white;
         }
 
         .toolbar-btn.delete {
-            color: var(--danger);
+            color: #d82c0d;
+            background: #fff1f0;
+        }
+
+        .toolbar-btn.delete:hover {
+            background: #d82c0d;
+            color: white;
         }
 
         .toolbar-btn.add {
-            color: var(--success);
+            color: #00b386;
+            background: #e6f7f3;
+        }
+
+        .toolbar-btn.add:hover {
+            background: #00b386;
+            color: white;
         }
 
         /* Sidebar Panel */
@@ -1048,8 +1076,41 @@
         // Iframe Load Handler
         window.onFrameLoad = function() {
             frameLoaded = true;
-            setTimeout(injectEditorScripts, 500);
+            console.log('Frame loaded, injecting editor scripts...');
+            setTimeout(() => {
+                injectEditorScripts();
+                setupSectionClickHandlers();
+            }, 500);
         };
+
+        // Setup Section Click Handlers for Live Editor
+        function setupSectionClickHandlers() {
+            const frame = document.getElementById('siteFrame');
+            if (!frame) return;
+            
+            const frameDoc = frame.contentDocument || frame.contentWindow.document;
+            
+            // Add click handlers to editable sections
+            frameDoc.querySelectorAll('.editable-section').forEach(section => {
+                section.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Remove active class from all sections
+                    frameDoc.querySelectorAll('.editable-section').forEach(s => s.classList.remove('active'));
+                    
+                    // Add active class to clicked section
+                    this.classList.add('active');
+                    
+                    // Open settings panel
+                    const sectionId = this.dataset.sectionId;
+                    const sectionIndex = this.dataset.sectionIndex;
+                    if (sectionId) {
+                        editSection(sectionId);
+                    }
+                });
+            });
+        }
 
         // Handle keyboard shortcuts
         document.addEventListener('keydown', (e) => {
