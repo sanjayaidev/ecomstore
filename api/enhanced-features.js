@@ -210,6 +210,32 @@ export async function reorderLayoutSections(req, res, sql) {
   return res.status(200).json({ success: true });
 }
 
+// Bulk save endpoint for visual editor
+export async function bulkSaveLayoutSections(req, res, sql) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const b = await parseBody(req);
+  if (!b.sections || !Array.isArray(b.sections)) return res.status(400).json({ error: 'sections array required' });
+  
+  const page = b.page || 'homepage';
+  
+  try {
+    // Delete existing sections for this page
+    await sql`DELETE FROM layout_sections WHERE page_location = ${page}`;
+    
+    // Insert new sections
+    for (const section of b.sections) {
+      await sql`INSERT INTO layout_sections (section_type, section_name, config, display_order, page_location, is_active, created_at, updated_at) 
+                VALUES (${section.type || section.section_type}, ${section.section_name||''}, ${JSON.stringify(section.settings || section.config)}, ${section.order || section.display_order||0}, ${page}, true, NOW(), NOW())`;
+    }
+    
+    return res.status(200).json({ success: true, message: 'Layout saved successfully' });
+  } catch (error) {
+    console.error('Error saving layout:', error);
+    return res.status(500).json({ error: 'Failed to save layout' });
+  }
+}
+
 export async function handleWebhooks(req, res, sql, params) {
   const method = req.method;
   if (method === 'GET') return res.status(200).json(await sql`SELECT * FROM webhooks ORDER BY created_at DESC`);

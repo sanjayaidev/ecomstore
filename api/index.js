@@ -10,6 +10,7 @@ import {
   handleCollectionProducts,
   handleLayoutSections,
   reorderLayoutSections,
+  bulkSaveLayoutSections,
   handleWebhooks,
   triggerWebhook,
   handleCSVImport
@@ -615,6 +616,7 @@ export default async function handler(req, res) {
       }
       if (pathParts[1] === 'layout-sections') {
         if (pathParts[2] === 'reorder') return reorderLayoutSections(req, res, sql);
+        if (pathParts[2] === 'bulk') return bulkSaveLayoutSections(req, res, sql);
         return handleLayoutSections(req, res, sql, params);
       }
       if (pathParts[1] === 'webhooks') return handleWebhooks(req, res, sql, params);
