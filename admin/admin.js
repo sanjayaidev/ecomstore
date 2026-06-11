@@ -753,6 +753,91 @@ function setupSettingsTabs() {
   });
  
   $('saveSettingsBtn')?.addEventListener('click', () => { showToast('✅ Settings saved', 'success'); });
+  
+  // Integration settings handlers
+  $('saveWhatsappIntegrationBtn')?.addEventListener('click', async () => {
+    const sheetUrl = $('whatsappSheetUrl')?.value?.trim();
+    if (!sheetUrl) { showToast('❌ Please enter a valid Apps Script URL', 'error'); return; }
+    try {
+      // Test the endpoint
+      const res = await fetch('/api/integrations/whatsapp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'test', customerData: { name: 'Test', phone: '+910000000000' }, sheetUrl })
+      });
+      const result = await res.json();
+      if (result.success) {
+        localStorage.setItem('whatsappSheetUrl', sheetUrl);
+        showToast('✅ WhatsApp integration configured successfully', 'success');
+      } else {
+        showToast('❌ ' + (result.error || 'Failed to save'), 'error');
+      }
+    } catch (err) {
+      showToast('❌ Connection failed: ' + err.message, 'error');
+    }
+  });
+  
+  $('saveEmailIntegrationBtn')?.addEventListener('click', async () => {
+    const sheetUrl = $('emailSheetUrl')?.value?.trim();
+    if (!sheetUrl) { showToast('❌ Please enter a valid Apps Script URL', 'error'); return; }
+    try {
+      const res = await fetch('/api/integrations/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'test', recipient: 'test@example.com', templateData: {}, sheetUrl })
+      });
+      const result = await res.json();
+      if (result.success) {
+        localStorage.setItem('emailSheetUrl', sheetUrl);
+        showToast('✅ Email integration configured successfully', 'success');
+      } else {
+        showToast('❌ ' + (result.error || 'Failed to save'), 'error');
+      }
+    } catch (err) {
+      showToast('❌ Connection failed: ' + err.message, 'error');
+    }
+  });
+  
+  $('testWhatsappBtn')?.addEventListener('click', async () => {
+    const sheetUrl = localStorage.getItem('whatsappSheetUrl') || $('whatsappSheetUrl')?.value?.trim();
+    if (!sheetUrl) { showToast('⚠️ Please configure WhatsApp integration first', 'warning'); return; }
+    try {
+      const res = await fetch('/api/integrations/whatsapp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'test', customerData: { name: 'Admin Test', phone: '+910000000000', email: 'admin@test.com' }, data: { message: 'Test message from admin panel' }, sheetUrl })
+      });
+      const result = await res.json();
+      showToast(result.success ? '✅ WhatsApp test sent!' : '❌ ' + result.error, result.success ? 'success' : 'error');
+    } catch (err) {
+      showToast('❌ Test failed: ' + err.message, 'error');
+    }
+  });
+  
+  $('testEmailBtn')?.addEventListener('click', async () => {
+    const sheetUrl = localStorage.getItem('emailSheetUrl') || $('emailSheetUrl')?.value?.trim();
+    if (!sheetUrl) { showToast('⚠️ Please configure Email integration first', 'warning'); return; }
+    try {
+      const res = await fetch('/api/integrations/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'test', recipient: 'test@example.com', templateData: { subject: 'Test Email', message: 'This is a test email from EcomStore' }, sheetUrl })
+      });
+      const result = await res.json();
+      showToast(result.success ? '✅ Email test sent!' : '❌ ' + result.error, result.success ? 'success' : 'error');
+    } catch (err) {
+      showToast('❌ Test failed: ' + err.message, 'error');
+    }
+  });
+  
+  // Load saved integration URLs on page load
+  setTimeout(() => {
+    const waUrl = localStorage.getItem('whatsappSheetUrl');
+    const emUrl = localStorage.getItem('emailSheetUrl');
+    if (waUrl && $('whatsappSheetUrl')) $('whatsappSheetUrl').value = waUrl;
+    if (emUrl && $('emailSheetUrl')) $('emailSheetUrl').value = emUrl;
+  }, 500);
+  
   $('changePasswordBtn')?.addEventListener('click', () => {
     const np = $('newPassword')?.value, cp = $('confirmPassword')?.value;
     if (!np || np.length < 8) { showToast('❌ Password must be at least 8 characters', 'error'); return; }

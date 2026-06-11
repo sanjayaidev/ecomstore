@@ -567,6 +567,7 @@
       <button class="settings-tab active" data-stab="general">General</button>
       <button class="settings-tab" data-stab="security">Security</button>
       <button class="settings-tab" data-stab="notifications">Notifications</button>
+      <button class="settings-tab" data-stab="integrations">Integrations</button>
     </div>
 
     <div id="stab-general" class="settings-panel active">
@@ -599,6 +600,38 @@
         <div class="toggle-list">
           <div class="toggle-item"><div><strong>New Orders</strong><p class="text-muted">Alert when a new order comes in</p></div><label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
           <div class="toggle-item"><div><strong>Low Stock</strong><p class="text-muted">Alert when stock falls below 5 units</p></div><label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="stab-integrations" class="settings-panel">
+      <div class="settings-card">
+        <h3>WhatsApp Integration</h3>
+        <p class="text-muted" style="margin-bottom:16px">Send customer data to Google Sheet for WhatsApp Business API (abandoned cart, order status, offers, OTP)</p>
+        <div class="form-group">
+          <label>Google Apps Script URL (WhatsApp)</label>
+          <input type="url" id="whatsappSheetUrl" placeholder="https://script.google.com/macros/s/.../exec">
+          <small class="text-muted">Deploy this Apps Script: https://github.com/your-repo/whatsapp-apps-script</small>
+        </div>
+        <button class="btn-primary" id="saveWhatsappIntegrationBtn">Save WhatsApp Settings</button>
+      </div>
+
+      <div class="settings-card" style="margin-top:20px">
+        <h3>Email Integration</h3>
+        <p class="text-muted" style="margin-bottom:16px">Send emails via Google Apps Script (order confirmations, shipping updates, newsletters)</p>
+        <div class="form-group">
+          <label>Google Apps Script URL (Email)</label>
+          <input type="url" id="emailSheetUrl" placeholder="https://script.google.com/macros/s/.../exec">
+          <small class="text-muted">Deploy this Apps Script: https://github.com/your-repo/email-apps-script</small>
+        </div>
+        <button class="btn-primary" id="saveEmailIntegrationBtn">Save Email Settings</button>
+      </div>
+
+      <div class="settings-card" style="margin-top:20px">
+        <h3>Test Integrations</h3>
+        <div style="display:flex;gap:10px;margin-top:10px">
+          <button class="btn-secondary btn-sm" id="testWhatsappBtn">📱 Test WhatsApp</button>
+          <button class="btn-secondary btn-sm" id="testEmailBtn">📧 Test Email</button>
         </div>
       </div>
     </div>
