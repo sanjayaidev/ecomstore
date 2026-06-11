@@ -324,7 +324,7 @@
       } else if (!authToken && authNavItem && loginNavItem) {
         // User is not logged in - show login button, change Account to Login/Register
         loginNavItem.style.display = 'block';
-        authNavItem.innerHTML = '<a href="pages/account.html?action=register"><i class="fas fa-user-plus"></i> Register</a>';
+        authNavItem.innerHTML = '<a href="#" onclick="showLoginModal(); return false;"><i class="fas fa-user-plus"></i> Register</a>';
       }
     }
 
