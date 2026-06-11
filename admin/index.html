@@ -672,9 +672,9 @@
         <div class="form-group">
           <label>Product Images (URLs)</label>
           <div class="image-inputs">
-            <div class="image-input-row"><span class="img-num">1</span><input type="text" id="image1" placeholder="https://…/image1.jpg"><span class="img-badge primary-badge">Primary</span></div>
-            <div class="image-input-row"><span class="img-num">2</span><input type="text" id="image2" placeholder="https://…/image2.jpg"></div>
-            <div class="image-input-row"><span class="img-num">3</span><input type="text" id="image3" placeholder="https://…/image3.jpg"></div>
+            <div class="image-input-row"><span class="img-num">1</span><input type="text" id="image1" placeholder="https://…/image1.jpg or /images/..."><span class="img-badge primary-badge">Primary</span></div>
+            <div class="image-input-row"><span class="img-num">2</span><input type="text" id="image2" placeholder="https://…/image2.jpg or /images/..."></div>
+            <div class="image-input-row"><span class="img-num">3</span><input type="text" id="image3" placeholder="https://…/image3.jpg or /images/..."></div>
           </div>
         </div>
         <div class="form-group">
@@ -714,7 +714,7 @@
       <input type="hidden" id="categoryId">
       <div class="form-group"><label>Name *</label><input type="text" id="categoryName" required placeholder="e.g. Saree"></div>
       <div class="form-group"><label>Slug *</label><input type="text" id="categorySlug" required placeholder="e.g. saree"></div>
-      <div class="form-group"><label>Image URL</label><input type="text" id="categoryImageUrl" placeholder="/images/categories/saree.jpg"></div>
+      <div class="form-group"><label>Image URL or Path</label><input type="text" id="categoryImageUrl" placeholder="/images/categories/saree.jpg or https://..."></div>
       <div class="modal-actions">
         <button type="button" class="btn-secondary" id="cancelCategoryModal">Cancel</button>
         <button type="submit" class="btn-primary">Save</button>
@@ -759,7 +759,7 @@
         <input type="hidden" name="edit_id">
         <div class="form-group"><label>Title *</label><input type="text" name="title" required placeholder="Summer Collection 2024"></div>
         <div class="form-group"><label>Subtitle</label><input type="text" name="subtitle" placeholder="Discover the latest trends"></div>
-        <div class="form-group"><label>Image URL</label><input type="url" name="image_url" placeholder="https://…/banner.jpg"></div>
+        <div class="form-group"><label>Image URL or Path</label><input type="text" name="image_url" placeholder="https://…/banner.jpg or /images/..."></div>
         <div class="form-row">
           <div class="form-group"><label>CTA Text</label><input type="text" name="cta_text" placeholder="Shop Now"></div>
           <div class="form-group"><label>CTA Link</label><input type="text" name="cta_link" placeholder="/products"></div>
@@ -800,7 +800,7 @@
           <div class="form-group"><label>Icon Emoji</label><input type="text" name="icon_emoji" value="📂" maxlength="5"></div>
           <div class="form-group"><label>Display Order</label><input type="number" name="display_order" value="0" min="0"></div>
         </div>
-        <div class="form-group"><label>Image URL</label><input type="url" name="image_url" placeholder="https://…"></div>
+        <div class="form-group"><label>Image URL or Path</label><input type="text" name="image_url" placeholder="https://… or /images/..."></div>
         <div class="form-group"><label>Description</label><textarea name="description" rows="2" placeholder="Short description…"></textarea></div>
         <div class="form-group" style="display:flex;align-items:center;gap:10px">
           <label class="toggle-switch"><input type="checkbox" name="is_active" checked><span class="toggle-slider"></span></label>
@@ -932,7 +932,7 @@
       <div class="form-group"><label>Name *</label><input type="text" id="collectionName" name="name" required placeholder="Summer Collection"></div>
       <div class="form-group"><label>Slug</label><input type="text" id="collectionSlug" name="slug" placeholder="summer-collection"></div>
       <div class="form-group"><label>Description</label><textarea id="collectionDescription" name="description" rows="3" placeholder="Curated summer products"></textarea></div>
-      <div class="form-group"><label>Image URL</label><input type="text" id="collectionImageUrl" name="image_url" placeholder="/images/collections/summer.jpg"></div>
+      <div class="form-group"><label>Image URL or Path</label><input type="text" id="collectionImageUrl" name="image_url" placeholder="/images/collections/summer.jpg or https://..."></div>
       <div class="form-group" style="display:flex;align-items:center;gap:10px">
         <label class="toggle-switch"><input type="checkbox" id="collectionIsVisible" name="is_visible" checked><span class="toggle-slider"></span></label>
         <span>Visible</span>
