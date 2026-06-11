@@ -103,6 +103,8 @@
     <div class="logo">🛍️ EcomStore</div>
   </div>
   <div class="admin-header__right">
+    <a href="/admin/layout-editor.html" target="_blank" class="btn-editor-topbar" title="Layout Designer">🎨 Layout Designer</a>
+    <a href="/admin/live-editor.html" target="_blank" class="btn-editor-topbar" title="Live Site Editor">🚀 Live Editor</a>
     <div class="header-search">
       <span class="search-icon">🔍</span>
       <input type="text" placeholder="Search…" id="globalSearch">
@@ -166,12 +168,6 @@
     <span class="nav-group-label">Content</span>
     <a class="nav-item" data-section="cms">
       <span class="nav-icon">🎨</span> Homepage CMS
-    </a>
-    <a class="nav-item" data-section="layout-editor">
-      <span class="nav-icon">🖼️</span> Visual Layout Editor
-    </a>
-    <a class="nav-item" href="/admin/live-editor.html" target="_blank">
-      <span class="nav-icon">🚀</span> Live Site Editor
     </a>
 
     <span class="nav-group-label">Insights</span>
@@ -566,16 +562,6 @@
         <thead><tr><th>Code</th><th>Type</th><th>Value</th><th>Min Purchase</th><th>Usage</th><th>Valid Until</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody id="couponsTableBody"><tr><td colspan="8" class="text-center">Loading…</td></tr></tbody>
       </table>
-    </div>
-  </section>
-
-  <!-- ── LAYOUT EDITOR (iframe wrapper) ── -->
-  <section id="layout-editor" class="admin-section">
-    <div class="section-header">
-      <div><h1>Visual Layout Editor</h1><p class="text-muted">Drag-and-drop editor for homepage layout</p></div>
-    </div>
-    <div class="settings-card" style="padding:0;overflow:hidden">
-      <iframe src="/admin/layout-editor.html" style="width:100%;height:calc(100vh - 250px);border:none"></iframe>
     </div>
   </section>
 

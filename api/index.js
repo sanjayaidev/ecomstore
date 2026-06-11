@@ -351,6 +351,192 @@ async function handlePayment(req, res, sql, params) {
   return json(res, 404, { error: 'Payment endpoint not found' });
 }
 
+// ============ CASHFREE PAYMENT HANDLERS ============
+
+function cashfreeAuth() {
+  const appId = process.env.CASHFREE_APP_ID;
+  const secretKey = process.env.CASHFREE_SECRET_KEY;
+  if (!appId || !secretKey) throw new Error('Cashfree credentials not configured');
+  return { appId, secretKey };
+}
+
+async function cashfreeRequest(path, method = 'GET', body = null) {
+  const { appId, secretKey } = cashfreeAuth();
+  const opts = {
+    method,
+    headers: { 
+      'Content-Type': 'application/json',
+      'x-api-version': '2023-12-21',
+      'x-client-id': appId,
+      'x-client-secret': secretKey
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(`https://sandbox.cashfree.com${path}`, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || `Cashfree error ${res.status}`);
+  return data;
+}
+
+function verifyCashfreeSignature(orderId, paymentId, signature) {
+  const expected = crypto
+    .createHmac('sha256', process.env.CASHFREE_SECRET_KEY)
+    .update(`${orderId}${paymentId}`)
+    .digest('hex');
+  try {
+    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+  } catch { return false; }
+}
+
+async function handleCashfreePayment(req, res, sql, params) {
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
+  const pathname = (req.url || '').split('?')[0];
+  const subRoute = pathname.replace(/^.*\/cashfree/, '') || '/';
+
+  // ── GET /api/payment/cashfree/config ── returns app ID
+  if (req.method === 'GET' && subRoute === '/config') {
+    const appId = process.env.CASHFREE_APP_ID;
+    if (!appId) return json(res, 500, { error: 'Cashfree not configured' });
+    return json(res, 200, { appId, environment: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox' });
+  }
+
+  // ── POST /api/payment/cashfree/create ── create Cashfree order
+  if (req.method === 'POST' && (subRoute === '/create' || subRoute === '/')) {
+    const body = await parseBody(req);
+    const {
+      customer_name, customer_email, customer_phone,
+      customer_address, items
+    } = body || {};
+
+    if (!customer_email || !customer_email.includes('@'))
+      return json(res, 400, { error: 'Valid email required' });
+    if (!customer_phone)
+      return json(res, 400, { error: 'Phone number required' });
+    if (!Array.isArray(items) || !items.length)
+      return json(res, 400, { error: 'Cart is empty' });
+
+    for (const item of items) {
+      if (!item.product_id || !item.quantity || item.quantity < 1)
+        return json(res, 400, { error: 'Invalid cart item' });
+    }
+
+    try {
+      const { subtotal, tax, shipping, total } = await calculateServerTotal(sql, items);
+
+      // Create DB order first (status: 'created' = awaiting payment)
+      const [dbOrder] = await sql`
+        INSERT INTO orders (customer_name, customer_email, customer_phone, customer_address, total, payment_method, status, created_at, updated_at)
+        VALUES (${customer_name || null}, ${customer_email}, ${customer_phone}, ${customer_address || null}, ${total}, 'online', 'created', NOW(), NOW())
+        RETURNING id`;
+
+      for (const item of items) {
+        const [prod] = await sql`SELECT price, discount_price FROM products WHERE id = ${item.product_id}`;
+        const unit = Number(prod.discount_price || prod.price);
+        await sql`INSERT INTO order_items (order_id, product_id, size, quantity, price) VALUES (${dbOrder.id}, ${item.product_id}, ${item.size || null}, ${item.quantity}, ${unit})`;
+      }
+
+      // Create Cashfree order
+      const cfOrder = await cashfreeRequest('/orders', 'POST', {
+        order_id: `CF-${dbOrder.id}-${Date.now()}`,
+        order_amount: total,
+        currency: 'INR',
+        customer_details: {
+          customer_id: `CUST-${dbOrder.id}`,
+          customer_name: customer_name || '',
+          customer_email: customer_email,
+          customer_phone: customer_phone
+        },
+        order_meta: {
+          return_url: `${process.env.BASE_URL || 'http://localhost:3000'}/pages/order-success.html?order_id=${dbOrder.id}&cf_order_id={order_id}`,
+          notify_webhook: `${process.env.BASE_URL || 'http://localhost:3000'}/api/payment/cashfree/webhook`
+        }
+      });
+
+      // Save Cashfree order ID for webhook lookup
+      await sql`UPDATE orders SET payment_reference = ${cfOrder.order_id}, updated_at = NOW() WHERE id = ${dbOrder.id}`;
+
+      return json(res, 200, {
+        cashfree_order_id: cfOrder.payment_session_id,
+        orderId: cfOrder.order_id,
+        amount: total,
+        currency: 'INR',
+        db_order_id: dbOrder.id,
+        breakdown: { subtotal, tax, shipping, total }
+      });
+    } catch (err) {
+      console.error('[cashfree/create]', err.message);
+      return json(res, 500, { error: err.message || 'Failed to create Cashfree payment order' });
+    }
+  }
+
+  // ── POST /api/payment/cashfree/verify ── verify payment after frontend success
+  if (req.method === 'POST' && subRoute === '/verify') {
+    const body = await parseBody(req);
+    const { cf_order_id, reference_id, payment_status, db_order_id } = body || {};
+
+    if (!cf_order_id || !reference_id || !db_order_id)
+      return json(res, 400, { error: 'Missing verification fields' });
+
+    try {
+      // Fetch order status from Cashfree
+      const cfOrderStatus = await cashfreeRequest(`/orders/${cf_order_id}/payments`, 'GET');
+      
+      const isPaid = payment_status === 'SUCCESS' || (cfOrderStatus.payments && cfOrderStatus.payments.some(p => p.payment_status === 'SUCCESS'));
+      
+      if (!isPaid) {
+        await sql`UPDATE orders SET status = 'payment_failed', updated_at = NOW() WHERE id = ${db_order_id}`;
+        return json(res, 400, { error: 'Payment not successful' });
+      }
+
+      await sql`
+        UPDATE orders
+        SET status = 'pending', payment_reference = ${cf_order_id}, updated_at = NOW()
+        WHERE id = ${db_order_id}`;
+
+      return json(res, 200, { success: true, order_id: db_order_id });
+    } catch (err) {
+      console.error('[cashfree/verify]', err.message);
+      return json(res, 500, { error: 'Verification error' });
+    }
+  }
+
+  // ── POST /api/payment/cashfree/webhook ── Cashfree server → server (backup confirmation)
+  if (req.method === 'POST' && subRoute === '/webhook') {
+    const rawBody = JSON.stringify(await parseBody(req));
+    const sig     = req.headers['x-cf-signature'];
+
+    if (!sig) {
+      console.warn('[cashfree webhook] Missing signature');
+      return json(res, 400, { error: 'Missing signature' });
+    }
+
+    let event;
+    try { event = JSON.parse(rawBody); } catch { return json(res, 400, { error: 'Bad JSON' }); }
+
+    const cfOrderId = event.order_id || event.data?.order_id;
+
+    try {
+      if (event.event === 'order.paid' || event.event === 'payment.success') {
+        await sql`
+          UPDATE orders SET status = 'pending', updated_at = NOW()
+          WHERE payment_reference = ${cfOrderId} AND status IN ('created', 'payment_failed')`;
+      }
+      if (event.event === 'payment.failed' || event.event === 'order.expired') {
+        await sql`
+          UPDATE orders SET status = 'payment_failed', updated_at = NOW()
+          WHERE payment_reference = ${cfOrderId} AND status = 'created'`;
+      }
+      return json(res, 200, { received: true });
+    } catch (err) {
+      console.error('[cashfree webhook]', err.message);
+      return json(res, 200, { received: true });
+    }
+  }
+
+  return json(res, 404, { error: 'Cashfree payment endpoint not found' });
+}
+
 // ============ AUTH HANDLERS ============
 async function handleAuth(req, res, pathParts) {
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -598,6 +784,8 @@ export default async function handler(req, res) {
       if (pathParts[1] === 'products') return handleProducts(req, res, sql, params);
       if (pathParts[1] === 'orders')   return handleOrders(req, res, sql, params);
       if (pathParts[1] === 'payment')  return handlePayment(req, res, sql, params);
+      // Cashfree payment routes under /api/payment/cashfree/*
+      if (pathParts[1] === 'payment' && pathParts[2] === 'cashfree') return handleCashfreePayment(req, res, sql, params);
       if (pathParts[1] === 'auth')     return handleAuth(req, res, pathParts);
       if (pathParts[1] === 'admin')    return handleAdmin(req, res, sql, pathParts);
       if (pathParts[1] === 'cms')      return handleCMS(req, res, sql, pathParts, params);

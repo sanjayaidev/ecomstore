@@ -7,6 +7,8 @@
   <link rel="stylesheet" href="/css/style.css" />
   <!-- Razorpay Checkout SDK -->
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <!-- Cashfree Checkout SDK -->
+  <script src="https://sdk.cashfree.com/js/ui-kit/1.0.2/cashfree.js"></script>
   <style>
     .checkout-container { max-width: 960px; margin: 40px auto; padding: 0 20px; }
     .checkout-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
@@ -193,10 +195,15 @@
             <div class="form-group">
               <label>Payment Method *</label>
               <div class="payment-methods">
-                <div class="pay-option selected" data-method="online" onclick="selectPayment('online')">
+                <div class="pay-option selected" data-method="razorpay" onclick="selectPayment('razorpay')">
                   <span class="pay-icon">💳</span>
-                  Online Payment
+                  Razorpay
                   <div style="font-size:0.7rem;color:#6b7280;margin-top:2px">UPI · Cards · NetBanking</div>
+                </div>
+                <div class="pay-option" data-method="cashfree" onclick="selectPayment('cashfree')">
+                  <span class="pay-icon">🏦</span>
+                  Cashfree
+                  <div style="font-size:0.7rem;color:#6b7280;margin-top:2px">UPI · Cards · Wallets</div>
                 </div>
                 <div class="pay-option" data-method="cod" onclick="selectPayment('cod')">
                   <span class="pay-icon">💵</span>
@@ -268,7 +275,7 @@
     // ─────────────────────────────────────────────
     // STATE
     // ─────────────────────────────────────────────
-    let selectedPaymentMethod = 'online';
+    let selectedPaymentMethod = 'razorpay';
 
     // ─────────────────────────────────────────────
     // INIT
@@ -291,7 +298,15 @@
         el.classList.toggle('selected', el.dataset.method === method);
       });
       const btn = document.getElementById('btnLabel');
-      btn.textContent = method === 'cod' ? 'Place Order (COD)' : 'Pay Now';
+      if (method === 'cod') {
+        btn.textContent = 'Place Order (COD)';
+      } else if (method === 'razorpay') {
+        btn.textContent = 'Pay with Razorpay';
+      } else if (method === 'cashfree') {
+        btn.textContent = 'Pay with Cashfree';
+      } else {
+        btn.textContent = 'Pay Now';
+      }
     }
 
     // ─────────────────────────────────────────────
@@ -367,8 +382,12 @@
 
       if (selectedPaymentMethod === 'cod') {
         await placeCODOrder(payload);
+      } else if (selectedPaymentMethod === 'razorpay') {
+        await placeRazorpayOrder(payload);
+      } else if (selectedPaymentMethod === 'cashfree') {
+        await placeCashfreeOrder(payload);
       } else {
-        await placeOnlineOrder(payload);
+        await placeRazorpayOrder(payload); // Default to Razorpay
       }
     }
 
@@ -413,7 +432,7 @@
     // ─────────────────────────────────────────────
     // RAZORPAY ONLINE FLOW
     // ─────────────────────────────────────────────
-    async function placeOnlineOrder(payload) {
+    async function placeRazorpayOrder(payload) {
       try {
         // Step 1 — create order on server (validates prices, creates DB row)
         const createRes = await fetch('/api/payment/create', {
@@ -506,6 +525,90 @@
         });
 
         rzp.open();
+
+      } catch (err) {
+        showError(err.message);
+        setLoading(false);
+      }
+    }
+
+    // ─────────────────────────────────────────────
+    // CASHFREE ONLINE FLOW
+    // ─────────────────────────────────────────────
+    async function placeCashfreeOrder(payload) {
+      try {
+        // Step 1 — create order on server for Cashfree
+        const createRes = await fetch('/api/payment/cashfree/create', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(payload)
+        });
+        const orderData = await createRes.json();
+        if (!createRes.ok) throw new Error(orderData.error || 'Could not initiate Cashfree payment');
+
+        const {
+          cashfree_order_id,
+          orderId,
+          amount,
+          db_order_id,
+          breakdown
+        } = orderData;
+
+        // Update summary with server-verified totals
+        if (breakdown) {
+          document.getElementById('sumSubtotal').textContent = '₹' + breakdown.subtotal.toLocaleString('en-IN');
+          document.getElementById('sumShipping').innerHTML   = breakdown.shipping === 0
+            ? '<span class="free">FREE</span>'
+            : '₹' + breakdown.shipping.toLocaleString('en-IN');
+          document.getElementById('sumTax').textContent      = '₹' + breakdown.tax.toLocaleString('en-IN');
+          document.getElementById('sumTotal').textContent    = '₹' + breakdown.total.toLocaleString('en-IN');
+        }
+
+        setLoading(false);
+
+        // Step 2 — Initialize Cashfree Checkout
+        if (typeof Cashfree === 'undefined') {
+          throw new Error('Cashfree SDK failed to load. Check your internet connection and try again.');
+        }
+
+        const checkoutOptions = {
+          paymentSessionId: cashfree_order_id,
+          redirectTarget: '_modal',
+          onSuccess: async (data) => {
+            setLoading(true);
+            try {
+              // Step 3 — Verify payment on server
+              const verifyRes = await fetch('/api/payment/cashfree/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  cf_order_id: cashfree_order_id,
+                  reference_id: data.reference_id,
+                  payment_status: data.paymentStatus,
+                  db_order_id
+                })
+              });
+              const verifyData = await verifyRes.json();
+              if (!verifyRes.ok) throw new Error(verifyData.error || 'Payment verification failed');
+
+              cartManager.clearCart();
+              showSuccess(db_order_id, payload.customer_email);
+            } catch (err) {
+              showError('Payment verification failed: ' + err.message + '. Please contact support with Order ID: ' + db_order_id);
+              setLoading(false);
+            }
+          },
+          onFailure: (data) => {
+            showError('Payment failed: ' + (data.message || 'Unknown error'));
+            setLoading(false);
+          },
+          onClose: () => {
+            showError('Payment cancelled. You can try again.');
+            setLoading(false);
+          }
+        };
+
+        Cashfree.checkout(checkoutOptions);
 
       } catch (err) {
         showError(err.message);
