@@ -31,9 +31,9 @@
           <ul class="nav-links">
             <li><a href="/" class="active">Home</a></li>
             <li><a href="pages/products.html">Shop</a></li>
-            <li><a href="pages/account.html"><i class="fas fa-user"></i> Account</a></li>
+            <li id="auth-nav-item"><a href="pages/account.html"><i class="fas fa-user"></i> Account</a></li>
             <li><a href="pages/cart.html">Cart <span id="cart-count" class="cart-badge">0</span></a></li>
-            <li><a href="#login-modal" class="btn-login mobile-hide" onclick="showLoginModal()"><i class="fas fa-sign-in-alt"></i> Login</a></li>
+            <li id="login-nav-item"><a href="#login-modal" class="btn-login mobile-hide" onclick="showLoginModal()"><i class="fas fa-sign-in-alt"></i> Login</a></li>
             <li><a href="#" class="mobile-menu-toggle"><i class="fas fa-bars"></i></a></li>
           </ul>
         </div>
@@ -216,15 +216,55 @@
   <script src="js/productRenderer.js"></script>
   <script src="js/cartManager.js"></script>
   <script>
-    const sliderConfig = {
+    // Slider configuration - will be populated from API
+    let sliderConfig = {
       autoPlay: true,
       autoPlayDelay: 5000,
-      slides: [
-        { image: 'images/10.png', title: 'New Collection 2026', subtitle: 'Discover the latest trends in fashion', ctaText: 'Shop Now', ctaLink: 'pages/products.html?sort=newest', gradient: 'linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%)' },
-        { image: 'images/11.png', title: 'Summer Sale', subtitle: 'Up to 70% off on selected items', ctaText: 'Grab Deals', ctaLink: 'pages/products.html', gradient: 'linear-gradient(135deg, rgba(240, 147, 251, 0.9) 0%, rgba(245, 87, 108, 0.9) 100%)' },
-        { image: 'images/12.png', title: 'Traditional Elegance', subtitle: 'Beautiful sarees for every occasion', ctaText: 'Explore Sarees', ctaLink: 'pages/products.html?category=saree', gradient: 'linear-gradient(135deg, rgba(79, 172, 254, 0.9) 0%, rgba(0, 242, 254, 0.9) 100%)' }
-      ]
+      slides: []
     };
+
+    // Fetch slider data from CMS API
+    async function loadSliderData() {
+      try {
+        const response = await fetch('/api/cms/sliders?active=true');
+        if (response.ok) {
+          const sliders = await response.json();
+          if (sliders && sliders.length > 0) {
+            sliderConfig.slides = sliders.map(slide => ({
+              image: slide.image_url || 'images/10.png',
+              title: slide.title || 'Welcome',
+              subtitle: slide.subtitle || '',
+              ctaText: slide.cta_text || 'Shop Now',
+              ctaLink: slide.cta_link || 'pages/products.html',
+              gradient: slide.bg_color ? `linear-gradient(135deg, ${slide.bg_color}dd 0%, ${slide.bg_color}99 100%)` : 'linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%)'
+            }));
+          } else {
+            // Default fallback slides if no CMS data
+            sliderConfig.slides = [
+              { image: 'images/10.png', title: 'New Collection 2026', subtitle: 'Discover the latest trends in fashion', ctaText: 'Shop Now', ctaLink: 'pages/products.html?sort=newest', gradient: 'linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%)' },
+              { image: 'images/11.png', title: 'Summer Sale', subtitle: 'Up to 70% off on selected items', ctaText: 'Grab Deals', ctaLink: 'pages/products.html', gradient: 'linear-gradient(135deg, rgba(240, 147, 251, 0.9) 0%, rgba(245, 87, 108, 0.9) 100%)' },
+              { image: 'images/12.png', title: 'Traditional Elegance', subtitle: 'Beautiful sarees for every occasion', ctaText: 'Explore Sarees', ctaLink: 'pages/products.html?category=saree', gradient: 'linear-gradient(135deg, rgba(79, 172, 254, 0.9) 0%, rgba(0, 242, 254, 0.9) 100%)' }
+            ];
+          }
+        } else {
+          // Fallback on API error
+          sliderConfig.slides = [
+            { image: 'images/10.png', title: 'New Collection 2026', subtitle: 'Discover the latest trends in fashion', ctaText: 'Shop Now', ctaLink: 'pages/products.html?sort=newest', gradient: 'linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%)' },
+            { image: 'images/11.png', title: 'Summer Sale', subtitle: 'Up to 70% off on selected items', ctaText: 'Grab Deals', ctaLink: 'pages/products.html', gradient: 'linear-gradient(135deg, rgba(240, 147, 251, 0.9) 0%, rgba(245, 87, 108, 0.9) 100%)' },
+            { image: 'images/12.png', title: 'Traditional Elegance', subtitle: 'Beautiful sarees for every occasion', ctaText: 'Explore Sarees', ctaLink: 'pages/products.html?category=saree', gradient: 'linear-gradient(135deg, rgba(79, 172, 254, 0.9) 0%, rgba(0, 242, 254, 0.9) 100%)' }
+          ];
+        }
+      } catch (error) {
+        console.error('Failed to load slider data:', error);
+        // Use default slides on error
+        sliderConfig.slides = [
+          { image: 'images/10.png', title: 'New Collection 2026', subtitle: 'Discover the latest trends in fashion', ctaText: 'Shop Now', ctaLink: 'pages/products.html?sort=newest', gradient: 'linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%)' },
+          { image: 'images/11.png', title: 'Summer Sale', subtitle: 'Up to 70% off on selected items', ctaText: 'Grab Deals', ctaLink: 'pages/products.html', gradient: 'linear-gradient(135deg, rgba(240, 147, 251, 0.9) 0%, rgba(245, 87, 108, 0.9) 100%)' },
+          { image: 'images/12.png', title: 'Traditional Elegance', subtitle: 'Beautiful sarees for every occasion', ctaText: 'Explore Sarees', ctaLink: 'pages/products.html?category=saree', gradient: 'linear-gradient(135deg, rgba(79, 172, 254, 0.9) 0%, rgba(0, 242, 254, 0.9) 100%)' }
+        ];
+      }
+      initSlider();
+    }
 
     let currentSlide = 0, slideInterval;
 
@@ -256,11 +296,12 @@
     function handleNewsletter(e) { e.preventDefault(); alert('Thank you for subscribing!'); e.target.reset(); }
 
     document.addEventListener('DOMContentLoaded', () => {
-      initSlider();
+      loadSliderData(); // Load slider data from CMS API
       productRenderer.renderProducts('featured', { limit: 6, sort: 'newest' });
       productRenderer.renderProducts('trending', { limit: 4, sort: 'trending' });
       productRenderer.renderProducts('new-arrivals', { limit: 8, sort: 'newest' });
       updateCartCount();
+      updateAuthUI(); // Update auth UI on page load
       document.querySelectorAll('.category-card').forEach(card => {
         card.addEventListener('click', () => window.location.href = `pages/products.html?category=${card.dataset.category}`);
       });
@@ -270,8 +311,32 @@
     function updateCartCount() { document.getElementById('cart-count').textContent = cartManager.getCart().length; }
     window.addEventListener('cartUpdated', updateCartCount);
 
+    // Auth state management - show/hide login button based on auth status
+    function updateAuthUI() {
+      const authToken = localStorage.getItem('authToken');
+      const authNavItem = document.getElementById('auth-nav-item');
+      const loginNavItem = document.getElementById('login-nav-item');
+      
+      if (authToken && authNavItem && loginNavItem) {
+        // User is logged in - hide login button, keep Account link
+        loginNavItem.style.display = 'none';
+        authNavItem.innerHTML = '<a href="pages/account.html"><i class="fas fa-user"></i> My Account</a>';
+      } else if (!authToken && authNavItem && loginNavItem) {
+        // User is not logged in - show login button, change Account to Login/Register
+        loginNavItem.style.display = 'block';
+        authNavItem.innerHTML = '<a href="pages/account.html?action=register"><i class="fas fa-user-plus"></i> Register</a>';
+      }
+    }
+
     // Login Modal Functions
     function showLoginModal() {
+      // Check if already logged in
+      const authToken = localStorage.getItem('authToken');
+      if (authToken) {
+        window.location.href = 'pages/account.html';
+        return;
+      }
+      
       const modal = document.createElement('div');
       modal.id = 'login-modal';
       modal.className = 'modal-overlay';
@@ -319,6 +384,7 @@
           localStorage.setItem('authToken', data.token);
           localStorage.setItem('customer', JSON.stringify(data.customer));
           closeLoginModal();
+          updateAuthUI();
           window.location.href = 'pages/account.html';
         } else {
           alert(data.error || 'Login failed. Please check your credentials.');

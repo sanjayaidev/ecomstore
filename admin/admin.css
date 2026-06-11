@@ -97,6 +97,26 @@
 
 .admin-header__right { display: flex; align-items: center; gap: 12px; }
 
+/* Editor Top Bar Buttons */
+.btn-editor-topbar {
+  padding: 7px 14px;
+  background: var(--bg-white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.btn-editor-topbar:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(0, 128, 96, 0.2);
+}
+
 /* Header Search */
 .header-search {
   position: relative;

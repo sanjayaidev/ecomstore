@@ -94,9 +94,10 @@ CREATE TABLE IF NOT EXISTS cms_hero_sliders (
     cta_text VARCHAR(50),
     cta_link VARCHAR(255),
     bg_color VARCHAR(7),
-    order_index INT DEFAULT 0,
+    display_order INT DEFAULT 0,
     is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS cms_categories (
@@ -105,9 +106,10 @@ CREATE TABLE IF NOT EXISTS cms_categories (
     slug VARCHAR(100) UNIQUE NOT NULL,
     image_url TEXT,
     description TEXT,
-    order_index INT DEFAULT 0,
+    display_order INT DEFAULT 0,
     is_visible BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS cms_offer_banners (
@@ -120,8 +122,10 @@ CREATE TABLE IF NOT EXISTS cms_offer_banners (
     text_color VARCHAR(7),
     start_date TIMESTAMP,
     end_date TIMESTAMP,
+    display_order INT DEFAULT 0,
     is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS cms_product_sections (
@@ -132,9 +136,10 @@ CREATE TABLE IF NOT EXISTS cms_product_sections (
     product_ids INT[],
     max_products INT DEFAULT 8,
     bg_color VARCHAR(7),
-    order_index INT DEFAULT 0,
+    display_order INT DEFAULT 0,
     is_visible BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS cms_trust_features (
@@ -142,9 +147,10 @@ CREATE TABLE IF NOT EXISTS cms_trust_features (
     icon VARCHAR(100),
     title VARCHAR(100),
     description TEXT,
-    order_index INT DEFAULT 0,
+    display_order INT DEFAULT 0,
     is_visible BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS cms_newsletter_settings (
