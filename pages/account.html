@@ -860,8 +860,36 @@
         let offers = [];
         let recommendedProducts = [];
 
+        // Check Authentication on Page Load
+        function checkAuth() {
+            const authToken = localStorage.getItem('authToken');
+            const customerData = localStorage.getItem('customer');
+            
+            if (!authToken && !customerData) {
+                // Not logged in, show login prompt
+                return false;
+            }
+            
+            if (customerData) {
+                try {
+                    customer = JSON.parse(customerData);
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            }
+            
+            return false;
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
+            // Check authentication first
+            if (!checkAuth()) {
+                showLoginPrompt();
+                return;
+            }
+            
             await loadCustomerData();
             await loadOrders();
             await loadOffers();
@@ -872,20 +900,24 @@
         // Load Customer Data from API
         async function loadCustomerData() {
             try {
-                // Get user from session/localStorage
-                const userId = localStorage.getItem('userId');
-                if (!userId) {
-                    // Show login prompt or redirect
+                // Get user from localStorage (set during login)
+                const customerData = localStorage.getItem('customer');
+                if (!customerData) {
                     showLoginPrompt();
                     return;
                 }
                 
-                const response = await fetch(`${API_BASE}/customers/${userId}`);
+                const storedCustomer = JSON.parse(customerData);
+                
+                // Fetch fresh data from API
+                const response = await fetch(`${API_BASE}/customers/${storedCustomer.id}`);
                 if (response.ok) {
                     customer = await response.json();
                     renderCustomerData();
                 } else {
-                    showLoginPrompt();
+                    // Use stored data as fallback
+                    customer = storedCustomer;
+                    renderCustomerData();
                 }
             } catch (error) {
                 console.error('Error loading customer data:', error);

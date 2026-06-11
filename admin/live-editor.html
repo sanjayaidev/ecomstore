@@ -517,6 +517,10 @@
                 <i class="fas fa-eye"></i>
                 Preview
             </button>
+            <button class="btn-editor btn-secondary" onclick="viewLiveSite()">
+                <i class="fas fa-external-link-alt"></i>
+                View Live
+            </button>
             <button class="btn-editor btn-primary" onclick="publishChanges()" id="publishBtn" disabled>
                 <i class="fas fa-upload"></i>
                 Publish
@@ -959,6 +963,19 @@
                 cart: '/pages/cart.html',
                 checkout: '/pages/checkout.html'
             };
+            window.open(pageUrls[currentPage] || '/', '_blank');
+        };
+
+        // View Live Site (opens actual live site in new tab)
+        window.viewLiveSite = function() {
+            const pageUrls = {
+                homepage: '/',
+                product: '/pages/product.html',
+                collection: '/pages/products.html',
+                cart: '/pages/cart.html',
+                checkout: '/pages/checkout.html'
+            };
+            // Open without editor=true parameter to show live version
             window.open(pageUrls[currentPage] || '/', '_blank');
         };
 

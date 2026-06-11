@@ -31,7 +31,9 @@
           <ul class="nav-links">
             <li><a href="/" class="active">Home</a></li>
             <li><a href="pages/products.html">Shop</a></li>
+            <li><a href="pages/account.html"><i class="fas fa-user"></i> Account</a></li>
             <li><a href="pages/cart.html">Cart <span id="cart-count" class="cart-badge">0</span></a></li>
+            <li><a href="#login-modal" class="btn-login mobile-hide" onclick="showLoginModal()"><i class="fas fa-sign-in-alt"></i> Login</a></li>
             <li><a href="#" class="mobile-menu-toggle"><i class="fas fa-bars"></i></a></li>
           </ul>
         </div>
@@ -267,6 +269,65 @@
 
     function updateCartCount() { document.getElementById('cart-count').textContent = cartManager.getCart().length; }
     window.addEventListener('cartUpdated', updateCartCount);
+
+    // Login Modal Functions
+    function showLoginModal() {
+      const modal = document.createElement('div');
+      modal.id = 'login-modal';
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal-content">
+          <button class="modal-close" onclick="closeLoginModal()">&times;</button>
+          <h2>Welcome Back</h2>
+          <form id="login-form" onsubmit="handleLogin(event)">
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="login-email" required placeholder="Enter your email">
+            </div>
+            <div class="form-group">
+              <label>Password</label>
+              <input type="password" id="login-password" required placeholder="Enter your password">
+            </div>
+            <button type="submit" class="btn-primary btn-full">Login</button>
+          </form>
+          <p class="modal-footer">Don't have an account? <a href="pages/account.html?action=register">Register here</a></p>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      modal.style.display = 'flex';
+    }
+
+    function closeLoginModal() {
+      const modal = document.getElementById('login-modal');
+      if (modal) modal.remove();
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+      
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        if (response.ok && data.token) {
+          localStorage.setItem('authToken', data.token);
+          localStorage.setItem('customer', JSON.stringify(data.customer));
+          closeLoginModal();
+          window.location.href = 'pages/account.html';
+        } else {
+          alert(data.error || 'Login failed. Please check your credentials.');
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        alert('An error occurred. Please try again.');
+      }
+    }
   </script>
 </body>
 </html>
