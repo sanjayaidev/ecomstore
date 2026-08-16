@@ -1,6 +1,7 @@
 // api/index.js - Unified API Router (Single Serverless Function)
 import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import {
   handleCoupons,
   validateCoupon,
@@ -546,17 +547,105 @@ async function handleCashfreePayment(req, res, sql, params) {
   return json(res, 404, { error: 'Cashfree payment endpoint not found' });
 }
 
+// ============ PASSWORD HELPERS ============
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+  return `${salt}:${hash}`;
+}
+
+function verifyPassword(password, stored) {
+  if (!stored || !stored.includes(':')) return false;
+  const [salt, hash] = stored.split(':');
+  const hashBuffer = Buffer.from(hash, 'hex');
+  const suppliedBuffer = crypto.scryptSync(password, salt, 64);
+  if (hashBuffer.length !== suppliedBuffer.length) return false;
+  return crypto.timingSafeEqual(hashBuffer, suppliedBuffer);
+}
+
+// Makes sure the `users` table (and password_hash column) exists.
+// Safe to run on every request — no-op once the table is there.
+async function ensureUsersTable(sql) {
+  await sql`
+    CREATE TABLE IF NOT EXISTS users (
+      id            SERIAL PRIMARY KEY,
+      name          VARCHAR(255) NOT NULL,
+      email         VARCHAR(255) UNIQUE NOT NULL,
+      password_hash VARCHAR(255) NOT NULL,
+      phone         VARCHAR(20),
+      address       TEXT,
+      city          VARCHAR(100),
+      pincode       VARCHAR(20),
+      created_at    TIMESTAMP DEFAULT NOW(),
+      updated_at    TIMESTAMP DEFAULT NOW()
+    )
+  `;
+  // Covers the case where an older `users` table already existed without this column
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)`;
+}
+
 // ============ AUTH HANDLERS ============
-async function handleAuth(req, res, pathParts) {
+async function handleAuth(req, res, sql, pathParts) {
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // ── POST /api/auth/register ── customer sign-up
+  if (pathParts[2] === 'register') {
+    if (req.method !== 'POST') return json(res, 405, { error: 'Method Not Allowed' });
+    const body = await parseBody(req);
+    const { name, email, password, phone } = body;
+
+    if (!name || !email || !password) return json(res, 400, { error: 'Name, email and password are required' });
+    if (!email.includes('@')) return json(res, 400, { error: 'Valid email required' });
+    if (password.length < 6) return json(res, 400, { error: 'Password must be at least 6 characters' });
+
+    try {
+      await ensureUsersTable(sql);
+
+      const existing = await sql`SELECT id FROM users WHERE email = ${email.toLowerCase()}`;
+      if (existing.length) return json(res, 409, { error: 'An account with this email already exists' });
+
+      const password_hash = hashPassword(password);
+      const result = await sql`
+        INSERT INTO users (name, email, password_hash, phone, created_at, updated_at)
+        VALUES (${name}, ${email.toLowerCase()}, ${password_hash}, ${phone || null}, NOW(), NOW())
+        RETURNING id, name, email, phone, address, city, pincode, created_at`;
+
+      const customer = result[0];
+      const token = jwt.sign({ id: customer.id, email: customer.email, role: 'customer' }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      return json(res, 201, { success: true, token, customer });
+    } catch (err) {
+      console.error('[auth/register]', err.message);
+      return json(res, 500, { error: 'Registration failed' });
+    }
+  }
+
+  // ── POST /api/auth/login ── customer login
   if (pathParts[2] === 'login') {
     if (req.method !== 'POST') return json(res, 405, { error: 'Method Not Allowed' });
     const body = await parseBody(req);
     const { email, password } = body;
-    if (email === 'sanjay@mystore.com' && password === 'sanjay@123')
-      return json(res, 200, { success: true, token: 'test-' + Date.now(), user: { email, role: 'admin' } });
-    return json(res, 401, { error: 'Invalid credentials' });
+    if (!email || !password) return json(res, 400, { error: 'Email and password are required' });
+
+    try {
+      await ensureUsersTable(sql);
+
+      const users = await sql`
+        SELECT id, name, email, password_hash, phone, address, city, pincode, created_at
+        FROM users WHERE email = ${email.toLowerCase()}`;
+
+      if (!users.length || !verifyPassword(password, users[0].password_hash)) {
+        return json(res, 401, { error: 'Invalid credentials' });
+      }
+
+      const { password_hash, ...customer } = users[0];
+      const token = jwt.sign({ id: customer.id, email: customer.email, role: 'customer' }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      return json(res, 200, { success: true, token, customer });
+    } catch (err) {
+      console.error('[auth/login]', err.message);
+      return json(res, 500, { error: 'Login failed' });
+    }
   }
+
   return json(res, 404, { error: 'Auth endpoint not found' });
 }
 
@@ -880,10 +969,12 @@ export default async function handler(req, res) {
     if (pathParts[0] === 'api') {
       if (pathParts[1] === 'products') return handleProducts(req, res, sql, params);
       if (pathParts[1] === 'orders')   return handleOrders(req, res, sql, params);
-      if (pathParts[1] === 'payment')  return handlePayment(req, res, sql, params);
-      // Cashfree payment routes under /api/payment/cashfree/*
+      // Cashfree payment routes under /api/payment/cashfree/* — must be checked
+      // before the generic /api/payment/* route below, since that one matches
+      // on pathParts[1] alone and would otherwise swallow these requests first.
       if (pathParts[1] === 'payment' && pathParts[2] === 'cashfree') return handleCashfreePayment(req, res, sql, params);
-      if (pathParts[1] === 'auth')     return handleAuth(req, res, pathParts);
+      if (pathParts[1] === 'payment')  return handlePayment(req, res, sql, params);
+      if (pathParts[1] === 'auth')     return handleAuth(req, res, sql, pathParts);
       if (pathParts[1] === 'admin')    return handleAdmin(req, res, sql, pathParts);
       if (pathParts[1] === 'cms') {
         if (pathParts[2] === 'live-edits') {
@@ -951,8 +1042,13 @@ export default async function handler(req, res) {
       if (pathParts[1] === 'login') {
         if (req.method !== 'POST') return json(res, 405, { error: 'Method Not Allowed' });
         const body = await parseBody(req);
-        if (body.email === 'sanjay@mystore.com' && body.password === 'sanjay@123')
-          return json(res, 200, { success: true, token: 'test-' + Date.now(), user: { email: body.email, role: 'admin' } });
+        if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) {
+          return json(res, 500, { error: 'Admin credentials not configured' });
+        }
+        if (body.email === process.env.ADMIN_EMAIL && body.password === process.env.ADMIN_PASSWORD) {
+          const token = jwt.sign({ email: body.email, role: 'admin' }, process.env.JWT_SECRET, { expiresIn: '7d' });
+          return json(res, 200, { success: true, token, user: { email: body.email, role: 'admin' } });
+        }
         return json(res, 401, { error: 'Invalid credentials' });
       }
     }

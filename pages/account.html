@@ -886,7 +886,8 @@
         document.addEventListener('DOMContentLoaded', async () => {
             // Check authentication first
             if (!checkAuth()) {
-                showLoginPrompt();
+                const wantsRegister = new URLSearchParams(window.location.search).get('action') === 'register';
+                showAuthForms(wantsRegister ? 'register' : 'login');
                 return;
             }
             
@@ -926,15 +927,113 @@
         }
         
         function showLoginPrompt() {
+            showAuthForms('login');
+        }
+
+        // Renders inline Login / Register forms in place of the account content.
+        // mode: 'login' | 'register'
+        function showAuthForms(mode) {
             document.getElementById('customerName').textContent = 'Guest';
+            const isRegister = mode === 'register';
             document.querySelector('.account-content').innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-user-lock"></i>
-                    <h3>Please Login</h3>
-                    <p>Login to view your account details</p>
-                    <a href="../index.html" class="btn-primary" style="display: inline-block; margin-top: 20px;">Go to Home</a>
+                <div class="empty-state" style="max-width:420px;margin:0 auto;text-align:left;">
+                    <div style="text-align:center;margin-bottom:20px;">
+                        <i class="fas fa-user-lock"></i>
+                        <h3 style="margin-top:10px;">${isRegister ? 'Create Your Account' : 'Please Login'}</h3>
+                        <p>${isRegister ? 'Sign up to track orders and checkout faster' : 'Login to view your account details'}</p>
+                    </div>
+
+                    <div id="authError" class="login-error" style="display:none;color:#d82c0d;background:#fbeae5;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:14px;"></div>
+
+                    <form id="registerForm" onsubmit="handleRegister(event)" style="${isRegister ? '' : 'display:none;'}">
+                        <div class="form-group"><label>Full Name</label><input type="text" id="regName" required placeholder="Your name"></div>
+                        <div class="form-group"><label>Email</label><input type="email" id="regEmail" required placeholder="you@example.com"></div>
+                        <div class="form-group"><label>Phone</label><input type="tel" id="regPhone" placeholder="Optional"></div>
+                        <div class="form-group"><label>Password</label><input type="password" id="regPassword" required minlength="6" placeholder="At least 6 characters"></div>
+                        <button type="submit" class="btn-primary btn-full" style="width:100%;margin-top:8px;" id="registerBtn">Create Account</button>
+                    </form>
+
+                    <form id="loginForm2" onsubmit="handleAccountLogin(event)" style="${isRegister ? 'display:none;' : ''}">
+                        <div class="form-group"><label>Email</label><input type="email" id="loginEmail2" required placeholder="you@example.com"></div>
+                        <div class="form-group"><label>Password</label><input type="password" id="loginPassword2" required placeholder="Your password"></div>
+                        <button type="submit" class="btn-primary btn-full" style="width:100%;margin-top:8px;" id="loginBtn2">Login</button>
+                    </form>
+
+                    <p class="modal-footer" style="text-align:center;margin-top:16px;">
+                        ${isRegister
+                            ? `Already have an account? <a href="#" onclick="showAuthForms('login'); return false;">Login here</a>`
+                            : `Don't have an account? <a href="#" onclick="showAuthForms('register'); return false;">Register here</a>`}
+                    </p>
                 </div>
             `;
+        }
+
+        function setAuthError(message) {
+            const el = document.getElementById('authError');
+            if (!el) return;
+            if (!message) { el.style.display = 'none'; el.textContent = ''; return; }
+            el.textContent = message;
+            el.style.display = 'block';
+        }
+
+        async function handleAccountLogin(e) {
+            e.preventDefault();
+            setAuthError('');
+            const btn = document.getElementById('loginBtn2');
+            const email = document.getElementById('loginEmail2').value.trim();
+            const password = document.getElementById('loginPassword2').value;
+            btn.disabled = true; btn.textContent = 'Signing in…';
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await response.json();
+                if (response.ok && data.token) {
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('customer', JSON.stringify(data.customer));
+                    window.location.href = 'account.html';
+                } else {
+                    setAuthError(data.error || 'Login failed. Please check your credentials.');
+                    btn.disabled = false; btn.textContent = 'Login';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                setAuthError('Something went wrong. Please try again.');
+                btn.disabled = false; btn.textContent = 'Login';
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            setAuthError('');
+            const btn = document.getElementById('registerBtn');
+            const name = document.getElementById('regName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const phone = document.getElementById('regPhone').value.trim();
+            const password = document.getElementById('regPassword').value;
+            btn.disabled = true; btn.textContent = 'Creating account…';
+            try {
+                const response = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password, phone })
+                });
+                const data = await response.json();
+                if (response.ok && data.token) {
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('customer', JSON.stringify(data.customer));
+                    window.location.href = 'account.html';
+                } else {
+                    setAuthError(data.error || 'Registration failed. Please try again.');
+                    btn.disabled = false; btn.textContent = 'Create Account';
+                }
+            } catch (error) {
+                console.error('Register error:', error);
+                setAuthError('Something went wrong. Please try again.');
+                btn.disabled = false; btn.textContent = 'Create Account';
+            }
         }
         
         function renderCustomerData() {
