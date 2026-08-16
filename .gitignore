@@ -1,1 +1,16 @@
-(js/live-editor.js admin/live-editor.html index.html)
+# Environment / secrets — never commit real credentials
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+
+# OS / editor cruft
+.DS_Store
+*.log
+
+# Original (unclear-intent) entries kept as-is from the prior .gitignore
+js/live-editor.js
+admin/live-editor.html
+index.html

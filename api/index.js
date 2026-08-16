@@ -2,6 +2,7 @@
 import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
+import { verifyAdmin, unauthorizedResponse } from '../utils/lib/auth.js';
 import {
   handleCoupons,
   validateCoupon,
@@ -652,6 +653,9 @@ async function handleAuth(req, res, sql, pathParts) {
 // ============ ADMIN HANDLERS ============
 async function handleAdmin(req, res, sql, pathParts) {
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // All /api/admin/* routes require a valid admin JWT (issued by /api/login).
+  if (!verifyAdmin(req)) return unauthorizedResponse(res);
 
   if (pathParts[2] === 'products') {
     if (req.method === 'GET') {
