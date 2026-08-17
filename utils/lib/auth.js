@@ -24,6 +24,13 @@ export function verifyAdmin(req) {
   return decoded?.role === 'admin' ? decoded : null;
 }
 
+// Returns the decoded JWT payload only if it belongs to a logged-in
+// customer (issued by /api/auth/login or /api/auth/register), or null.
+export function verifyCustomer(req) {
+  const decoded = verifyToken(req);
+  return decoded?.role === 'customer' ? decoded : null;
+}
+
 // Sends a 401 response using the same Node-style `res` object (res.status().json())
 // used throughout api/index.js.
 export function unauthorizedResponse(res) {

@@ -860,6 +860,15 @@
         let offers = [];
         let recommendedProducts = [];
 
+        // Shared headers for authenticated fetches to the customer-scoped API
+        function authHeaders() {
+            const authToken = localStorage.getItem('authToken');
+            return {
+                'Content-Type': 'application/json',
+                ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+            };
+        }
+
         // Check Authentication on Page Load
         function checkAuth() {
             const authToken = localStorage.getItem('authToken');
@@ -911,7 +920,16 @@
                 const storedCustomer = JSON.parse(customerData);
                 
                 // Fetch fresh data from API
-                const response = await fetch(`${API_BASE}/customers/${storedCustomer.id}`);
+                const response = await fetch(`${API_BASE}/customers/${storedCustomer.id}`, {
+                    headers: authHeaders()
+                });
+                if (response.status === 401 || response.status === 403) {
+                    // Stale/invalid token — force re-login
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('customer');
+                    showLoginPrompt();
+                    return;
+                }
                 if (response.ok) {
                     customer = await response.json();
                     renderCustomerData();
@@ -1076,22 +1094,94 @@
         };
 
         // Update Profile
-        window.updateProfile = function(e) {
+        window.updateProfile = async function(e) {
             e.preventDefault();
-            
-            customer.firstName = document.getElementById('firstName').value;
-            customer.lastName = document.getElementById('lastName').value;
-            customer.email = document.getElementById('email').value;
-            customer.phone = document.getElementById('phone').value;
-            customer.address = document.getElementById('address').value;
-            customer.city = document.getElementById('city').value;
-            customer.pincode = document.getElementById('pincode').value;
-            
-            alert('Profile updated successfully!');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName  = document.getElementById('lastName').value.trim();
+
+            const payload = {
+                name:    [firstName, lastName].filter(Boolean).join(' '),
+                email:   document.getElementById('email').value.trim(),
+                phone:   document.getElementById('phone').value.trim(),
+                address: document.getElementById('address').value.trim(),
+                city:    document.getElementById('city').value.trim(),
+                pincode: document.getElementById('pincode').value.trim()
+            };
+
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving…'; }
+            try {
+                const response = await fetch(`${API_BASE}/customers/${customer.id}`, {
+                    method: 'PUT',
+                    headers: authHeaders(),
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Failed to update profile');
+
+                customer = data;
+                localStorage.setItem('customer', JSON.stringify(customer));
+                renderCustomerData();
+                alert('Profile updated successfully!');
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Save Changes'; }
+            }
         };
 
-        // Load Orders
-        function loadOrders() {
+        // Load Orders — fetches this customer's real order history from the API
+        async function loadOrders() {
+            try {
+                const response = await fetch(`${API_BASE}/orders?email=${encodeURIComponent(customer.email)}`, {
+                    headers: authHeaders()
+                });
+                if (!response.ok) throw new Error('Failed to load orders');
+                const data = await response.json();
+
+                orders = (Array.isArray(data) ? data : []).map(o => ({
+                    id:     o.id,
+                    date:   o.created_at,
+                    status: o.status,
+                    total:  Number(o.total) || 0,
+                    items: (o.items_detail || []).map(item => ({
+                        name:  item.title || 'Product',
+                        qty:   item.quantity,
+                        price: Number(item.price) || 0,
+                        image: '../images/1.png'
+                    })),
+                    tracking: deriveTracking(o.status)
+                }));
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                orders = [];
+            }
+            renderOrdersList();
+        }
+
+        // Builds a simple tracking timeline from an order's status, since
+        // the API doesn't store a separate step-by-step tracking history.
+        function deriveTracking(status) {
+            const stepOrder = ['pending', 'processing', 'shipped', 'delivered'];
+            const labels = { pending: 'Order Placed', processing: 'Processing', shipped: 'Shipped', delivered: 'Delivered' };
+
+            if (status === 'cancelled' || status === 'payment_failed') {
+                return [
+                    { status: 'Order Placed', completed: true, date: null },
+                    { status: formatStatus(status), completed: true, date: null }
+                ];
+            }
+
+            const idx = stepOrder.indexOf(status);
+            return stepOrder.map((step, i) => ({
+                status:    labels[step],
+                completed: idx >= 0 ? i <= idx : i === 0,
+                date:      null
+            }));
+        }
+
+        // Renders the orders table from the `orders` state populated by loadOrders()
+        function renderOrdersList() {
             const container = document.getElementById('ordersList');
             if (orders.length === 0) {
                 container.innerHTML = `
@@ -1363,6 +1453,8 @@
         // Logout
         window.logout = function() {
             if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('customer');
                 window.location.href = '/';
             }
             return false;

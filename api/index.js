@@ -2,7 +2,7 @@
 import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-import { verifyAdmin, unauthorizedResponse } from '../utils/lib/auth.js';
+import { verifyAdmin, verifyCustomer, unauthorizedResponse, forbiddenResponse } from '../utils/lib/auth.js';
 import {
   handleCoupons,
   validateCoupon,
@@ -53,10 +53,12 @@ async function handleProducts(req, res, sql, params) {
   if (method === 'GET') {
     const conditions = [];
     if (params.get('id')) {
-      const id = Number(params.get('id'));
-      if (!Number.isNaN(id)) conditions.push(sql`id = ${id}`);
+      // products.id is a uuid column — pass it straight through as a
+      // parameterized value instead of coercing with Number(), which
+      // always evaluates to NaN for a uuid and silently dropped this filter.
+      conditions.push(sql`id = ${params.get('id')}`);
     } else if (params.get('ids')) {
-      const ids = params.get('ids').split(',').map(id => Number(id.trim())).filter(id => !Number.isNaN(id));
+      const ids = params.get('ids').split(',').map(id => id.trim()).filter(Boolean);
       if (ids.length > 0) conditions.push(sql`id = ANY(${ids})`);
     }
     if (params.get('category')) conditions.push(sql`category = ${params.get('category')}`);
@@ -96,10 +98,15 @@ async function handleProducts(req, res, sql, params) {
 // ============ ORDERS HANDLERS ============
 async function handleOrders(req, res, sql, params) {
   if (req.method === 'OPTIONS') return res.status(200).end();
+  await ensureOrdersUserId(sql);
   const body = await parseBody(req);
 
   if (req.method === 'GET') {
     const orderId = params.get('id');
+
+    // Single order lookup by id — left public. Used by order-success.html
+    // right after a guest (non-logged-in) checkout, and the id is an
+    // unguessable uuid, so this is a reasonable "possession token" model.
     if (orderId) {
       const orders = await sql`
         SELECT o.*,
@@ -109,6 +116,32 @@ async function handleOrders(req, res, sql, params) {
       if (!orders.length) return json(res, 404, { error: 'Order not found' });
       return json(res, 200, orders[0]);
     }
+
+    // Self-service order history — GET /api/orders?email=<customer email>.
+    // Requires a valid customer JWT whose email matches the one requested,
+    // so one logged-in customer can't page through another customer's orders.
+    // Matches on user_id (stable even if the account email later changes)
+    // OR customer_email (covers guest/legacy orders placed before this
+    // migration, or before the customer had an account).
+    const email = params.get('email');
+    if (email) {
+      const decoded = verifyCustomer(req);
+      if (!decoded) return unauthorizedResponse(res);
+      if (decoded.email?.toLowerCase() !== email.toLowerCase()) return forbiddenResponse(res);
+
+      const orders = await sql`
+        SELECT o.*,
+          (SELECT json_agg(json_build_object('product_id', oi.product_id, 'title', p.title, 'price', oi.price, 'quantity', oi.quantity, 'size', oi.size))
+           FROM order_items oi LEFT JOIN products p ON oi.product_id = p.id WHERE oi.order_id = o.id) as items_detail
+        FROM orders o
+        WHERE o.user_id = ${decoded.id} OR lower(o.customer_email) = ${email.toLowerCase()}
+        ORDER BY o.created_at DESC`;
+      return json(res, 200, orders || []);
+    }
+
+    // Unfiltered order listing — admin dashboard only. Previously had no
+    // auth check at all, exposing every customer's name/email/phone/address.
+    if (!verifyAdmin(req)) return unauthorizedResponse(res);
     const orders = await sql`
       SELECT o.*,
         (SELECT json_agg(json_build_object('product_id', oi.product_id, 'title', p.title, 'price', oi.price, 'quantity', oi.quantity, 'size', oi.size))
@@ -120,9 +153,17 @@ async function handleOrders(req, res, sql, params) {
   if (req.method === 'POST') {
     const { customer_name, customer_email, customer_phone, customer_address, items, total, payment_method, notes } = body;
     if (!customer_email || !items?.length || !total) return json(res, 400, { error: 'Missing: customer_email, items, or total' });
+
+    // Link this order to the customer's account if the request carries a
+    // valid customer JWT. user_id is derived only from the verified token —
+    // never trust a client-supplied id, or anyone could attach an order to
+    // someone else's account. Guest checkout (no token) still works fine.
+    const decodedCustomer = verifyCustomer(req);
+    const userId = decodedCustomer ? decodedCustomer.id : null;
+
     const orderResult = await sql`
-      INSERT INTO orders (customer_name, customer_email, customer_phone, customer_address, total, payment_method, notes, status, created_at, updated_at)
-      VALUES (${customer_name || null}, ${customer_email}, ${customer_phone || null}, ${customer_address || null}, ${total}, ${payment_method || 'cod'}, ${notes || null}, 'pending', NOW(), NOW())
+      INSERT INTO orders (user_id, customer_name, customer_email, customer_phone, customer_address, total, payment_method, notes, status, created_at, updated_at)
+      VALUES (${userId}, ${customer_name || null}, ${customer_email}, ${customer_phone || null}, ${customer_address || null}, ${total}, ${payment_method || 'cod'}, ${notes || null}, 'pending', NOW(), NOW())
       RETURNING id`;
     const orderId = orderResult[0].id;
     for (const item of items) {
@@ -137,6 +178,7 @@ async function handleOrders(req, res, sql, params) {
   }
 
   if (req.method === 'PUT') {
+    if (!verifyAdmin(req)) return unauthorizedResponse(res);
     const { id, status, tracking_number, notes } = body;
     if (!id) return json(res, 400, { error: 'Order ID required' });
     const updates = [];
@@ -150,6 +192,7 @@ async function handleOrders(req, res, sql, params) {
   }
 
   if (req.method === 'DELETE') {
+    if (!verifyAdmin(req)) return unauthorizedResponse(res);
     const { id } = body;
     if (!id) return json(res, 400, { error: 'Order ID required' });
     const result = await sql`UPDATE orders SET status = 'cancelled', updated_at = NOW() WHERE id = ${id} RETURNING id`;
@@ -249,12 +292,18 @@ async function handlePayment(req, res, sql, params) {
     }
 
     try {
+      await ensureOrdersUserId(sql);
       const { subtotal, tax, shipping, total } = await calculateServerTotal(sql, items);
+
+      // Derived only from the verified token — never trust a client value,
+      // or anyone could attach an order to someone else's account.
+      const decodedCustomer = verifyCustomer(req);
+      const userId = decodedCustomer ? decodedCustomer.id : null;
 
       // Create DB order first (status: 'created' = awaiting payment)
       const [dbOrder] = await sql`
-        INSERT INTO orders (customer_name, customer_email, customer_phone, customer_address, total, payment_method, status, created_at, updated_at)
-        VALUES (${customer_name || null}, ${customer_email}, ${customer_phone}, ${customer_address || null}, ${total}, 'online', 'created', NOW(), NOW())
+        INSERT INTO orders (user_id, customer_name, customer_email, customer_phone, customer_address, total, payment_method, status, created_at, updated_at)
+        VALUES (${userId}, ${customer_name || null}, ${customer_email}, ${customer_phone}, ${customer_address || null}, ${total}, 'online', 'created', NOW(), NOW())
         RETURNING id`;
 
       for (const item of items) {
@@ -433,12 +482,18 @@ async function handleCashfreePayment(req, res, sql, params) {
     }
 
     try {
+      await ensureOrdersUserId(sql);
       const { subtotal, tax, shipping, total } = await calculateServerTotal(sql, items);
+
+      // Derived only from the verified token — never trust a client value,
+      // or anyone could attach an order to someone else's account.
+      const decodedCustomer = verifyCustomer(req);
+      const userId = decodedCustomer ? decodedCustomer.id : null;
 
       // Create DB order first (status: 'created' = awaiting payment)
       const [dbOrder] = await sql`
-        INSERT INTO orders (customer_name, customer_email, customer_phone, customer_address, total, payment_method, status, created_at, updated_at)
-        VALUES (${customer_name || null}, ${customer_email}, ${customer_phone}, ${customer_address || null}, ${total}, 'online', 'created', NOW(), NOW())
+        INSERT INTO orders (user_id, customer_name, customer_email, customer_phone, customer_address, total, payment_method, status, created_at, updated_at)
+        VALUES (${userId}, ${customer_name || null}, ${customer_email}, ${customer_phone}, ${customer_address || null}, ${total}, 'online', 'created', NOW(), NOW())
         RETURNING id`;
 
       for (const item of items) {
@@ -585,6 +640,26 @@ async function ensureUsersTable(sql) {
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)`;
 }
 
+// Adds a proper user_id FK on `orders` so a customer's order history stays
+// linked even if they later change their account email. Safe to run on
+// every request that touches orders — no-op once the column exists.
+// Also backfills existing rows by matching customer_email to users.email,
+// on a best-effort basis (email match only; NULL user_id just means the
+// order was placed as a guest, or before this migration ran).
+async function ensureOrdersUserId(sql) {
+  // users is created lazily on first register/login (see ensureUsersTable
+  // above) — a store with zero signups yet wouldn't have it, so the FK
+  // below would fail with "relation users does not exist" without this.
+  await ensureUsersTable(sql);
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id)`;
+  await sql`
+    UPDATE orders o SET user_id = u.id
+    FROM users u
+    WHERE o.user_id IS NULL AND lower(o.customer_email) = lower(u.email)
+  `;
+}
+
 // ============ AUTH HANDLERS ============
 async function handleAuth(req, res, sql, pathParts) {
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -644,6 +719,26 @@ async function handleAuth(req, res, sql, pathParts) {
     } catch (err) {
       console.error('[auth/login]', err.message);
       return json(res, 500, { error: 'Login failed' });
+    }
+  }
+
+  // ── GET /api/auth/me ── validate token + return fresh customer record
+  if (pathParts[2] === 'me') {
+    if (req.method !== 'GET') return json(res, 405, { error: 'Method Not Allowed' });
+
+    const decoded = verifyCustomer(req);
+    if (!decoded) return unauthorizedResponse(res);
+
+    try {
+      await ensureUsersTable(sql);
+      const users = await sql`
+        SELECT id, name, email, phone, address, city, pincode, created_at
+        FROM users WHERE id = ${decoded.id}`;
+      if (!users.length) return json(res, 404, { error: 'Customer not found' });
+      return json(res, 200, { customer: users[0] });
+    } catch (err) {
+      console.error('[auth/me]', err.message);
+      return json(res, 500, { error: 'Failed to load session' });
     }
   }
 
@@ -1019,24 +1114,36 @@ export default async function handler(req, res) {
         return json(res, 404, { error: 'Integration endpoint not found' });
       }
       
-      // Customer accounts endpoint
+      // Customer accounts endpoint — self-service only. Requires the
+      // requesting customer's own JWT and only lets them read/edit their
+      // own record (previously fully unauthenticated, and PUT built SQL
+      // via raw string interpolation, an injection hole).
       if (pathParts[1] === 'customers') {
-        const customerId = params.get('id') || pathParts[2];
-        if (req.method === 'GET' && customerId) {
-          const users = await sql`SELECT id, name, email, phone, address, city, pincode, created_at FROM users WHERE id = ${parseInt(customerId)}`;
+        const customerId = parseInt(params.get('id') || pathParts[2]);
+        if (!customerId) return json(res, 400, { error: 'Invalid request' });
+
+        const decoded = verifyCustomer(req);
+        if (!decoded) return unauthorizedResponse(res);
+        if (decoded.id !== customerId) return forbiddenResponse(res);
+
+        if (req.method === 'GET') {
+          const users = await sql`SELECT id, name, email, phone, address, city, pincode, created_at FROM users WHERE id = ${customerId}`;
           if (!users.length) return json(res, 404, { error: 'Customer not found' });
           return json(res, 200, users[0]);
         }
-        if (req.method === 'PUT' && customerId) {
+        if (req.method === 'PUT') {
           const body = await parseBody(req);
-          const clauses = ['updated_at = NOW()'];
-          if (body.name !== undefined) clauses.push(`name = '${body.name}'`);
-          if (body.email !== undefined) clauses.push(`email = '${body.email}'`);
-          if (body.phone !== undefined) clauses.push(`phone = '${body.phone}'`);
-          if (body.address !== undefined) clauses.push(`address = '${body.address}'`);
-          if (body.city !== undefined) clauses.push(`city = '${body.city}'`);
-          if (body.pincode !== undefined) clauses.push(`pincode = '${body.pincode}'`);
-          const result = await sql`UPDATE users SET ${sql.join(clauses.map(c=>sql.raw(c)), sql`, `)} WHERE id = ${parseInt(customerId)} RETURNING id, name, email, phone, address, city, pincode`;
+          const result = await sql`
+            UPDATE users SET
+              name     = COALESCE(${body.name}, name),
+              email    = COALESCE(${body.email ? body.email.toLowerCase() : null}, email),
+              phone    = COALESCE(${body.phone}, phone),
+              address  = COALESCE(${body.address}, address),
+              city     = COALESCE(${body.city}, city),
+              pincode  = COALESCE(${body.pincode}, pincode),
+              updated_at = NOW()
+            WHERE id = ${customerId}
+            RETURNING id, name, email, phone, address, city, pincode`;
           if (!result.length) return json(res, 404, { error: 'Customer not found' });
           return json(res, 200, result[0]);
         }

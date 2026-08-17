@@ -277,6 +277,17 @@
     // ─────────────────────────────────────────────
     let selectedPaymentMethod = 'razorpay';
 
+    // If the shopper is logged in (account.html sets these on login/register),
+    // attach their token so the order gets linked to their account server-side.
+    // Guest checkout works exactly the same with no token sent.
+    function orderHeaders() {
+      const authToken = localStorage.getItem('authToken');
+      return {
+        'Content-Type': 'application/json',
+        ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+      };
+    }
+
     // ─────────────────────────────────────────────
     // INIT
     // ─────────────────────────────────────────────
@@ -405,7 +416,7 @@
 
         const res = await fetch('/api/orders', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: orderHeaders(),
           body: JSON.stringify({
             ...payload,
             payment_method: 'cod',
@@ -437,7 +448,7 @@
         // Step 1 — create order on server (validates prices, creates DB row)
         const createRes = await fetch('/api/payment/create', {
           method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: orderHeaders(),
           body:    JSON.stringify(payload)
         });
         const orderData = await createRes.json();
@@ -540,7 +551,7 @@
         // Step 1 — create order on server for Cashfree
         const createRes = await fetch('/api/payment/cashfree/create', {
           method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: orderHeaders(),
           body:    JSON.stringify(payload)
         });
         const orderData = await createRes.json();

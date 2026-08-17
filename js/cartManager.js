@@ -83,8 +83,10 @@ const cartManager = (() => {
   function getCartTotals() {
     const cart = getCart();
     const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const tax = subtotal * 0.1;
-    const shipping = 100;
+    // Keep this in sync with the totals logic in pages/checkout.html —
+    // free shipping over ₹999, otherwise a flat ₹100 fee.
+    const shipping = subtotal >= 999 ? 0 : 100;
+    const tax = Math.round(subtotal * 0.10);
     const total = subtotal + tax + shipping;
 
     return {
